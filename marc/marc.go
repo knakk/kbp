@@ -14,8 +14,10 @@ const (
 	UNIMARC
 )
 
+// Format represents a MARC serialization format.
 type Format int
 
+// Supported MARC serialization formats:
 const (
 	unknownFormat Format = iota
 	MARC
@@ -108,6 +110,7 @@ func (r *Record) String() string {
 
 type leaderPos int
 
+// Positions in leader:
 const (
 	LeaderRecordStatus leaderPos = iota + 5
 	LeaderRecordType
@@ -134,16 +137,21 @@ func (r *Record) SetLeaderPos(pos leaderPos, val byte) *Record {
 	return r
 }
 
+// AddControlField adds the given control field to the record,
+// overwriting any existing control field with the same tag.
 func (r *Record) AddControlField(f ControlField) *Record {
 	r.cfields[f.Tag] = f.value
 	return r
 }
 
+// AddDataField adds the given data field to the record,
+// appending to any existing data fields with the same tag.
 func (r *Record) AddDataField(f DataField) *Record {
 	r.dfields[f.Tag] = append(r.dfields[f.Tag], f)
 	return r
 }
 
+// NewDataField return a new DataField.
 func NewDataField(tag DataTag) DataField {
 	return DataField{
 		Tag:        tag,
@@ -153,6 +161,7 @@ func NewDataField(tag DataTag) DataField {
 	}
 }
 
+// NewDataFieldWithIndicators returns a new DataField with specified Indicators.
 func NewDataFieldWithIndicators(tag DataTag, ind1, ind2 rune) DataField {
 	return DataField{
 		Tag:        tag,
@@ -162,6 +171,7 @@ func NewDataFieldWithIndicators(tag DataTag, ind1, ind2 rune) DataField {
 	}
 }
 
+// DataField represents a DataField in a MARC record.
 type DataField struct {
 	Tag        DataTag
 	Indicator1 rune
@@ -169,25 +179,32 @@ type DataField struct {
 	subfields  map[rune][]string
 }
 
+// Add will add the given code,value pair to DataField's subfields.
 func (df DataField) Add(code rune, value string) DataField {
 	df.subfields[code] = append(df.subfields[code], value)
 	return df
 }
 
+// ControlField represents a MARC control field. Control fields have
+// no indicators or subfield codes.
 type ControlField struct {
 	Tag   ControlTag
 	value []byte
 }
 
+// NewControlField returns a new ControlField.
 func NewControlField(tag ControlTag) ControlField {
 	return ControlField{Tag: tag}
 }
 
+// Set sets the ControlField value to the given string.
 func (f ControlField) Set(s string) ControlField {
 	f.value = []byte(s)
 	return f
 }
 
+// SetPos inserts the given string in he ControlField value at
+// the specified (byte) position.
 func (f ControlField) SetPos(pos int, s string) ControlField {
 	if l := pos + len(s); len(f.value) < l {
 		b := make([]byte, l)
@@ -201,6 +218,7 @@ func (f ControlField) SetPos(pos int, s string) ControlField {
 	return f
 }
 
+// Eq checks if two MARC records are equal.
 func (r *Record) Eq(other *Record) bool {
 	if !bytes.Equal(r.leader, other.leader) {
 		return false

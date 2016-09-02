@@ -8,18 +8,22 @@ import (
 	"unicode/utf8"
 )
 
+// LineMARC-specific constants
 const (
 	linemarcRT  = 0x5E // ^ (record terminator)
 	linemarcFS  = 0x2A // * (field separator)
 	linemarcSFS = 0x24 // $ (subfield separator)
 )
 
+// Decoder can decode MARC records from a stream, in one of the supported formats:
+// MARCXML (ISO25577), LineMARC or Standard MARC (ISO2709)
 type Decoder struct {
 	input  *bufio.Reader
 	format Format
 	lineN  int
 }
 
+// NewDecoder returns a new Decoder for the given stream and format.
 func NewDecoder(r io.Reader, f Format) *Decoder {
 	switch f {
 	case MARC, MARCXML, LineMARC:
@@ -47,6 +51,7 @@ func (d *Decoder) DecodeAll() ([]*Record, error) {
 	return res, nil
 }
 
+// Decode decodes and returns a single MARC Record, or and error.
 func (d *Decoder) Decode() (*Record, error) {
 	switch d.format {
 	case LineMARC:
@@ -114,7 +119,7 @@ decodeRecord:
 			dField, err2 := parseDataField(line[p:])
 			if err2 != nil {
 				err = err2
-				break
+				break decodeRecord
 			}
 			r.AddDataField(dField)
 		}
