@@ -1,5 +1,24 @@
 package marc
 
+type leaderPos int
+
+// Positions in leader:
+const (
+	LeaderRecordStatus leaderPos = iota + 5
+	LeaderRecordType
+	LeaderBibliograhicLevel
+	LeaderControlType
+	LeaderCharacterEncoding
+	LeaderIndicatorCount
+	LeaderSubfieldCodeCount
+	_ // pos 12-16: "Base adress of data"
+	_
+	_
+	_
+	_
+	LeaderEncodingLevel
+)
+
 type ControlTag int
 
 const (

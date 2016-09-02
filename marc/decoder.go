@@ -8,13 +8,6 @@ import (
 	"unicode/utf8"
 )
 
-// LineMARC-specific constants
-const (
-	linemarcRT  = 0x5E // ^ (record terminator)
-	linemarcFS  = 0x2A // * (field separator)
-	linemarcSFS = 0x24 // $ (subfield separator)
-)
-
 // Decoder can decode MARC records from a stream, in one of the supported formats:
 // MARCXML (ISO25577), LineMARC or Standard MARC (ISO2709)
 type Decoder struct {
@@ -64,6 +57,13 @@ func (d *Decoder) Decode() (*Record, error) {
 		panic("Cannot decode unknown MARC Format")
 	}
 }
+
+// LineMARC-specific constants
+const (
+	linemarcRT  = 0x5E // ^ (record terminator)
+	linemarcFS  = 0x2A // * (field separator)
+	linemarcSFS = 0x24 // $ (subfield separator)
+)
 
 func (d *Decoder) decodeLineMARC() (r *Record, err error) {
 	r = NewRecord()

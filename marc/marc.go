@@ -108,25 +108,6 @@ func (r *Record) String() string {
 	return b.String()
 }
 
-type leaderPos int
-
-// Positions in leader:
-const (
-	LeaderRecordStatus leaderPos = iota + 5
-	LeaderRecordType
-	LeaderBibliograhicLevel
-	LeaderControlType
-	LeaderCharacterEncoding
-	LeaderIndicatorCount
-	LeaderSubfieldCodeCount
-	_ // pos 12-16: "Base adress of data"
-	_
-	_
-	_
-	_
-	LeaderEncodingLevel
-)
-
 // SetLeaderPos sets the Record leader position to the given value.
 //
 // It is not possible to set the values for "Record length" or
