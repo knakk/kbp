@@ -1,6 +1,9 @@
 package marc
 
-import "bytes"
+import (
+	"bytes"
+	"strconv"
+)
 
 type Flavor int
 
@@ -56,29 +59,30 @@ func NewRecord() *Record {
 	}
 }
 
-var controltags = []ControlTag{Tag001, Tag002, Tag003, Tag004, Tag005, Tag006, Tag007, Tag008}
-
-var datatags = []DataTag{
-	Tag010, Tag020, Tag041, Tag111, Tag245, Tag260, Tag300, Tag440, Tag508, Tag546, Tag700, Tag911,
-}
-
+// String renders the Record as a readable string in a format similar to LineMARC.
 func (r *Record) String() string {
 	var b bytes.Buffer
 	b.WriteString("000  ")
 	b.Write(r.leader)
 	b.WriteRune('\n')
-	for _, tag := range controltags {
+	for i := 1; i < 9; i++ {
+		tag := ControlTag(i)
 		if val, ok := r.cfields[tag]; ok {
-			b.WriteString(controlfields2str[tag])
+			b.WriteString("00")
+			b.WriteString(strconv.Itoa(i))
 			b.WriteString("  ")
 			b.Write(val)
 			b.WriteRune('\n')
 		}
 	}
-	for _, tag := range datatags {
+	for i := 10; i < 1000; i++ {
+		tag := DataTag(i)
 		if dfs, ok := r.dfields[tag]; ok {
 			for _, df := range dfs {
-				b.WriteString(datafield2str[tag])
+				if i < 100 {
+					b.WriteString("0") // zero-pad
+				}
+				b.WriteString(strconv.Itoa(i))
 				b.WriteRune(df.Indicator1)
 				b.WriteRune(df.Indicator2)
 				// TODO sort codes alphabetically

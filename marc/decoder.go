@@ -150,20 +150,10 @@ var (
 		"001": Tag001, "003": Tag003, "005": Tag005, "006": Tag006, "007": Tag007, "008": Tag008, "009": Tag009,
 	}
 
-	controlfields2str = map[ControlTag]string{
-		Tag001: "001", Tag003: "003", Tag005: "005", Tag006: "006", Tag007: "007", Tag008: "008", Tag009: "009",
-	}
-
 	str2datafields = map[string]DataTag{
 		"010": Tag010, "020": Tag020, "041": Tag041, "111": Tag111, "245": Tag245, "260": Tag260,
 		"300": Tag300, "440": Tag440, "508": Tag508, "546": Tag546, "700": Tag700,
 		"911": Tag911,
-	}
-
-	datafield2str = map[DataTag]string{
-		Tag010: "010", Tag020: "020", Tag041: "041", Tag111: "111", Tag245: "245", Tag260: "260",
-		Tag300: "300", Tag440: "440", Tag508: "508", Tag546: "546", Tag700: "700",
-		Tag911: "911",
 	}
 )
 
