@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strconv"
 	"unicode/utf8"
 )
 
@@ -155,9 +154,8 @@ func DetectFormat(data []byte) Format {
 func parseControlField(b []byte) (ControlField, error) {
 	// We can asume that len(b) >= 3, and that b[0:3] is numeric,
 	// and that b[3] != '0'.
-	i, _ := strconv.Atoi(string(b[:3])) // we can ignore the error, as we know it's numeric
 	f := ControlField{
-		Tag:   ControlTag(i),
+		Tag:   ControlTag(byteToInt(b[:3])),
 		value: b[3:],
 	}
 	return f, nil
@@ -165,9 +163,8 @@ func parseControlField(b []byte) (ControlField, error) {
 
 func parseDataField(b []byte) (DataField, error) {
 	// We can asume that len(b) >= 3, and that b[0:3] is numeric.
-	i, _ := strconv.Atoi(string(b[:3])) // we can ignore the error, as we know it's numeric
 	f := DataField{
-		Tag:       DataTag(i),
+		Tag:       DataTag(byteToInt(b[:3])),
 		subfields: make(map[rune][]string),
 	}
 	if len(b) >= 5 {
@@ -223,4 +220,11 @@ func isAllDigits(b []byte) bool {
 		}
 	}
 	return true
+}
+
+func byteToInt(in []byte) (x int) {
+	for _, c := range in {
+		x = x*10 + int(c-'0')
+	}
+	return x
 }
