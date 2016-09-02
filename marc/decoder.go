@@ -84,7 +84,7 @@ decodeRecord:
 			// OK
 		default:
 			err = fmt.Errorf("%d:0: expected '*', found %q", d.lineN, string(line))
-			break
+			break decodeRecord
 		}
 
 		// strip newline
