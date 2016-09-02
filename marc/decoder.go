@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strconv"
 	"unicode/utf8"
 )
 
@@ -149,26 +150,14 @@ func DetectFormat(data []byte) Format {
 	}
 }
 
-// Mappings
-var (
-	str2controlfields = map[string]ControlTag{
-		"001": Tag001, "003": Tag003, "005": Tag005, "006": Tag006, "007": Tag007, "008": Tag008, "009": Tag009,
-	}
-
-	str2datafields = map[string]DataTag{
-		"010": Tag010, "020": Tag020, "041": Tag041, "111": Tag111, "245": Tag245, "260": Tag260,
-		"300": Tag300, "440": Tag440, "508": Tag508, "546": Tag546, "700": Tag700,
-		"911": Tag911,
-	}
-)
-
 // Parsing helper functions:
 
 func parseControlField(b []byte) (ControlField, error) {
 	// We can asume that len(b) >= 3, and that b[0:3] is numeric,
 	// and that b[3] != '0'.
+	i, _ := strconv.Atoi(string(b[:3])) // we can ignore the error, as we know it's numeric
 	f := ControlField{
-		Tag:   str2controlfields[string(b[:3])],
+		Tag:   ControlTag(i),
 		value: b[3:],
 	}
 	return f, nil
@@ -176,8 +165,9 @@ func parseControlField(b []byte) (ControlField, error) {
 
 func parseDataField(b []byte) (DataField, error) {
 	// We can asume that len(b) >= 3, and that b[0:3] is numeric.
+	i, _ := strconv.Atoi(string(b[:3])) // we can ignore the error, as we know it's numeric
 	f := DataField{
-		Tag:       str2datafields[string(b[:3])],
+		Tag:       DataTag(i),
 		subfields: make(map[rune][]string),
 	}
 	if len(b) >= 5 {
