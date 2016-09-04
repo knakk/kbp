@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 )
 
 // DateLayout is the date time format that the SIP-protocol expects.
@@ -223,6 +224,68 @@ func (m Message) Validate() []string {
 	}*/
 
 	return errs
+}
+
+// MessageFactory can generate Message with default values set.
+// Some fields will always have the same value in a lot of
+// configurations, so this is provided as a convenience in those cases.
+type MessageFactory struct {
+	defaults map[fieldType]string
+}
+
+// NewMessageFactory returns a MessageFacyory with the given default
+// fields, which will be used creating messages with NewMessage.
+func NewMessageFactory(defaults ...Field) MessageFactory {
+	mf := MessageFactory{
+		defaults: make(map[fieldType]string, len(defaults)),
+	}
+
+	for _, f := range defaults {
+		mf.defaults[f.Type] = f.Value
+	}
+
+	return mf
+}
+
+// NewMessage returns a new Message, with the default values defined in the MessageFactory, but
+// only when applicable to the message type.
+//
+// In addition, the fields FieldTransactionDate and FieldNbDueDate are set with the current timestamp,
+// again, only when required by given the message type.
+func (mf MessageFactory) NewMessage(t msgType) Message {
+	now := time.Now().Format(DateLayout)
+
+	msg := NewMessage(t)
+	switch msg.typ {
+	case MsgReqStatus, MsgReqResend, MsgReqLogin, MsgRespStatus, MsgRespLogin:
+		// No timestamp
+	case MsgReqCheckout, MsgReqRenew:
+		msg.AddField(Field{Type: FieldNbDueDate, Value: now})
+		fallthrough
+	default:
+		// Matches all except those types in the first case statement
+		msg.AddField(Field{Type: FieldTransactionDate, Value: now})
+	}
+
+	for _, f := range msgDefinitions[msg.typ].RequiredFixed {
+		if def, ok := mf.defaults[f]; ok {
+			msg.AddField(Field{Type: f, Value: def})
+		}
+	}
+
+	for _, f := range msgDefinitions[msg.typ].RequiredVar {
+		if def, ok := mf.defaults[f]; ok {
+			msg.AddField(Field{Type: f, Value: def})
+		}
+	}
+
+	for _, f := range msgDefinitions[msg.typ].OptionalVar {
+		if def, ok := mf.defaults[f]; ok {
+			msg.AddField(Field{Type: f, Value: def})
+		}
+	}
+
+	return msg
 }
 
 // msgType represents the request or response message type.
