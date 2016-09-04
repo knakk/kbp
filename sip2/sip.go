@@ -17,7 +17,6 @@ const DateLayout = "20060102    150405"
 // A Message defines a request sent by the SC to the ACS, or the response
 // sent by the ACS to the SC. The Message Type defines which kind it is.
 type Message struct {
-	// TODO make theese unexported when getters/setters done
 	typ               msgType
 	fields            map[fieldType]string
 	repeateableFields map[fieldType][]string
