@@ -129,11 +129,11 @@ func TestDecodeErrors(t *testing.T) {
 		input     string
 		errString string
 	}{
-		{"", "message too short"},
-		{"1\r", "message too short"},
-		{"xx", `unknown message code: "xx"`},
-		{"3301000120131216    140859ABix:664329,9|AJEgeland, Tom : Ulvenatten|", `unknown message code: "33"`},
-		{"2300019810908ZZZZ12453AO|AA|AC|AD|", "message too short to contain required fields for MsgReqPatronStatus: 34 < 35"},
+		{"", "Decode: message too short"},
+		{"1\r", "Decode: message too short"},
+		{"xx", `Decode: unknown message code: "xx"`},
+		{"3301000120131216    140859ABix:664329,9|AJEgeland, Tom : Ulvenatten|", `Decode: unknown message code: "33"`},
+		{"2300019810908ZZZZ12453AO|AA|AC|AD|", "Decode: message too short to contain required fields for MsgReqPatronStatus: 34 < 35"},
 	}
 
 	for i, tt := range tests {

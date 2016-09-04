@@ -28,16 +28,16 @@ func Decode(msg []byte) (Message, error) {
 	}
 
 	if l < 2 {
-		return m, errors.New("message too short")
+		return m, errors.New("Decode: message too short")
 	}
 
 	m.typ = codeToMsg[string(msg[:2])]
 	if m.typ == MsgUnknown {
-		return m, fmt.Errorf("unknown message code: %q", string(msg[:2]))
+		return m, fmt.Errorf("Decode: unknown message code: %q", string(msg[:2]))
 	}
 
 	if l < minMsgLength[m.typ] {
-		return m, fmt.Errorf("message too short to contain required fields for %v: %d < %d", m.typ, len(msg), minMsgLength[m.typ])
+		return m, fmt.Errorf("Decode: message too short to contain required fields for %v: %d < %d", m.typ, len(msg), minMsgLength[m.typ])
 	}
 
 	m.fields = make(map[fieldType]string)

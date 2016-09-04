@@ -105,7 +105,7 @@ func (m Message) Encode(w io.Writer) error {
 
 	for _, f := range msgDefinitions[m.typ].RequiredFixed {
 		if !m.hasField(f) {
-			return fmt.Errorf("missing required fixed-length field: %v", f)
+			return fmt.Errorf("Encode: missing required fixed-length field: %v", f)
 		}
 
 		if _, err := bw.WriteString(m.fields[f]); err != nil {
@@ -115,7 +115,7 @@ func (m Message) Encode(w io.Writer) error {
 
 	for _, f := range msgDefinitions[m.typ].RequiredVar {
 		if !m.hasField(f) { // TODO leave out?
-			return fmt.Errorf("missing required variable-length field: %v", f)
+			return fmt.Errorf("Encode: missing required variable-length field: %v", f)
 		}
 
 		if _, err := bw.WriteString(fieldToCode[f]); err != nil {
