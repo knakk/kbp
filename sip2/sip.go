@@ -37,6 +37,10 @@ func NewMessage(f msgType) Message {
 	}
 }
 
+func (m Message) Type() msgType {
+	return m.typ
+}
+
 // AddField adds a field to the Message. If the field is not repeatable, it
 // will overwrite any existing value for the field.
 func (m Message) AddField(fs ...Field) Message {
