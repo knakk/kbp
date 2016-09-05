@@ -2,7 +2,7 @@ package marc
 
 import "bytes"
 
-func mustDecodeOne(input string) *Record {
+func mustDecode(input string) *Record {
 	l := 64
 	if len(input) < 64 {
 		l = len(input)

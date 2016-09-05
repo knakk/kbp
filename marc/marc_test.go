@@ -72,7 +72,7 @@ func TestCreateRecord(t *testing.T) {
 				Add('w', "Nordiska fackkonferansen før historisk metodlæra").
 				Add('z', "Nordisk fagkonferanse for historisk metodelære"))
 
-	want := mustDecodeOne(`
+	want := mustDecode(`
 *000     nam         1
 *00186000097
 *008860708         no     a     a10  0 mul
@@ -93,4 +93,91 @@ func TestCreateRecord(t *testing.T) {
 	if !r.Eq(want) {
 		t.Errorf("got:\n%+v\nwant:\n%+v", r, want)
 	}
+}
+
+func TestRecordEquality(t *testing.T) {
+	tests := []struct {
+		a, b   string
+		wantEq bool
+	}{
+		{ // 0
+			a:      "*000\n^",
+			b:      "*000\n^",
+			wantEq: true,
+		},
+		{ // 1
+			a:      "*000\n^",
+			b:      "*000\n*001\n^",
+			wantEq: true, // empty controlfield should be disregarded
+		},
+		{ // 2
+			a:      "*000\n*245\n^",
+			b:      "*000\n^",
+			wantEq: true, // empty datafield should be disregarded
+		},
+		{ // 3
+			a:      "*000\n*245\n^",
+			b:      "*000\n*500\n^",
+			wantEq: true, // empty datafields should be disregarded
+		},
+		{ // 4
+			a:      "*000\n*245  $aTitle\n^",
+			b:      "*000\n*245  $aTitle\n^",
+			wantEq: true,
+		},
+		{ // 5
+			a:      "*000\n*245  $aTitle$bSubtitle\n^",
+			b:      "*000\n*245  $aTitle$bSubtitle\n^",
+			wantEq: true,
+		},
+		{ // 6
+			a:      "*000\n*245  $bSubtitle$aTitle\n^",
+			b:      "*000\n*245  $aTitle$bSubtitle\n^",
+			wantEq: true, // order of subfields should not matter
+		},
+		{ // 7
+			a:      "*000\n*245  $aTitle$bSubtitle\n^",
+			b:      "*000\n*245  $aTitle\n^",
+			wantEq: false,
+		},
+		{ // 8
+			a:      "*000\n*245  $aTitle$bSubtitle\n^",
+			b:      "*000\n*245 1$aTitle$bSubtitle\n^",
+			wantEq: false, // different indicator2
+		},
+		{ // 9
+			a:      "*000\n*24501$aTitle$bSubtitle\n^",
+			b:      "*000\n*245 1$aTitle$bSubtitle\n^",
+			wantEq: false, // different indicator1
+		},
+		{ // 10
+			a:      "*000\n*650  $aWar$\n*650  $aPeace$\n*650  $aLove$\n^",
+			b:      "*000\n*650  $aPeace$\n*650  $aWar$\n*650  $aLove$\n^",
+			wantEq: true, // repeated datafields
+		},
+		{ // 11
+			a:      "*000\n*041  $anor$aswe$adan\n^",
+			b:      "*000\n*041  $anor$aswe$adan\n^",
+			wantEq: true, // repeated subfields
+		},
+		{ // 12
+			a:      "*000\n*041  $anor$aswe$adan\n^",
+			b:      "*000\n*041  $aswe$adan$anor\n^",
+			wantEq: true, // repeated subfields; order should not matter
+		},
+	}
+
+	for i, tt := range tests {
+		if got := mustDecode(tt.a).Eq(mustDecode(tt.b)); got != tt.wantEq {
+			t.Logf("\n\n%v\nshould %s\n\n%v\n", mustDecode(tt.a), boolstr(tt.wantEq), mustDecode(tt.b))
+			t.Errorf("equality test %d: got %v; want %v", i, got, tt.wantEq)
+		}
+	}
+}
+
+func boolstr(b bool) string {
+	if b {
+		return "=="
+	}
+	return "!="
 }

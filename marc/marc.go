@@ -2,6 +2,7 @@ package marc
 
 import (
 	"bytes"
+	"sort"
 	"strconv"
 )
 
@@ -257,11 +258,80 @@ func (r *Record) Eq(other *Record) bool {
 			return false
 		}
 	}
-	for tag, _ := range r.dfields {
-		if _, ok := other.dfields[tag]; !ok {
+
+	if len(r.dfields) != len(other.dfields) {
+		return false
+	}
+
+	for tag, dfs := range r.dfields {
+		if len(other.dfields[tag]) != len(dfs) {
 			return false
 		}
-		// TODO check eq of of dfields[tag] (need to sort them)
+
+		sort.Sort(byTagAndSubfields(r.dfields[tag]))
+		sort.Sort(byTagAndSubfields(other.dfields[tag]))
+
+		for i, df := range dfs {
+			if df.Indicator1 != other.dfields[tag][i].Indicator1 {
+				return false
+			}
+			if df.Indicator2 != other.dfields[tag][i].Indicator2 {
+				return false
+			}
+			for code, vals := range df.subfields {
+				if len(vals) != len(other.dfields[tag][i].subfields[code]) {
+					return false
+				}
+				for _, v := range vals {
+					if !strInSlice(v, other.dfields[tag][i].subfields[code]) {
+						return false
+					}
+				}
+			}
+		}
 	}
+
 	return true
+}
+
+func strInSlice(needle string, haystack []string) bool {
+	for _, v := range haystack {
+		if v == needle {
+			return true
+		}
+	}
+	return false
+}
+
+// byTagAndSubfields is a wrapper type to sort DataFields.
+type byTagAndSubfields []*DataField
+
+func (b byTagAndSubfields) Len() int      { return len(b) }
+func (b byTagAndSubfields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+
+func (b byTagAndSubfields) Less(i, j int) bool {
+	if b[i].Tag < b[j].Tag {
+		return true
+	}
+	if b[i].Indicator1 < b[j].Indicator1 {
+		return true
+	}
+	if b[i].Indicator2 < b[j].Indicator2 {
+		return true
+	}
+	if len(b[i].subfields) < len(b[j].subfields) {
+		return true
+	}
+	for code, vals := range b[i].subfields {
+		if len(vals) < len(b[j].subfields[code]) {
+			return true
+		}
+		// TODO sort vals
+		for k, v := range vals {
+			if v < b[j].subfields[code][k] {
+				return true
+			}
+		}
+	}
+	return false
 }
