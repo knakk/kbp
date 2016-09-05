@@ -101,8 +101,8 @@ func (r *Record) String() string {
 						indented = false
 					}
 				}
+				b.WriteRune('\n')
 			}
-			b.WriteRune('\n')
 		}
 	}
 	return b.String()
