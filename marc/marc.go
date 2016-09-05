@@ -45,7 +45,7 @@ func (f Format) String() string {
 type Record struct {
 	leader  []byte
 	cfields map[ControlTag][]byte
-	dfields map[DataTag][]DataField
+	dfields map[DataTag][]*DataField
 }
 
 var emptyLeader = []byte("                        ") // 24 spaces
@@ -57,7 +57,7 @@ func NewRecord() *Record {
 	return &Record{
 		leader:  leader,
 		cfields: make(map[ControlTag][]byte),
-		dfields: make(map[DataTag][]DataField),
+		dfields: make(map[DataTag][]*DataField),
 	}
 }
 
@@ -120,21 +120,52 @@ func (r *Record) SetLeaderPos(pos leaderPos, val byte) *Record {
 
 // AddControlField adds the given control field to the record,
 // overwriting any existing control field with the same tag.
-func (r *Record) AddControlField(f ControlField) *Record {
+func (r *Record) AddControlField(f *ControlField) *Record {
 	r.cfields[f.Tag] = f.value
 	return r
 }
 
 // AddDataField adds the given data field to the record,
 // appending to any existing data fields with the same tag.
-func (r *Record) AddDataField(f DataField) *Record {
+func (r *Record) AddDataField(f *DataField) *Record {
 	r.dfields[f.Tag] = append(r.dfields[f.Tag], f)
 	return r
 }
 
+// ControlField returns the ControlField for the given tag, along
+// with a boolean indicating whether the Record has that ControlField or not.
+// If not, the ControlField will be empty.
+func (r *Record) ControlField(tag ControlTag) (cf *ControlField, ok bool) {
+	cf = NewControlField(tag)
+	var b []byte
+	if b, ok = r.cfields[tag]; ok {
+		cf.value = b
+	}
+	return cf, ok
+}
+
+// DataField returns the DataField for the given tag, along
+// with a boolean indicating whether the Record has that DataField or not.
+// If not, the DataField will be empty.
+// Only one DataField will be returned; if the field is repeated, use
+// the DataFields() to retrieve all.
+func (r *Record) DataField(tag DataTag) (*DataField, bool) {
+	dfs, ok := r.dfields[tag]
+	if !ok {
+		return nil, ok
+	}
+
+	return dfs[0], true
+}
+
+// DataFields returns all the DataFields for the given tag.
+func (r *Record) DataFields(tag DataTag) []*DataField {
+	return r.dfields[tag]
+}
+
 // NewDataField return a new DataField.
-func NewDataField(tag DataTag) DataField {
-	return DataField{
+func NewDataField(tag DataTag) *DataField {
+	return &DataField{
 		Tag:        tag,
 		Indicator1: ' ',
 		Indicator2: ' ',
@@ -143,8 +174,8 @@ func NewDataField(tag DataTag) DataField {
 }
 
 // NewDataFieldWithIndicators returns a new DataField with specified Indicators.
-func NewDataFieldWithIndicators(tag DataTag, ind1, ind2 rune) DataField {
-	return DataField{
+func NewDataFieldWithIndicators(tag DataTag, ind1, ind2 rune) *DataField {
+	return &DataField{
 		Tag:        tag,
 		Indicator1: ind1,
 		Indicator2: ind2,
@@ -161,32 +192,37 @@ type DataField struct {
 }
 
 // Add will add the given code,value pair to DataField's subfields.
-func (df DataField) Add(code rune, value string) DataField {
+func (df *DataField) Add(code rune, value string) *DataField {
 	df.subfields[code] = append(df.subfields[code], value)
 	return df
 }
 
+// Subfield returns the values set for a DataField's given subfield.
+func (df *DataField) Subfield(code rune) []string {
+	return df.subfields[code]
+}
+
 // ControlField represents a MARC control field. Control fields have
-// no indicators or subfield codes.
+// no indicators or subfield codes, unlike Data fields.
 type ControlField struct {
 	Tag   ControlTag
 	value []byte
 }
 
 // NewControlField returns a new ControlField.
-func NewControlField(tag ControlTag) ControlField {
-	return ControlField{Tag: tag}
+func NewControlField(tag ControlTag) *ControlField {
+	return &ControlField{Tag: tag}
 }
 
 // Set sets the ControlField value to the given string.
-func (f ControlField) Set(s string) ControlField {
+func (f *ControlField) Set(s string) *ControlField {
 	f.value = []byte(s)
 	return f
 }
 
 // SetPos inserts the given string in he ControlField value at
 // the specified (byte) position.
-func (f ControlField) SetPos(pos int, s string) ControlField {
+func (f *ControlField) SetPos(pos int, s string) *ControlField {
 	if l := pos + len(s); len(f.value) < l {
 		b := make([]byte, l)
 		for i := range b {
@@ -197,6 +233,14 @@ func (f ControlField) SetPos(pos int, s string) ControlField {
 	}
 	copy(f.value[pos:], s)
 	return f
+}
+
+// GetPos returns n characters starting at the given position in the ControlField.
+func (f ControlField) GetPos(pos int, n int) string {
+	if len(f.value) < pos+n {
+		return ""
+	}
+	return string(f.value[pos : pos+n])
 }
 
 // Eq checks if two MARC records are equal.

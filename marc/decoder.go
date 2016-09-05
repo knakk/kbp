@@ -112,7 +112,7 @@ decodeRecord:
 					err = err2
 					break
 				}
-				r.AddControlField(cField)
+				r.AddControlField(&cField)
 			}
 		} else {
 			// Parse Data field
@@ -121,7 +121,7 @@ decodeRecord:
 				err = err2
 				break decodeRecord
 			}
-			r.AddDataField(dField)
+			r.AddDataField(&dField)
 		}
 
 	}
