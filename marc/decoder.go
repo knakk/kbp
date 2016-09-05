@@ -121,7 +121,9 @@ decodeRecord:
 				err = err2
 				break decodeRecord
 			}
-			r.AddDataField(&dField)
+			if len(dField.subfields) > 0 {
+				r.AddDataField(&dField)
+			}
 		}
 
 	}
