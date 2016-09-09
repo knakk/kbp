@@ -65,7 +65,7 @@ func (s *Server) Run() {
 	for {
 		conn, err := s.ln.Accept()
 		if err != nil {
-			println(err.Error())
+			//println(err.Error())
 			continue
 		}
 		go s.handle(conn)

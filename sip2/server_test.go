@@ -21,8 +21,6 @@ var testMF = NewMessageFactory(
 )
 
 type testHandler struct {
-	lastMessage Message
-
 	// circulation state:
 	catalogue map[string]string // barcode -> title
 	checkouts map[string]string // barcode ->  patron id
@@ -31,8 +29,6 @@ type testHandler struct {
 
 func (h *testHandler) Handle(req Message) (resp Message) {
 	switch req.Type() {
-	case MsgReqPatronStatus:
-		resp = testMF.NewMessage(MsgRespPatronStatus)
 	case MsgReqCheckout:
 		barcode := req.Field(FieldItemIdentifier)
 		resp = testMF.NewMessage(MsgRespCheckout).AddField(
@@ -44,50 +40,40 @@ func (h *testHandler) Handle(req Message) (resp Message) {
 		if checkedout {
 			// allready checked out, decline
 			resp.AddField(Field{Type: FieldOK, Value: "0"})
+			resp.AddField(Field{Type: FieldRenewalOK, Value: "N"})
+			resp.AddField(Field{Type: FieldDueDate, Value: time.Now().Format(DateLayout)})
 		} else {
 			// OK!
 			resp.AddField(Field{Type: FieldOK, Value: "1"})
-			resp.AddField(Field{Type: FieldRenewalOK, Value: "N"})
+			resp.AddField(Field{Type: FieldRenewalOK, Value: "Y"})
 			resp.AddField(Field{Type: FieldDueDate, Value: time.Now().AddDate(0, 1, 0).Format(DateLayout)})
+			h.checkouts[barcode] = req.Field(FieldPatronIdentifier)
 		}
 		resp.AddField(
 			Field{Type: FieldTitleIdentifier, Value: h.catalogue[barcode]})
 	case MsgReqCheckin:
-		resp = testMF.NewMessage(MsgRespCheckin)
-	case MsgReqBlockPatron:
-		resp = testMF.NewMessage(MsgRespPatronStatus)
-	case MsgReqStatus:
-		resp = testMF.NewMessage(MsgRespStatus)
-	case MsgReqResend:
-		resp = h.lastMessage
-	case MsgReqLogin:
-		resp = testMF.NewMessage(MsgRespLogin)
-	case MsgReqPatronInformation:
-		resp = testMF.NewMessage(MsgRespPatronInformation)
-	case MsgReqEndPatronSession:
-		resp = testMF.NewMessage(MsgRespEndPatronSession)
-	case MsgReqFeePaid:
-		resp = testMF.NewMessage(MsgRespFeePaid)
+		// delete any checkouts
+		delete(h.checkouts, req.Field(FieldItemIdentifier))
+		resp = testMF.NewMessage(MsgRespCheckin).AddField(
+			Field{Type: FieldOK, Value: "1"},
+			Field{Type: FieldResentisize, Value: "Y"},
+			Field{Type: FieldAlert, Value: "N"},
+			Field{Type: FieldItemIdentifier, Value: req.Field(FieldItemIdentifier)},
+			Field{Type: FieldPermanentLocation, Value: "here"})
 	case MsgReqItemInformation:
 		resp = testMF.NewMessage(MsgRespItemInformation).AddField(
-			Field{Type: FieldCirulationStatus, Value: "03"}, // TODO status constants
 			Field{Type: FieldTitleIdentifier, Value: h.catalogue[req.Field(FieldItemIdentifier)]},
 		)
-	case MsgReqItemStatusUpdate:
-		resp = testMF.NewMessage(MsgRespItemStatusUpdate)
-	case MsgReqPatronEnable:
-		resp = testMF.NewMessage(MsgRespPatronEnable)
-	case MsgReqHold:
-		resp = testMF.NewMessage(MsgRespHold)
-	case MsgReqRenew:
-		resp = testMF.NewMessage(MsgRespRenew)
-	case MsgReqRenewAll:
-		resp = testMF.NewMessage(MsgRespRenewAll)
+		_, checkedout := h.checkouts[req.Field(FieldItemIdentifier)]
+		if checkedout {
+			resp.AddField(Field{Type: FieldCirulationStatus, Value: "04"})
+		} else {
+			resp.AddField(Field{Type: FieldCirulationStatus, Value: "03"})
+		}
 	default:
 		resp = testMF.NewMessage(MsgReqResend)
 	}
 
-	h.lastMessage = resp
 	return resp
 }
 
@@ -162,7 +148,7 @@ func TestTransactionSession(t *testing.T) {
 
 	// Interaction
 
-	// 1) Item information
+	// 1) Item information (available)
 
 	sendMsg(t, client,
 		testMF.NewMessage(MsgReqItemInformation).AddField(
@@ -171,9 +157,10 @@ func TestTransactionSession(t *testing.T) {
 
 	wantMsg(t, client, MsgRespItemInformation,
 		Field{Type: FieldTitleIdentifier, Value: books[1]},
+		Field{Type: FieldCirulationStatus, Value: "03"}, // = avialable, TODO constant
 	)
 
-	// 2) Checkouts
+	// 2) Checkout
 
 	sendMsg(t, client,
 		testMF.NewMessage(MsgReqCheckout).AddField(
@@ -188,15 +175,58 @@ func TestTransactionSession(t *testing.T) {
 		Field{Type: FieldTitleIdentifier, Value: books[1]},
 	)
 
-	// 3) Checkins
+	// 3) Checkout (allready checked out)
 
-	/*
+	sendMsg(t, client,
+		testMF.NewMessage(MsgReqCheckout).AddField(
+			Field{Type: FieldPatronIdentifier, Value: "0"},
+			Field{Type: FieldItemIdentifier, Value: "1"},
+		))
 
-		resp := getMsg(t, client)
-		wantFields(t, resp,
-			Fields{Type: FieldOK, Value: "1"})
-	*/
+	wantMsg(t, client, MsgRespCheckout,
+		Field{Type: FieldOK, Value: "0"},
+		Field{Type: FieldPatronIdentifier, Value: "0"},
+		Field{Type: FieldItemIdentifier, Value: "1"},
+		Field{Type: FieldTitleIdentifier, Value: books[1]},
+	)
 
+	// 4) Item information (checked out)
+
+	sendMsg(t, client,
+		testMF.NewMessage(MsgReqItemInformation).AddField(
+			Field{Type: FieldItemIdentifier, Value: "1"},
+		))
+
+	wantMsg(t, client, MsgRespItemInformation,
+		Field{Type: FieldTitleIdentifier, Value: books[1]},
+		Field{Type: FieldCirulationStatus, Value: "04"}, // = charged, TODO constant
+	)
+
+	// 5) Checkin
+
+	sendMsg(t, client,
+		testMF.NewMessage(MsgReqCheckin).AddField(
+			Field{Type: FieldItemIdentifier, Value: "1"},
+			Field{Type: FieldCurrentLocation, Value: "here"},
+			Field{Type: FieldReturnDate, Value: time.Now().Format(DateLayout)},
+		))
+
+	wantMsg(t, client, MsgRespCheckin,
+		Field{Type: FieldOK, Value: "1"},
+		Field{Type: FieldItemIdentifier, Value: "1"},
+	)
+
+	// 6) Item information (available again)
+
+	sendMsg(t, client,
+		testMF.NewMessage(MsgReqItemInformation).AddField(
+			Field{Type: FieldItemIdentifier, Value: "1"},
+		))
+
+	wantMsg(t, client, MsgRespItemInformation,
+		Field{Type: FieldTitleIdentifier, Value: books[1]},
+		Field{Type: FieldCirulationStatus, Value: "03"}, // = avialable, TODO constant
+	)
 }
 
 func localAddr(s string) string {
