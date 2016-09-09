@@ -34,6 +34,9 @@ func TestRequestDecodeEncodeRoundtrip(t *testing.T) {
 				break
 			}
 		}
+		if b.Len() == 0 {
+			break
+		}
 		want := b.String()
 		want = want[:len(want)-1] // trim last newline
 		req, err := DecodeRequest(&b)

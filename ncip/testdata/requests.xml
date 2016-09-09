@@ -138,7 +138,7 @@
     </ItemId>
     <RequestType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm">Recall/Delivery Request</RequestType>
     <RequestScopeType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requestscopetype/requestscopetype.scm">Bibliographic Item</RequestScopeType>
-    <!--<NeedBeforeDate>2014-03-17T00:00:00-01:00</NeedBeforeDate>-->
+    <NeedBeforeDate>2014-03-17T00:00:00-01:00</NeedBeforeDate>
   </RequestItem>
 </NCIPMessage>
 <NCIPMessage>

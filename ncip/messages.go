@@ -152,6 +152,7 @@ type CancelRecallItemResponse struct {
 }
 
 type CancelRequestItem struct {
+	XMLName          xml.Name
 	InitiationHeader *InitiationHeader
 	MandatedAction   *MandatedAction
 	// xs:choice ->
@@ -161,7 +162,7 @@ type CancelRequestItem struct {
 	// xs:choice ->
 	//ItemId *ItemId
 	// xs:sequence ->
-	RequestId RequestId
+	RequestId *RequestId
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
@@ -859,6 +860,7 @@ type RecallItemResponse struct {
 }
 
 type RenewItem struct {
+	XMLName          xml.Name
 	InitiationHeader *InitiationHeader
 	MandatedAction   *MandatedAction
 	// xs:choice ->
@@ -1985,7 +1987,10 @@ type UserPrivilegeStatus struct {
 type UserFiscalAccount struct{}
 
 // TODO Interface implementations
-func (r LookupUser) Type() requestType   { return TypeLookupUser }
-func (r RequestItem) Type() requestType  { return TypeRequestItem }
-func (r CheckOutItem) Type() requestType { return TypeCheckOutItem }
-func (r CheckInItem) Type() requestType  { return TypeCheckInItem }
+func (r LookupUser) Type() requestType        { return TypeLookupUser }
+func (r RequestItem) Type() requestType       { return TypeRequestItem }
+func (r CheckOutItem) Type() requestType      { return TypeCheckOutItem }
+func (r CheckInItem) Type() requestType       { return TypeCheckInItem }
+func (r AcceptItem) Type() requestType        { return TypeAcceptItem }
+func (r RenewItem) Type() requestType         { return TypeRenewItem }
+func (r CancelRequestItem) Type() requestType { return TypeCancelRequestItem }

@@ -36,17 +36,23 @@ func DecodeRequest(r io.Reader) (Request, error) {
 			case "NCIPMessage":
 				continue
 			case "RequestItem":
-				reqItem = RequestItem{}
+				reqItem = &RequestItem{}
 			case "LookupUser":
-				reqItem = LookupUser{}
+				reqItem = &LookupUser{}
 			case "CheckOutItem":
-				reqItem = CheckOutItem{}
+				reqItem = &CheckOutItem{}
 			case "CheckInItem":
-				reqItem = CheckInItem{}
+				reqItem = &CheckInItem{}
+			case "AcceptItem":
+				reqItem = &AcceptItem{}
+			case "RenewItem":
+				reqItem = &RenewItem{}
+			case "CancelRequestItem":
+				reqItem = &CancelRequestItem{}
 			default:
 				return reqItem, fmt.Errorf("TODO: Decode %s", elem.Name.Local)
 			}
-			err := dec.DecodeElement(&reqItem, &elem)
+			err := dec.DecodeElement(reqItem, &elem)
 			return reqItem, err
 		}
 	}
