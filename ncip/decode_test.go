@@ -1,21 +1,16 @@
 package ncip
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
+	"io"
+	"os"
 	"testing"
 )
 
-func mustDecodeRequest(s string) Request {
-	req, err := DecodeRequest(bytes.NewBufferString(s))
-	if err != nil {
-		panic("mustDecodeRequest: " + err.Error())
-	}
-	return req
-}
-
 func mustEncodeRequest(req Request) string {
-	output, err := xml.MarshalIndent(&req, "", "  ")
+	output, err := xml.MarshalIndent(&NCIPRequestMessage{Request: req}, "", "  ")
 	if err != nil {
 		panic("mustEncodeRequest: " + err.Error())
 	}
@@ -23,63 +18,32 @@ func mustEncodeRequest(req Request) string {
 	return string(output)
 }
 
-// Verify that a XML request can be decoded, and encoded again into an identical XML request.
-func TestDecodeEncodeRequest(t *testing.T) {
-	requests := []string{
-		`<RequestItem>
-  <InitiationHeader>
-    <FromAgencyId>
-      <AgencyId>
-        <Scheme>http://biblstandard.dk/isil/schemes/1.1/</Scheme>
-        <Value>DK-190101</Value>
-      </AgencyId>
-    </FromAgencyId>
-    <FromAgencyAuthentication>[PASSWORD]</FromAgencyAuthentication>
-    <ToAgencyId>
-      <AgencyId>
-        <Scheme>http://biblstandard.dk/isil/schemes/1.1/</Scheme>
-        <Value>DK-715700</Value>
-      </AgencyId>
-    </ToAgencyId>
-  </InitiationHeader>
-  <UserId>
-    <AgencyId>
-      <Scheme>http://biblstandard.dk/isil/schemes/1.1/</Scheme>
-      <Value>DK-715700</Value>
-    </AgencyId>
-    <UserIdentifierValue>1231231230</UserIdentifierValue>
-  </UserId>
-  <BibliographicId>
-    <BibliographicRecordId>
-      <BibliographicRecordIdentifier>44397315</BibliographicRecordIdentifier>
-      <BibliographicRecordIdentifierCode>
-        <Scheme>http://biblstandard.dk/ncip/schemes/faust/1.0/</Scheme>
-        <Value>FAUST</Value>
-      </BibliographicRecordIdentifierCode>
-    </BibliographicRecordId>
-  </BibliographicId>
-  <RequestId>
-    <AgencyId>
-      <Scheme>http://biblstandard.dk/isil/schemes/1.1/</Scheme>
-      <Value>DK-190101</Value>
-    </AgencyId>
-    <RequestIdentifierValue>23770051</RequestIdentifierValue>
-  </RequestId>
-  <RequestType>
-    <Scheme>http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm</Scheme>
-    <Value>Hold</Value>
-  </RequestType>
-  <RequestScopeType>
-    <Scheme>http://www.niso.org/ncip/v1_0/imp1/schemes/requestscopetype/requestscopetype.scm</Scheme>
-    <Value>Bibliographic Item</Value>
-  </RequestScopeType>
-  <NeedBeforeDate>2008-09-29T00:00+01:00</NeedBeforeDate>
-</RequestItem>`,
+func TestRequestDecodeEncodeRoundtrip(t *testing.T) {
+	f, err := os.Open("testdata/requests.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	r := bufio.NewReader(f)
+
+	for {
+		var b bytes.Buffer
+		for line, err := r.ReadBytes('\n'); err != io.EOF; line, err = r.ReadBytes('\n') {
+			b.Write(line)
+			if bytes.Equal(line, []byte("</NCIPMessage>\n")) {
+				break
+			}
+		}
+		want := b.String()
+		want = want[:len(want)-1] // trim last newline
+		req, err := DecodeRequest(&b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := mustEncodeRequest(req); want != got {
+			t.Errorf("\n\ngot:\n%q\nwant:\n%q", got, want)
+		}
+
 	}
 
-	for i, reqXML := range requests {
-		if req := mustDecodeRequest(reqXML); mustEncodeRequest(req) != reqXML {
-			t.Errorf("%d got:\n%s", i, mustEncodeRequest(req))
-		}
-	}
 }

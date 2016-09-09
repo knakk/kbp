@@ -1,0 +1,162 @@
+<NCIPMessage>
+  <LookupUser>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <UserId>
+      <AgencyId>NFSM</AgencyId>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <UserElementType>Name Information</UserElementType>
+    <UserElementType>User Address Information</UserElementType>
+    <UserElementType>User Language</UserElementType>
+    <UserElementType>User Privilege</UserElementType>
+    <UserElementType>User Id</UserElementType>
+  </LookupUser>
+</NCIPMessage>
+<NCIPMessage>
+  <CheckOutItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <UserId>
+      <AgencyId>LEHI</AgencyId>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+  </CheckOutItem>
+</NCIPMessage>
+<NCIPMessage>
+  <CheckInItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierValue>17</ItemIdentifierValue>
+    </ItemId>
+    <ItemElementType>Bibliographic Description</ItemElementType>
+    <ItemElementType>Item Description</ItemElementType>
+  </CheckInItem>
+</NCIPMessage>
+<NCIPMessage>
+  <AcceptItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <RequestId>
+      <AgencyId>LEHI</AgencyId>
+      <RequestIdentifierValue>TST-111</RequestIdentifierValue>
+    </RequestId>
+    <RequestedActionType>Hold For Pickup</RequestedActionType>
+    <UserId>
+      <AgencyId>LEHI</AgencyId>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+    <ItemOptionalFields>
+      <BibliographicDescription>
+        <Author>Author</Author>
+        <Title>Title</Title>
+      </BibliographicDescription>
+      <ItemDescription>
+        <CallNumber>Call Number</CallNumber>
+      </ItemDescription>
+    </ItemOptionalFields>
+    <PickupLocation>BL_EDUC</PickupLocation>
+  </AcceptItem>
+</NCIPMessage>
+<NCIPMessage>
+  <RenewItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <UserId>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+  </RenewItem>
+</NCIPMessage>
+<NCIPMessage>
+  <RenewItem>
+    <UserId>
+      <UserIdentifierValue>00389218X</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <ItemIdentifierValue>5656</ItemIdentifierValue>
+    </ItemId>
+  </RenewItem>
+</NCIPMessage>
+<NCIPMessage>
+  <RequestItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <UserId>
+      <UserIdentifierValue>6010570003043558</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+    <RequestType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm">Recall/Delivery Request</RequestType>
+    <RequestScopeType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requestscopetype/requestscopetype.scm">Bibliographic Item</RequestScopeType>
+    <!--<NeedBeforeDate>2014-03-17T00:00:00-01:00</NeedBeforeDate>-->
+  </RequestItem>
+</NCIPMessage>
+<NCIPMessage>
+  <CancelRequestItem>
+    <InitiationHeader>
+      <FromAgencyId>
+        <AgencyId>API9999</AgencyId>
+      </FromAgencyId>
+      <ToAgencyId>
+        <AgencyId>Lehigh University</AgencyId>
+      </ToAgencyId>
+    </InitiationHeader>
+    <UserId>
+      <UserIdentifierValue>6010570003043558</UserIdentifierValue>
+    </UserId>
+    <ItemId>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+    <RequestType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm">Hold</RequestType>
+  </CancelRequestItem>
+</NCIPMessage>
