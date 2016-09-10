@@ -27,6 +27,17 @@ func mustEncodeResponse(resp Response) string {
 	return string(output)
 }
 
+func readMsg(r *bufio.Reader) bytes.Buffer {
+	var b bytes.Buffer
+	for line, err := r.ReadBytes('\n'); err != io.EOF; line, err = r.ReadBytes('\n') {
+		b.Write(line)
+		if bytes.Equal(line, []byte("</NCIPMessage>\n")) {
+			break
+		}
+	}
+	return b
+}
+
 func TestRequestDecodeEncodeRoundtrip(t *testing.T) {
 	f, err := os.Open("testdata/requests.xml")
 	if err != nil {
@@ -36,13 +47,7 @@ func TestRequestDecodeEncodeRoundtrip(t *testing.T) {
 	r := bufio.NewReader(f)
 
 	for {
-		var b bytes.Buffer
-		for line, err := r.ReadBytes('\n'); err != io.EOF; line, err = r.ReadBytes('\n') {
-			b.Write(line)
-			if bytes.Equal(line, []byte("</NCIPMessage>\n")) {
-				break
-			}
-		}
+		b := readMsg(r)
 		if b.Len() == 0 {
 			break
 		}
@@ -69,13 +74,7 @@ func TestResponseDecodeEncodeRoundtrip(t *testing.T) {
 	r := bufio.NewReader(f)
 
 	for {
-		var b bytes.Buffer
-		for line, err := r.ReadBytes('\n'); err != io.EOF; line, err = r.ReadBytes('\n') {
-			b.Write(line)
-			if bytes.Equal(line, []byte("</NCIPMessage>\n")) {
-				break
-			}
-		}
+		b := readMsg(r)
 		if b.Len() == 0 {
 			break
 		}
