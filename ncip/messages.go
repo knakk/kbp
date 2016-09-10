@@ -7,63 +7,12 @@ type SchemeValue struct {
 	Value  string `xml:",innerxml"`
 }
 
-type AcknowledgedItemUseRestrictionType SchemeValue
-type AgencyUserPrivilegeType SchemeValue
-type AuthenticationDataFormatType SchemeValue
-type ComponentIdentifierType SchemeValue
-type ConsortiumAgreement SchemeValue
-type RequestIdentifierType SchemeValue
-type UserIdentifierType SchemeValue
-type ApplicationProfileSupportedType SchemeValue
-type BibliographicRecordIdentifierCode SchemeValue
-type PickupLocation SchemeValue
-type RequestType SchemeValue
-type ToSystemId SchemeValue
-type UserAddressRoleType SchemeValue
-type AgencyElementType SchemeValue
-type CirculationStatus SchemeValue
-type ElectronicDataFormatType SchemeValue
-type FiscalActionType SchemeValue
-type ProblemType SchemeValue
-type RequestStatusType SchemeValue
-type ApplicationProfileType SchemeValue
-type AuthenticationInputType SchemeValue
-type ElectronicAddressType SchemeValue
-type PhysicalAddressType SchemeValue
-type RequestedActionType SchemeValue
-type AgencyAddressRoleType SchemeValue
-type ItemIdentifierType SchemeValue
-type PhysicalConditionType SchemeValue
-type AuthenticationPromptType SchemeValue
-type BibliographicLevel SchemeValue
-type BlockOrTrapType SchemeValue
-type ItemElementType SchemeValue
-type MediumType SchemeValue
-type SecurityMarker SchemeValue
-type UserPrivilegeStatusType SchemeValue
-type ItemDescriptionLevel SchemeValue
-type ItemUseRestrictionType SchemeValue
-type NoticeType SchemeValue
-type OrganizationNameType SchemeValue
-type RequestElementType SchemeValue
-type UserLanguage SchemeValue
-type BibliographicItemIdentifierCode SchemeValue
-type CurrencyCode SchemeValue
-type FiscalTransactionType SchemeValue
-type FromSystemId SchemeValue
-type Language SchemeValue
-type LocationType SchemeValue
-type PaymentMethodType SchemeValue
-type RequestScopeType SchemeValue
-type RequiredItemUseRestrictionType SchemeValue
-type UnstructuredAddressType SchemeValue
-
 type AcceptItem struct {
 	XMLName             xml.Name
 	InitiationHeader    *InitiationHeader
 	MandatedAction      *MandatedAction
 	RequestId           RequestId
-	RequestedActionType RequestedActionType
+	RequestedActionType SchemeValue
 	UserId              *UserId
 	ItemId              *ItemId
 	// xs:choice ->
@@ -75,7 +24,7 @@ type AcceptItem struct {
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
-	PickupLocation               *PickupLocation
+	PickupLocation               *SchemeValue
 	PickupExpiryDate             string `xml:",omitempty"` // xs:dateTime
 	Ext                          *Ext
 }
@@ -100,9 +49,9 @@ type AgencyCreated struct {
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
 	AuthenticationPrompt            []AuthenticationPrompt
-	ApplicationProfileSupportedType []ApplicationProfileSupportedType
-	ConsortiumAgreement             []ConsortiumAgreement
-	AgencyUserPrivilegeType         []AgencyUserPrivilegeType
+	ApplicationProfileSupportedType []SchemeValue
+	ConsortiumAgreement             []SchemeValue
+	AgencyUserPrivilegeType         []SchemeValue
 	Ext                             *Ext
 }
 
@@ -131,7 +80,7 @@ type CancelRecallItem struct {
 	InitiationHeader *InitiationHeader
 	MandatedAction   *MandatedAction
 	ItemId           ItemId
-	ItemElementType  []ItemElementType
+	ItemElementType  []SchemeValue
 	UserElementType  []SchemeValue
 	Ext              *Ext
 }
@@ -166,11 +115,11 @@ type CancelRequestItem struct {
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
-	RequestType           RequestType
-	RequestScopeType      *RequestScopeType
+	RequestType           SchemeValue
+	RequestScopeType      *SchemeValue
 	AcknowledgedFeeAmount *AcknowledgedFeeAmount
 	PaidFeeAmount         *PaidFeeAmount
-	ItemElementType       []ItemElementType
+	ItemElementType       []SchemeValue
 	UserElementType       []SchemeValue
 	Ext                   *Ext
 }
@@ -201,7 +150,7 @@ type CheckInItem struct {
 	InitiationHeader *InitiationHeader
 	MandatedAction   *MandatedAction
 	ItemId           ItemId
-	ItemElementType  []ItemElementType
+	ItemElementType  []SchemeValue
 	UserElementType  []SchemeValue
 	Ext              *Ext
 }
@@ -234,11 +183,11 @@ type CheckOutItem struct {
 	RequestId                          *RequestId
 	AcknowledgedFeeAmount              *AcknowledgedFeeAmount
 	PaidFeeAmount                      *PaidFeeAmount
-	AcknowledgedItemUseRestrictionType []AcknowledgedItemUseRestrictionType
+	AcknowledgedItemUseRestrictionType []SchemeValue
 	ShippingInformation                *ShippingInformation
 	ResourceDesired                    *ResourceDesired
 	DesiredDateDue                     string `xml:",omitempty"` // xs:dateTime
-	ItemElementType                    []ItemElementType
+	ItemElementType                    []SchemeValue
 	UserElementType                    []SchemeValue
 	Ext                                *Ext
 }
@@ -249,7 +198,7 @@ type CheckOutItemResponse struct {
 	// xs:sequence ->
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
-	RequiredItemUseRestrictionType []RequiredItemUseRestrictionType
+	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	// xs:sequence ->
 	ItemId ItemId
@@ -294,7 +243,7 @@ type CirculationStatusChangeReportedResponse struct {
 type CirculationStatusUpdated struct {
 	InitiationHeader  *InitiationHeader
 	ItemId            ItemId
-	CirculationStatus CirculationStatus
+	CirculationStatus SchemeValue
 	Ext               *Ext
 }
 
@@ -311,9 +260,9 @@ type CreateAgency struct {
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
 	AuthenticationPrompt            []AuthenticationPrompt
-	ApplicationProfileSupportedType []ApplicationProfileSupportedType
-	ConsortiumAgreement             []ConsortiumAgreement
-	AgencyUserPrivilegeType         []AgencyUserPrivilegeType
+	ApplicationProfileSupportedType []SchemeValue
+	ConsortiumAgreement             []SchemeValue
+	AgencyUserPrivilegeType         []SchemeValue
 	Ext                             *Ext
 }
 
@@ -332,12 +281,12 @@ type CreateItem struct {
 	ItemId                   *ItemId
 	RequestId                *RequestId
 	BibliographicDescription BibliographicDescription
-	ItemUseRestrictionType   []ItemUseRestrictionType
-	CirculationStatus        *CirculationStatus
+	ItemUseRestrictionType   []SchemeValue
+	CirculationStatus        *SchemeValue
 	ItemDescription          *ItemDescription
 	Location                 []Location
 	PhysicalCondition        *PhysicalCondition
-	SecurityMarker           *SecurityMarker
+	SecurityMarker           *SchemeValue
 	SensitizationFlag        *SensitizationFlag
 	Ext                      *Ext
 }
@@ -361,7 +310,7 @@ type CreateUser struct {
 	NameInformation        NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
-	UserLanguage           []UserLanguage
+	UserLanguage           []SchemeValue
 	UserPrivilege          []UserPrivilege
 	BlockOrTrap            []BlockOrTrap
 	Ext                    *Ext
@@ -435,14 +384,14 @@ type DeleteUserResponse struct {
 }
 
 type InitiationHeader struct {
-	FromSystemId             *FromSystemId
+	FromSystemId             *SchemeValue
 	FromSystemAuthentication string `xml:",omitempty"`
 	FromAgencyId             FromAgencyId
 	FromAgencyAuthentication string `xml:",omitempty"`
 	OnBehalfOfAgency         *OnBehalfOfAgency
-	ToSystemId               *ToSystemId
+	ToSystemId               *SchemeValue
 	ToAgencyId               ToAgencyId
-	ApplicationProfileType   *ApplicationProfileType
+	ApplicationProfileType   *SchemeValue
 	Ext                      *Ext
 }
 
@@ -493,12 +442,12 @@ type ItemCreated struct {
 	ItemId                   ItemId
 	RequestId                *RequestId
 	BibliographicDescription BibliographicDescription
-	ItemUseRestrictionType   []ItemUseRestrictionType
-	CirculationStatus        *CirculationStatus
+	ItemUseRestrictionType   []SchemeValue
+	CirculationStatus        *SchemeValue
 	ItemDescription          *ItemDescription
 	Location                 []Location
 	PhysicalCondition        *PhysicalCondition
-	SecurityMarker           *SecurityMarker
+	SecurityMarker           *SchemeValue
 	SensitizationFlag        *SensitizationFlag
 	Ext                      *Ext
 }
@@ -587,8 +536,8 @@ type ItemRequestCancelled struct {
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
-	RequestType                  RequestType
-	RequestScopeType             *RequestScopeType
+	RequestType                  SchemeValue
+	RequestScopeType             *SchemeValue
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
@@ -607,7 +556,7 @@ type ItemRequestUpdated struct {
 	// xs:sequence ->
 	UserId      UserId
 	ItemId      ItemId
-	RequestType RequestType
+	RequestType SchemeValue
 	// <- xs:sequence
 	RequestId *RequestId
 	// <- xs:choice
@@ -634,12 +583,12 @@ type ItemRequested struct {
 	RequestId       RequestId
 	// <- xs:sequence
 	// <- xs:choice
-	RequestType         RequestType
-	RequestScopeType    RequestScopeType
+	RequestType         SchemeValue
+	RequestScopeType    SchemeValue
 	ShippingInformation *ShippingInformation
 	EarliestDateNeeded  string `xml:",omitempty"` // xs:dateTime
 	NeedBeforeDate      string `xml:",omitempty"` // xs:dateTime
-	PickupLocation      *PickupLocation
+	PickupLocation      *SchemeValue
 	PickupExpiryDate    string `xml:",omitempty"` // xs:dateTime
 	DateOfUserRequest   string `xml:",omitempty"` // xs:dateTime
 	DateAvailable       string `xml:",omitempty"` // xs:dateTime
@@ -694,7 +643,7 @@ type ItemUpdatedResponse struct {
 type LookupAgency struct {
 	InitiationHeader  *InitiationHeader
 	AgencyId          SchemeValue
-	AgencyElementType []AgencyElementType
+	AgencyElementType []SchemeValue
 	Ext               *Ext
 }
 
@@ -707,9 +656,9 @@ type LookupAgencyResponse struct {
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
 	AuthenticationPrompt            []AuthenticationPrompt
-	ApplicationProfileSupportedType []ApplicationProfileSupportedType
-	ConsortiumAgreement             []ConsortiumAgreement
-	AgencyUserPrivilegeType         []AgencyUserPrivilegeType
+	ApplicationProfileSupportedType []SchemeValue
+	ConsortiumAgreement             []SchemeValue
+	AgencyUserPrivilegeType         []SchemeValue
 	// <- xs:sequence
 	// <- xs:choice
 	Ext *Ext
@@ -721,7 +670,7 @@ type LookupItem struct {
 	ItemId    *ItemId
 	RequestId *RequestId
 	// <- xs:choice
-	ItemElementType          []ItemElementType
+	ItemElementType          []SchemeValue
 	CurrentBorrowerDesired   *CurrentBorrowerDesired
 	CurrentRequestersDesired *CurrentRequestersDesired
 	Ext                      *Ext
@@ -757,12 +706,12 @@ type LookupRequest struct {
 	AuthenticationInput []AuthenticationInput
 	// <- xs:choice
 	ItemId      ItemId
-	RequestType RequestType
+	RequestType SchemeValue
 	// <- xs:sequence
 	RequestId *RequestId
 	// <- xs:choice
-	RequestElementType []RequestElementType
-	ItemElementType    []ItemElementType
+	RequestElementType []SchemeValue
+	ItemElementType    []SchemeValue
 	UserElementType    []SchemeValue
 	Ext                *Ext
 }
@@ -780,15 +729,15 @@ type LookupRequestResponse struct {
 	// <- xs:sequence
 	// <- xs:choice
 	UserId                *UserId
-	RequestType           *RequestType
-	RequestScopeType      *RequestScopeType
-	RequestStatusType     *RequestStatusType
+	RequestType           *SchemeValue
+	RequestScopeType      *SchemeValue
+	RequestStatusType     *SchemeValue
 	HoldQueuePosition     *int // xs:positiveInteger
 	ShippingInformation   *ShippingInformation
 	EarliestDateNeeded    string `xml:",omitempty"` // xs:dateTime
 	NeedBeforeDate        string `xml:",omitempty"` // xs:dateTime
 	PickupDate            string `xml:",omitempty"` // xs:dateTime
-	PickupLocation        *PickupLocation
+	PickupLocation        *SchemeValue
 	PickupExpiryDate      string `xml:",omitempty"` // xs:dateTime
 	DateOfUserRequest     string `xml:",omitempty"` // xs:dateTime
 	DateAvailable         string `xml:",omitempty"` // xs:dateTime
@@ -839,7 +788,7 @@ type RecallItem struct {
 	ItemId              ItemId
 	DesiredDateDue      string `xml:",omitempty"` // xs:dateTime
 	ShippingInformation *ShippingInformation
-	ItemElementType     []ItemElementType
+	ItemElementType     []SchemeValue
 	UserElementType     []SchemeValue
 	Ext                 *Ext
 }
@@ -869,13 +818,13 @@ type RenewItem struct {
 	AuthenticationInput []AuthenticationInput
 	// <- xs:choice
 	ItemId                             ItemId
-	ItemElementType                    []ItemElementType
+	ItemElementType                    []SchemeValue
 	UserElementType                    []SchemeValue
 	DesiredDateDue                     string `xml:",omitempty"` // xs:dateTime
 	DesiredDateForReturn               string `xml:",omitempty"` // xs:dateTime
 	AcknowledgedFeeAmount              *AcknowledgedFeeAmount
 	PaidFeeAmount                      *PaidFeeAmount
-	AcknowledgedItemUseRestrictionType []AcknowledgedItemUseRestrictionType
+	AcknowledgedItemUseRestrictionType []SchemeValue
 	Ext                                *Ext
 }
 
@@ -885,7 +834,7 @@ type RenewItemResponse struct {
 	// xs:sequence ->
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
-	RequiredItemUseRestrictionType []RequiredItemUseRestrictionType
+	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	Pending *Pending
 	// xs:sequence ->
@@ -916,7 +865,7 @@ type ReportCirculationStatusChange struct {
 	ItemReportedLost          *ItemReportedLost
 	ItemReportedMissing       *ItemReportedMissing
 	// <- xs:choice
-	ItemElementType []ItemElementType
+	ItemElementType []SchemeValue
 	UserElementType []SchemeValue
 	Ext             *Ext
 }
@@ -951,18 +900,18 @@ type RequestItem struct {
 	// <- xs:sequence
 	// <- xs:choice
 	RequestId                          *RequestId
-	RequestType                        RequestType
-	RequestScopeType                   RequestScopeType
+	RequestType                        SchemeValue
+	RequestScopeType                   SchemeValue
 	ItemOptionalFields                 *ItemOptionalFields
 	ShippingInformation                *ShippingInformation
 	EarliestDateNeeded                 string `xml:",omitempty"` // xs:dateTime
 	NeedBeforeDate                     string `xml:",omitempty"` // xs:dateTime
-	PickupLocation                     *PickupLocation
+	PickupLocation                     *SchemeValue
 	PickupExpiryDate                   string `xml:",omitempty"` // xs:dateTime
 	AcknowledgedFeeAmount              *AcknowledgedFeeAmount
 	PaidFeeAmount                      *PaidFeeAmount
-	AcknowledgedItemUseRestrictionType []AcknowledgedItemUseRestrictionType
-	ItemElementType                    []ItemElementType
+	AcknowledgedItemUseRestrictionType []SchemeValue
+	ItemElementType                    []SchemeValue
 	UserElementType                    []SchemeValue
 	Ext                                *Ext
 }
@@ -973,7 +922,7 @@ type RequestItemResponse struct {
 	// xs:sequence ->
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
-	RequiredItemUseRestrictionType []RequiredItemUseRestrictionType
+	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	// xs:sequence ->
 	// xs:choice ->
@@ -984,8 +933,8 @@ type RequestItemResponse struct {
 	// <- xs:sequence
 	// <- xs:choice
 	UserId                       UserId
-	RequestType                  RequestType
-	RequestScopeType             RequestScopeType
+	RequestType                  SchemeValue
+	RequestScopeType             SchemeValue
 	ShippingInformation          *ShippingInformation
 	DateAvailable                string `xml:",omitempty"` // xs:dateTime
 	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
@@ -998,11 +947,11 @@ type RequestItemResponse struct {
 }
 
 type ResponseHeader struct {
-	FromSystemId             *FromSystemId
+	FromSystemId             *SchemeValue
 	FromSystemAuthentication string `xml:",omitempty"`
 	FromAgencyId             FromAgencyId
 	FromAgencyAuthentication string `xml:",omitempty"`
-	ToSystemId               *ToSystemId
+	ToSystemId               *SchemeValue
 	ToAgencyId               ToAgencyId
 	Ext                      *Ext
 }
@@ -1078,7 +1027,7 @@ type UpdateCirculationStatus struct {
 	InitiationHeader  *InitiationHeader
 	MandatedAction    *MandatedAction
 	ItemId            ItemId
-	CirculationStatus CirculationStatus
+	CirculationStatus SchemeValue
 	Ext               *Ext
 }
 
@@ -1119,13 +1068,13 @@ type UpdateRequestItem struct {
 	AuthenticationInput []AuthenticationInput
 	// <- xs:choice
 	ItemId      ItemId
-	RequestType RequestType
+	RequestType SchemeValue
 	// <- xs:sequence
 	RequestId *RequestId
 	// <- xs:choice
 	DeleteRequestFields *DeleteRequestFields
 	AddRequestFields    *AddRequestFields
-	ItemElementType     []ItemElementType
+	ItemElementType     []SchemeValue
 	UserElementType     []SchemeValue
 	Ext                 *Ext
 }
@@ -1136,13 +1085,13 @@ type UpdateRequestItemResponse struct {
 	// xs:sequence ->
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
-	RequiredItemUseRestrictionType []RequiredItemUseRestrictionType
+	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	// xs:sequence ->
 	ItemId                       ItemId
 	UserId                       UserId
-	RequestType                  RequestType
-	RequestScopeType             RequestScopeType
+	RequestType                  SchemeValue
+	RequestScopeType             SchemeValue
 	DateAvailable                string `xml:",omitempty"` // xs:dateTime
 	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
 	FiscalTransactionInformation *FiscalTransactionInformation
@@ -1180,7 +1129,7 @@ type UserCreated struct {
 	NameInformation        NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
-	UserLanguage           []UserLanguage
+	UserLanguage           []SchemeValue
 	UserPrivilege          []UserPrivilege
 	BlockOrTrap            []BlockOrTrap
 	Ext                    *Ext
@@ -1234,7 +1183,7 @@ type UserUpdatedResponse struct {
 }
 
 type AccountBalance struct {
-	CurrencyCode  CurrencyCode
+	CurrencyCode  SchemeValue
 	MonetaryValue int // xs:integer
 	Ext           *Ext
 }
@@ -1246,7 +1195,7 @@ type AccountDetails struct {
 }
 
 type AcknowledgedFeeAmount struct {
-	CurrencyCode  CurrencyCode
+	CurrencyCode  SchemeValue
 	MonetaryValue int // xs:integer
 	Ext           *Ext
 }
@@ -1255,19 +1204,19 @@ type AddAgencyFields struct {
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
 	AuthenticationPrompt            []AuthenticationPrompt
-	ApplicationProfileSupportedType []ApplicationProfileSupportedType
-	ConsortiumAgreement             []ConsortiumAgreement
-	AgencyUserPrivilegeType         []AgencyUserPrivilegeType
+	ApplicationProfileSupportedType []SchemeValue
+	ConsortiumAgreement             []SchemeValue
+	AgencyUserPrivilegeType         []SchemeValue
 	Ext                             *Ext
 }
 
 type AddItemFields struct {
 	BibliographicDescription *BibliographicDescription
-	ItemUseRestrictionType   []ItemUseRestrictionType
+	ItemUseRestrictionType   []SchemeValue
 	ItemDescription          *ItemDescription
 	Location                 []Location
 	PhysicalCondition        *PhysicalCondition
-	SecurityMarker           *SecurityMarker
+	SecurityMarker           *SchemeValue
 	SensitizationFlag        *SensitizationFlag
 	Ext                      *Ext
 }
@@ -1275,13 +1224,13 @@ type AddItemFields struct {
 type AddRequestFields struct {
 	UserId                *UserId
 	ItemId                *ItemId
-	RequestType           *RequestType
-	RequestScopeType      *RequestScopeType
-	RequestStatusType     *RequestStatusType
+	RequestType           *SchemeValue
+	RequestScopeType      *SchemeValue
+	RequestStatusType     *SchemeValue
 	ShippingInformation   *ShippingInformation
 	EarliestDateNeeded    string `xml:",omitempty"` // xs:dateTime
 	NeedBeforeDate        string `xml:",omitempty"` // xs:dateTime
-	PickupLocation        *PickupLocation
+	PickupLocation        *SchemeValue
 	PickupExpiryDate      string `xml:",omitempty"` // xs:dateTime
 	DateOfUserRequest     string `xml:",omitempty"` // xs:dateTime
 	DateAvailable         string `xml:",omitempty"` // xs:dateTime
@@ -1295,14 +1244,14 @@ type AddUserFields struct {
 	NameInformation        *NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
-	UserLanguage           []UserLanguage
+	UserLanguage           []SchemeValue
 	UserPrivilege          []UserPrivilege
 	BlockOrTrap            []BlockOrTrap
 	Ext                    *Ext
 }
 
 type AgencyAddressInformation struct {
-	AgencyAddressRoleType AgencyAddressRoleType
+	AgencyAddressRoleType SchemeValue
 	ValidFromDate         string `xml:",omitempty"` // xs:dateTime
 	ValidToDate           string `xml:",omitempty"` // xs:dateTime
 	// xs:choice ->
@@ -1313,15 +1262,15 @@ type AgencyAddressInformation struct {
 }
 
 type Amount struct {
-	CurrencyCode  CurrencyCode
+	CurrencyCode  SchemeValue
 	MonetaryValue int // xs:integer
 	Ext           *Ext
 }
 
 type AuthenticationInput struct {
 	AuthenticationInputData      string
-	AuthenticationDataFormatType AuthenticationDataFormatType
-	AuthenticationInputType      AuthenticationInputType
+	AuthenticationDataFormatType SchemeValue
+	AuthenticationInputType      SchemeValue
 	Ext                          *Ext
 }
 
@@ -1346,11 +1295,11 @@ type BibliographicDescription struct {
 	SeriesTitleNumber          string `xml:",omitempty"`
 	Title                      string `xml:",omitempty"`
 	TitleOfComponent           string `xml:",omitempty"`
-	BibliographicLevel         *BibliographicLevel
+	BibliographicLevel         *SchemeValue
 	SponsoringBody             string `xml:",omitempty"`
-	ElectronicDataFormatType   *ElectronicDataFormatType
-	Language                   *Language
-	MediumType                 *MediumType
+	ElectronicDataFormatType   *SchemeValue
+	Language                   *SchemeValue
+	MediumType                 *SchemeValue
 	Ext                        *Ext
 }
 
@@ -1364,7 +1313,7 @@ type BibliographicId struct {
 
 type BibliographicItemId struct {
 	BibliographicItemIdentifier     string
-	BibliographicItemIdentifierCode *BibliographicItemIdentifierCode
+	BibliographicItemIdentifierCode *SchemeValue
 	Ext                             *Ext
 }
 
@@ -1372,14 +1321,14 @@ type BibliographicRecordId struct {
 	BibliographicRecordIdentifier string
 	// xs:choice ->
 	AgencyId                          *SchemeValue
-	BibliographicRecordIdentifierCode *BibliographicRecordIdentifierCode
+	BibliographicRecordIdentifierCode *SchemeValue
 	// <- xs:choice
 	Ext *Ext
 }
 
 type BlockOrTrap struct {
 	AgencyId        SchemeValue
-	BlockOrTrapType BlockOrTrapType
+	BlockOrTrapType SchemeValue
 	ValidFromDate   string `xml:",omitempty"` // xs:dateTime
 	ValidToDate     string `xml:",omitempty"` // xs:dateTime
 	Ext             *Ext
@@ -1398,7 +1347,7 @@ type ChronologyLevelInstance struct {
 }
 
 type ComponentId struct {
-	ComponentIdentifierType ComponentIdentifierType
+	ComponentIdentifierType SchemeValue
 	ComponentIdentifier     string
 	Ext                     *Ext
 }
@@ -1423,19 +1372,19 @@ type DeleteAgencyFields struct {
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
 	AuthenticationPrompt            []AuthenticationPrompt
-	ApplicationProfileSupportedType []ApplicationProfileSupportedType
-	ConsortiumAgreement             []ConsortiumAgreement
-	AgencyUserPrivilegeType         []AgencyUserPrivilegeType
+	ApplicationProfileSupportedType []SchemeValue
+	ConsortiumAgreement             []SchemeValue
+	AgencyUserPrivilegeType         []SchemeValue
 	Ext                             *Ext
 }
 
 type DeleteItemFields struct {
 	BibliographicDescription *BibliographicDescription
-	ItemUseRestrictionType   []ItemUseRestrictionType
+	ItemUseRestrictionType   []SchemeValue
 	ItemDescription          *ItemDescription
 	Location                 []Location
 	PhysicalCondition        *PhysicalCondition
-	SecurityMarker           *SecurityMarker
+	SecurityMarker           *SchemeValue
 	SensitizationFlag        *SensitizationFlag
 	Ext                      *Ext
 }
@@ -1443,13 +1392,13 @@ type DeleteItemFields struct {
 type DeleteRequestFields struct {
 	UserId                *UserId
 	ItemId                *ItemId
-	RequestType           *RequestType
-	RequestScopeType      *RequestScopeType
-	RequestStatusType     *RequestStatusType
+	RequestType           *SchemeValue
+	RequestScopeType      *SchemeValue
+	RequestStatusType     *SchemeValue
 	ShippingInformation   *ShippingInformation
 	EarliestDateNeeded    string `xml:",omitempty"` // xs:dateTime
 	NeedBeforeDate        string `xml:",omitempty"` // xs:dateTime
-	PickupLocation        *PickupLocation
+	PickupLocation        *SchemeValue
 	PickupExpiryDate      string `xml:",omitempty"` // xs:dateTime
 	DateOfUserRequest     string `xml:",omitempty"` // xs:dateTime
 	DateAvailable         string `xml:",omitempty"` // xs:dateTime
@@ -1463,7 +1412,7 @@ type DeleteUserFields struct {
 	NameInformation        *NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
-	UserLanguage           []UserLanguage
+	UserLanguage           []SchemeValue
 	UserPrivilege          []UserPrivilege
 	BlockOrTrap            []BlockOrTrap
 	Ext                    *Ext
@@ -1481,14 +1430,14 @@ type Destination struct {
 }
 
 type ElectronicAddress struct {
-	ElectronicAddressType ElectronicAddressType
+	ElectronicAddressType SchemeValue
 	ElectronicAddressData string
 	Ext                   *Ext
 }
 
 type ElectronicResource struct {
 	// xs:choice ->
-	ElectronicDataFormatType *ElectronicDataFormatType
+	ElectronicDataFormatType *SchemeValue
 	ActualResource           string `xml:",omitempty"`
 	// <- xs:sequence
 	ReferenceToResource string
@@ -1515,14 +1464,14 @@ type Ext struct {
 }
 
 type FiscalTransactionInformation struct {
-	FiscalActionType                    FiscalActionType
+	FiscalActionType                    SchemeValue
 	FiscalTransactionReferenceId        *FiscalTransactionReferenceId
 	RelatedFiscalTransactionReferenceId []RelatedFiscalTransactionReferenceId
-	FiscalTransactionType               FiscalTransactionType
+	FiscalTransactionType               SchemeValue
 	ValidFromDate                       string `xml:",omitempty"` // xs:dateTime
 	ValidToDate                         string `xml:",omitempty"` // xs:dateTime
 	Amount                              Amount
-	PaymentMethodType                   *PaymentMethodType
+	PaymentMethodType                   *SchemeValue
 	FiscalTransactionDescription        string `xml:",omitempty"`
 	RequestId                           *RequestId
 	ItemDetails                         *ItemDetails
@@ -1564,7 +1513,7 @@ type IndeterminateLoanPeriodFlag struct {
 type ItemDescription struct {
 	CallNumber           string `xml:",omitempty"`
 	CopyNumber           string `xml:",omitempty"`
-	ItemDescriptionLevel *ItemDescriptionLevel
+	ItemDescriptionLevel *SchemeValue
 	HoldingsInformation  *HoldingsInformation
 	NumberOfPieces       *int // xs:positiveInteger
 	Ext                  *Ext
@@ -1586,21 +1535,21 @@ type ItemDetails struct {
 
 type ItemId struct {
 	AgencyId            *SchemeValue
-	ItemIdentifierType  *ItemIdentifierType
+	ItemIdentifierType  *SchemeValue
 	ItemIdentifierValue string
 	Ext                 *Ext
 }
 
 type ItemOptionalFields struct {
 	BibliographicDescription *BibliographicDescription
-	ItemUseRestrictionType   []ItemUseRestrictionType
-	CirculationStatus        *CirculationStatus
+	ItemUseRestrictionType   []SchemeValue
+	CirculationStatus        *SchemeValue
 	HoldQueueLength          *int // xs:nonnegativeInteger
 	ItemDescription          *ItemDescription
 	Location                 []Location
 	PhysicalCondition        *PhysicalCondition
 	ElectronicResource       *ElectronicResource
-	SecurityMarker           *SecurityMarker
+	SecurityMarker           *SchemeValue
 	SensitizationFlag        *SensitizationFlag
 	Ext                      *Ext
 }
@@ -1634,14 +1583,14 @@ type LoanedItem struct {
 	// <- xs:choice
 	Amount     Amount
 	Title      string `xml:",omitempty"`
-	MediumType *MediumType
+	MediumType *SchemeValue
 	Ext        *Ext
 }
 
 type LoanedItemsCount struct {
 	// xs:choice ->
-	CirculationStatus      *CirculationStatus
-	ItemUseRestrictionType *ItemUseRestrictionType
+	CirculationStatus      *SchemeValue
+	ItemUseRestrictionType *SchemeValue
 	// <- xs:choice
 	LoanedItemCountValue int // xs:nonnegativeInteger
 	Ext                  *Ext
@@ -1650,7 +1599,7 @@ type LoanedItemsCount struct {
 type LoanedItemsDesired []byte // TODO
 
 type Location struct {
-	LocationType  LocationType
+	LocationType  SchemeValue
 	LocationName  LocationName
 	ValidFromDate string `xml:",omitempty"` // xs:dateTime
 	ValidToDate   string `xml:",omitempty"` // xs:dateTime
@@ -1696,13 +1645,13 @@ type OnBehalfOfAgency struct {
 }
 
 type OrganizationNameInformation struct {
-	OrganizationNameType OrganizationNameType
+	OrganizationNameType SchemeValue
 	OrganizationName     string
 	Ext                  *Ext
 }
 
 type PaidFeeAmount struct {
-	CurrencyCode  CurrencyCode
+	CurrencyCode  SchemeValue
 	MonetaryValue int // xs:integer
 	Ext           *Ext
 }
@@ -1728,12 +1677,12 @@ type PhysicalAddress struct {
 	StructuredAddress   *StructuredAddress
 	UnstructuredAddress *UnstructuredAddress
 	// <- xs:choice
-	PhysicalAddressType PhysicalAddressType
+	PhysicalAddressType SchemeValue
 	Ext                 *Ext
 }
 
 type PhysicalCondition struct {
-	PhysicalConditionType    PhysicalConditionType
+	PhysicalConditionType    SchemeValue
 	PhysicalConditionDetails string `xml:",omitempty"`
 	Ext                      *Ext
 }
@@ -1747,7 +1696,7 @@ type PreviousUserId struct {
 }
 
 type Problem struct {
-	ProblemType    ProblemType
+	ProblemType    SchemeValue
 	ProblemDetail  string `xml:",omitempty"`
 	ProblemElement string `xml:",omitempty"`
 	ProblemValue   string `xml:",omitempty"`
@@ -1755,15 +1704,15 @@ type Problem struct {
 }
 
 type PromptInput struct {
-	AuthenticationInputType      AuthenticationInputType
-	AuthenticationDataFormatType AuthenticationDataFormatType
+	AuthenticationInputType      SchemeValue
+	AuthenticationDataFormatType SchemeValue
 	SensitiveDataFlag            *SensitiveDataFlag
 	Ext                          *Ext
 }
 
 type PromptOutput struct {
 	AuthenticationPromptData string
-	AuthenticationPromptType AuthenticationPromptType
+	AuthenticationPromptType SchemeValue
 	Ext                      *Ext
 }
 
@@ -1780,7 +1729,7 @@ type RequestedItemsDesired []byte // TODO
 
 type RequestId struct {
 	AgencyId               *SchemeValue
-	RequestIdentifierType  *RequestIdentifierType
+	RequestIdentifierType  *SchemeValue
 	RequestIdentifierValue string
 	Ext                    *Ext
 }
@@ -1793,31 +1742,31 @@ type RequestedItem struct {
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
-	RequestType       RequestType
-	RequestStatusType RequestStatusType
+	RequestType       SchemeValue
+	RequestStatusType SchemeValue
 	DatePlaced        string // xs:dateTime
 	PickupDate        string `xml:",omitempty"` // xs:dateTime
-	PickupLocation    *PickupLocation
+	PickupLocation    *SchemeValue
 	PickupExpiryDate  string `xml:",omitempty"` // xs:dateTime
 	ReminderLevel     *int   // xs:positiveInteger
 	HoldQueuePosition *int   // xs:positiveInteger
 	Title             string `xml:",omitempty"`
-	MediumType        *MediumType
+	MediumType        *SchemeValue
 	Ext               *Ext
 }
 
 type RequestedItemsCount struct {
 	// xs:choice ->
-	RequestType            *RequestType
-	CirculationStatus      *CirculationStatus
-	ItemUseRestrictionType *ItemUseRestrictionType
+	RequestType            *SchemeValue
+	CirculationStatus      *SchemeValue
+	ItemUseRestrictionType *SchemeValue
 	// <- xs:choice
 	RequestedItemCountValue int // xs:nonnegativeInteger
 	Ext                     *Ext
 }
 
 type RequiredFeeAmount struct {
-	CurrencyCode  CurrencyCode
+	CurrencyCode  SchemeValue
 	MonetaryValue int // xs:integer
 	Ext           *Ext
 }
@@ -1828,7 +1777,7 @@ type ResourceDesired struct {
 type RoutingInformation struct {
 	RoutingInstructions string
 	Destination         Destination
-	RequestType         *RequestType
+	RequestType         *SchemeValue
 	UserId              *UserId
 	NameInformation     *NameInformation
 	Ext                 *Ext
@@ -1905,13 +1854,13 @@ type ToAgencyId struct {
 }
 
 type UnstructuredAddress struct {
-	UnstructuredAddressType UnstructuredAddressType
+	UnstructuredAddressType SchemeValue
 	UnstructuredAddressData string
 	Ext                     *Ext
 }
 
 type UserAddressInformation struct {
-	UserAddressRoleType UserAddressRoleType
+	UserAddressRoleType SchemeValue
 	ValidFromDate       string `xml:",omitempty"` // xs:dateTime
 	ValidToDate         string `xml:",omitempty"` // xs:dateTime
 	// xs:choice ->
@@ -1933,13 +1882,13 @@ type UserFiscalAccountDesired []byte
 
 type UserId struct {
 	AgencyId            *SchemeValue
-	UserIdentifierType  *UserIdentifierType
+	UserIdentifierType  *SchemeValue
 	UserIdentifierValue string
 	Ext                 *Ext
 }
 
 type UserNoticeDetails struct {
-	NoticeType    NoticeType
+	NoticeType    SchemeValue
 	NoticeContent string `xml:",omitempty"`
 	// xs:choice ->
 	NoticeItem        []NoticeItem
@@ -1953,7 +1902,7 @@ type UserOptionalFields struct {
 	NameInformation        *NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
-	UserLanguage           []UserLanguage
+	UserLanguage           []SchemeValue
 	UserPrivilege          []UserPrivilege
 	BlockOrTrap            []BlockOrTrap
 	UserId                 []UserId
@@ -1963,7 +1912,7 @@ type UserOptionalFields struct {
 
 type UserPrivilege struct {
 	AgencyId                 SchemeValue
-	AgencyUserPrivilegeType  AgencyUserPrivilegeType
+	AgencyUserPrivilegeType  SchemeValue
 	ValidFromDate            string `xml:",omitempty"` // xs:dateTime
 	ValidToDate              string `xml:",omitempty"` // xs:dateTime
 	UserPrivilegeFee         *UserPrivilegeFee
@@ -1974,12 +1923,12 @@ type UserPrivilege struct {
 
 type UserPrivilegeFee struct {
 	Amount            Amount
-	PaymentMethodType *PaymentMethodType
+	PaymentMethodType *SchemeValue
 	Ext               *Ext
 }
 
 type UserPrivilegeStatus struct {
-	UserPrivilegeStatusType   UserPrivilegeStatusType
+	UserPrivilegeStatusType   SchemeValue
 	DateOfUserPrivilegeStatus string `xml:",omitempty"` // xs:dateTime
 	Ext                       *Ext
 }
