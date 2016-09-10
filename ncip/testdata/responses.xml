@@ -1,155 +1,155 @@
 <NCIPMessage>
-   <LookupUserResponse>
-      <UserId>
-         <AgencyId>NFSM</AgencyId>
-         <UserIdentifierValue>00001497Q</UserIdentifierValue>
-      </UserId>
-      <UserOptionalFields>
-         <NameInformation>
-            <PersonalNameInformation>
-               <StructuredPersonalUserName>
-                  <GivenName>Salinda</GivenName>
-                  <Surname>Lample</Surname>
-               </StructuredPersonalUserName>
-               <UnstructuredPersonalUserName>Salinda null Lample</UnstructuredPersonalUserName>
-            </PersonalNameInformation>
-         </NameInformation>
-         <UserAddressInformation>
-            <UserAddressRoleType>HM</UserAddressRoleType>
-            <PhysicalAddress>
-               <StructuredAddress>
-                  <Line1>P.O. Box 9</Line1>
-                  <Locality>Gambier</Locality>
-                  <Region>OH</Region>
-                  <PostalCode>43022</PostalCode>
-               </StructuredAddress>
-               <PhysicalAddressType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/physicaladdresstype/physicaladdresstype.scm">HM</PhysicalAddressType>
-            </PhysicalAddress>
-         </UserAddressInformation>
-         <UserAddressInformation>
-            <UserAddressRoleType>HM</UserAddressRoleType>
-            <ElectronicAddress>
-               <ElectronicAddressType>HMelectronic mail address</ElectronicAddressType>
-               <ElectronicAddressData>lample97@uchicago.edu</ElectronicAddressData>
-            </ElectronicAddress>
-         </UserAddressInformation>
-         <UserAddressInformation>
-            <UserAddressRoleType>HM</UserAddressRoleType>
-            <ElectronicAddress>
-               <ElectronicAddressType>TEL</ElectronicAddressType>
-               <ElectronicAddressData>9176489999</ElectronicAddressData>
-            </ElectronicAddress>
-         </UserAddressInformation>
-         <UserPrivilege>
-            <AgencyId>LEHI</AgencyId>
-            <AgencyUserPrivilegeType Scheme="">Courtesy Notice</AgencyUserPrivilegeType>
-            <UserPrivilegeStatus>
-               <UserPrivilegeStatusType Scheme="">false</UserPrivilegeStatusType>
-            </UserPrivilegeStatus>
-            <UserPrivilegeDescription>Eligible to receive the courtesy Notices</UserPrivilegeDescription>
-         </UserPrivilege>
-         <UserPrivilege>
-            <AgencyId>LEHI</AgencyId>
-            <AgencyUserPrivilegeType Scheme="">Delivery</AgencyUserPrivilegeType>
-            <UserPrivilegeStatus>
-               <UserPrivilegeStatusType Scheme="">false</UserPrivilegeStatusType>
-            </UserPrivilegeStatus>
-            <UserPrivilegeDescription>Eligible to receive item</UserPrivilegeDescription>
-         </UserPrivilege>
-         <UserPrivilege>
-            <AgencyId>LEHI</AgencyId>
-            <AgencyUserPrivilegeType Scheme="">Paging</AgencyUserPrivilegeType>
-            <UserPrivilegeStatus>
-               <UserPrivilegeStatusType Scheme="">false</UserPrivilegeStatusType>
-            </UserPrivilegeStatus>
-            <UserPrivilegeDescription>Eligible to Page item</UserPrivilegeDescription>
-         </UserPrivilege>
-         <UserPrivilege>
-            <AgencyId>LEHI</AgencyId>
-            <AgencyUserPrivilegeType Scheme="">Profile</AgencyUserPrivilegeType>
-            <UserPrivilegeStatus>
-               <UserPrivilegeStatusType Scheme="">UnderGrad</UserPrivilegeStatusType>
-            </UserPrivilegeStatus>
-            <UserPrivilegeDescription>User Profile</UserPrivilegeDescription>
-         </UserPrivilege>
-         <UserPrivilege>
-            <AgencyId>LEHI</AgencyId>
-            <AgencyUserPrivilegeType Scheme="">Status</AgencyUserPrivilegeType>
-            <UserPrivilegeStatus>
-               <UserPrivilegeStatusType Scheme="">OK</UserPrivilegeStatusType>
-            </UserPrivilegeStatus>
-            <UserPrivilegeDescription>Allowed to Check out an item or not</UserPrivilegeDescription>
-         </UserPrivilege>
-      </UserOptionalFields>
-   </LookupUserResponse>
+  <LookupUserResponse>
+    <UserId>
+      <AgencyId>NFSM</AgencyId>
+      <UserIdentifierValue>00001497Q</UserIdentifierValue>
+    </UserId>
+    <UserOptionalFields>
+      <NameInformation>
+        <PersonalNameInformation>
+          <StructuredPersonalUserName>
+            <GivenName>Salinda</GivenName>
+            <Surname>Lample</Surname>
+          </StructuredPersonalUserName>
+          <UnstructuredPersonalUserName>Salinda null Lample</UnstructuredPersonalUserName>
+        </PersonalNameInformation>
+      </NameInformation>
+      <UserAddressInformation>
+        <UserAddressRoleType>HM</UserAddressRoleType>
+        <PhysicalAddress>
+          <StructuredAddress>
+            <Line1>P.O. Box 9</Line1>
+            <Locality>Gambier</Locality>
+            <Region>OH</Region>
+            <PostalCode>43022</PostalCode>
+          </StructuredAddress>
+          <PhysicalAddressType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/physicaladdresstype/physicaladdresstype.scm">HM</PhysicalAddressType>
+        </PhysicalAddress>
+      </UserAddressInformation>
+      <UserAddressInformation>
+        <UserAddressRoleType>HM</UserAddressRoleType>
+        <ElectronicAddress>
+          <ElectronicAddressType>HMelectronic mail address</ElectronicAddressType>
+          <ElectronicAddressData>lample97@uchicago.edu</ElectronicAddressData>
+        </ElectronicAddress>
+      </UserAddressInformation>
+      <UserAddressInformation>
+        <UserAddressRoleType>HM</UserAddressRoleType>
+        <ElectronicAddress>
+          <ElectronicAddressType>TEL</ElectronicAddressType>
+          <ElectronicAddressData>9176489999</ElectronicAddressData>
+        </ElectronicAddress>
+      </UserAddressInformation>
+      <UserPrivilege>
+        <AgencyId>LEHI</AgencyId>
+        <AgencyUserPrivilegeType>Courtesy Notice</AgencyUserPrivilegeType>
+        <UserPrivilegeStatus>
+          <UserPrivilegeStatusType>false</UserPrivilegeStatusType>
+        </UserPrivilegeStatus>
+        <UserPrivilegeDescription>Eligible to receive the courtesy Notices</UserPrivilegeDescription>
+      </UserPrivilege>
+      <UserPrivilege>
+        <AgencyId>LEHI</AgencyId>
+        <AgencyUserPrivilegeType>Delivery</AgencyUserPrivilegeType>
+        <UserPrivilegeStatus>
+          <UserPrivilegeStatusType>false</UserPrivilegeStatusType>
+        </UserPrivilegeStatus>
+        <UserPrivilegeDescription>Eligible to receive item</UserPrivilegeDescription>
+      </UserPrivilege>
+      <UserPrivilege>
+        <AgencyId>LEHI</AgencyId>
+        <AgencyUserPrivilegeType>Paging</AgencyUserPrivilegeType>
+        <UserPrivilegeStatus>
+          <UserPrivilegeStatusType>false</UserPrivilegeStatusType>
+        </UserPrivilegeStatus>
+        <UserPrivilegeDescription>Eligible to Page item</UserPrivilegeDescription>
+      </UserPrivilege>
+      <UserPrivilege>
+        <AgencyId>LEHI</AgencyId>
+        <AgencyUserPrivilegeType>Profile</AgencyUserPrivilegeType>
+        <UserPrivilegeStatus>
+          <UserPrivilegeStatusType>UnderGrad</UserPrivilegeStatusType>
+        </UserPrivilegeStatus>
+        <UserPrivilegeDescription>User Profile</UserPrivilegeDescription>
+      </UserPrivilege>
+      <UserPrivilege>
+        <AgencyId>LEHI</AgencyId>
+        <AgencyUserPrivilegeType>Status</AgencyUserPrivilegeType>
+        <UserPrivilegeStatus>
+          <UserPrivilegeStatusType>OK</UserPrivilegeStatusType>
+        </UserPrivilegeStatus>
+        <UserPrivilegeDescription>Allowed to Check out an item or not</UserPrivilegeDescription>
+      </UserPrivilege>
+    </UserOptionalFields>
+  </LookupUserResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <LookupUserResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>The user is not available</ProblemDetail>
-         <ProblemElement>User</ProblemElement>
-         <ProblemValue>User value:00011497Q</ProblemValue>
-      </Problem>
-   </LookupUserResponse>
+  <LookupUserResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>The user is not available</ProblemDetail>
+      <ProblemElement>User</ProblemElement>
+      <ProblemValue>User value:00011497Q</ProblemValue>
+    </Problem>
+  </LookupUserResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CheckOutItemResponse>
-      <ItemId>
-         <AgencyId>LEHI</AgencyId>
-         <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
-         <ItemIdentifierValue>15</ItemIdentifierValue>
-      </ItemId>
-      <UserId>
-         <AgencyId>LEHI</AgencyId>
-         <UserIdentifierType Scheme="UnderGrad">UnderGrad</UserIdentifierType>
-         <UserIdentifierValue>6010570002006861</UserIdentifierValue>
-      </UserId>
-      <DateDue>2014-03-19T08:31:16.688Z</DateDue>
-      <RenewalCount>0</RenewalCount>
-   </CheckOutItemResponse>
+  <CheckOutItemResponse>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+    <UserId>
+      <AgencyId>LEHI</AgencyId>
+      <UserIdentifierType Scheme="UnderGrad">UnderGrad</UserIdentifierType>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <DateDue>2014-03-19T08:31:16.688Z</DateDue>
+    <RenewalCount>0</RenewalCount>
+  </CheckOutItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CheckOutItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>1. There is no circulation rule for this combination&lt;br/&gt;2. There is no circulation rule for this combination&lt;br/&gt;3. Patron's street address has not been verified.&lt;br/&gt;</ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>Item value:11</ProblemValue>
-      </Problem>
-   </CheckOutItemResponse>
+  <CheckOutItemResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>1. There is no circulation rule for this combination&lt;br/&gt;2. There is no circulation rule for this combination&lt;br/&gt;3. Patron's street address has not been verified.&lt;br/&gt;</ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>Item value:11</ProblemValue>
+    </Problem>
+  </CheckOutItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CheckInItemResponse>
-      <ItemId>
-         <AgencyId>LEHI</AgencyId>
-         <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
-         <ItemIdentifierValue>15</ItemIdentifierValue>
-      </ItemId>
-      <UserId>
-         <UserIdentifierType/>
-         <UserIdentifierValue>6010570002006861</UserIdentifierValue>
-      </UserId>
-      <ItemOptionalFields>
-         <BibliographicDescription>
-            <Author>Title</Author>
-            <Title>Author</Title>
-         </BibliographicDescription>
-         <ItemDescription>
-            <CallNumber>TST-111</CallNumber>
-         </ItemDescription>
-      </ItemOptionalFields>
-   </CheckInItemResponse>
+  <CheckInItemResponse>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+    <UserId>
+      <UserIdentifierType/>
+      <UserIdentifierValue>6010570002006861</UserIdentifierValue>
+    </UserId>
+    <ItemOptionalFields>
+      <BibliographicDescription>
+        <Author>Title</Author>
+        <Title>Author</Title>
+      </BibliographicDescription>
+      <ItemDescription>
+        <CallNumber>TST-111</CallNumber>
+      </ItemDescription>
+    </ItemOptionalFields>
+  </CheckInItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CheckInItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>Check-in failed</ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>Item value:1234</ProblemValue>
-      </Problem>
-   </CheckInItemResponse>
+  <CheckInItemResponse>
+    <Problem>
+      <ProblemType/>
+      <ProblemDetail>Check-in failed</ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>Item value:1234</ProblemValue>
+    </Problem>
+  </CheckInItemResponse>
 </NCIPMessage>
 <NCIPMessage>
    <AcceptItemResponse>

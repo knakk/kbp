@@ -59,3 +59,30 @@ func DecodeRequest(r io.Reader) (Request, error) {
 
 	return nil, io.EOF
 }
+
+func DecodeResponse(r io.Reader) (Response, error) {
+	dec := xml.NewDecoder(r)
+
+	for {
+		t, _ := dec.Token()
+		if t == nil {
+			break
+		}
+		switch elem := t.(type) {
+		case xml.StartElement:
+			var respItem Response
+			switch elem.Name.Local {
+			case "NCIPMessage":
+				continue
+			case "LookupUserResponse":
+				respItem = &LookupUserResponse{}
+			default:
+				return respItem, fmt.Errorf("TODO: Decode %s", elem.Name.Local)
+			}
+			err := dec.DecodeElement(respItem, &elem)
+			return respItem, err
+		}
+	}
+
+	return nil, io.EOF
+}
