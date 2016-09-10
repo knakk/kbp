@@ -386,18 +386,6 @@ type DeleteUserResponse struct {
 	Ext *Ext
 }
 
-type InitiationHeader struct {
-	FromSystemId             *SchemeValue
-	FromSystemAuthentication string `xml:",omitempty"`
-	FromAgencyId             FromAgencyId
-	FromAgencyAuthentication string `xml:",omitempty"`
-	OnBehalfOfAgency         *OnBehalfOfAgency
-	ToSystemId               *SchemeValue
-	ToAgencyId               ToAgencyId
-	ApplicationProfileType   *SchemeValue
-	Ext                      *Ext
-}
-
 type ItemCheckedIn struct {
 	InitiationHeader             *InitiationHeader
 	UserId                       *UserId
@@ -951,16 +939,6 @@ type RequestItemResponse struct {
 	Ext *Ext
 }
 
-type ResponseHeader struct {
-	FromSystemId             *SchemeValue
-	FromSystemAuthentication string `xml:",omitempty"`
-	FromAgencyId             FromAgencyId
-	FromAgencyAuthentication string `xml:",omitempty"`
-	ToSystemId               *SchemeValue
-	ToAgencyId               ToAgencyId
-	Ext                      *Ext
-}
-
 type SendUserNotice struct {
 	InitiationHeader  *InitiationHeader
 	MandatedAction    *MandatedAction
@@ -1185,6 +1163,30 @@ type UserUpdatedResponse struct {
 	ResponseHeader *ResponseHeader
 	Problem        []Problem
 	Ext            *Ext
+}
+
+// End of request/response structs. The following types are embedded in above structs:
+
+type InitiationHeader struct {
+	FromSystemId             *SchemeValue
+	FromSystemAuthentication string `xml:",omitempty"`
+	FromAgencyId             FromAgencyId
+	FromAgencyAuthentication string `xml:",omitempty"`
+	OnBehalfOfAgency         *OnBehalfOfAgency
+	ToSystemId               *SchemeValue
+	ToAgencyId               ToAgencyId
+	ApplicationProfileType   *SchemeValue
+	Ext                      *Ext
+}
+
+type ResponseHeader struct {
+	FromSystemId             *SchemeValue
+	FromSystemAuthentication string `xml:",omitempty"`
+	FromAgencyId             FromAgencyId
+	FromAgencyAuthentication string `xml:",omitempty"`
+	ToSystemId               *SchemeValue
+	ToAgencyId               ToAgencyId
+	Ext                      *Ext
 }
 
 type AccountBalance struct {
