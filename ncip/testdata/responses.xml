@@ -113,7 +113,7 @@
   <CheckOutItemResponse>
     <Problem>
       <ProblemType></ProblemType>
-      <ProblemDetail>1. There is no circulation rule for this combination&lt;br/&gt;2. There is no circulation rule for this combination&lt;br/&gt;3. Patron's street address has not been verified.&lt;br/&gt;</ProblemDetail>
+      <ProblemDetail>1. There is no circulation rule for this combination&lt;br/&gt;2. There is no circulation rule for this combination&lt;br/&gt;3. Patron&#39;s street address has not been verified.&lt;br/&gt;</ProblemDetail>
       <ProblemElement>Item</ProblemElement>
       <ProblemValue>Item value:11</ProblemValue>
     </Problem>
@@ -127,7 +127,7 @@
       <ItemIdentifierValue>15</ItemIdentifierValue>
     </ItemId>
     <UserId>
-      <UserIdentifierType/>
+      <UserIdentifierType></UserIdentifierType>
       <UserIdentifierValue>6010570002006861</UserIdentifierValue>
     </UserId>
     <ItemOptionalFields>
@@ -144,7 +144,7 @@
 <NCIPMessage>
   <CheckInItemResponse>
     <Problem>
-      <ProblemType/>
+      <ProblemType></ProblemType>
       <ProblemDetail>Check-in failed</ProblemDetail>
       <ProblemElement>Item</ProblemElement>
       <ProblemValue>Item value:1234</ProblemValue>
@@ -152,98 +152,98 @@
   </CheckInItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <AcceptItemResponse>
-      <RequestId>
-         <AgencyId>LEHI</AgencyId>
-         <RequestIdentifierType Scheme="scheme">requestIdentifierType</RequestIdentifierType>
-         <RequestIdentifierValue>TST-111</RequestIdentifierValue>
-      </RequestId>
-      <ItemId>
-         <AgencyId>LEHI</AgencyId>
-         <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
-         <ItemIdentifierValue>15</ItemIdentifierValue>
-      </ItemId>
-   </AcceptItemResponse>
+  <AcceptItemResponse>
+    <RequestId>
+      <AgencyId>LEHI</AgencyId>
+      <RequestIdentifierType Scheme="scheme">requestIdentifierType</RequestIdentifierType>
+      <RequestIdentifierValue>TST-111</RequestIdentifierValue>
+    </RequestId>
+    <ItemId>
+      <AgencyId>LEHI</AgencyId>
+      <ItemIdentifierType Scheme="Scheme">BOOK</ItemIdentifierType>
+      <ItemIdentifierValue>15</ItemIdentifierValue>
+    </ItemId>
+  </AcceptItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <AcceptItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>Item Creation failed </ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>Item value:11</ProblemValue>
-      </Problem>
-   </AcceptItemResponse>
+  <AcceptItemResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>Item Creation failed </ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>Item value:11</ProblemValue>
+    </Problem>
+  </AcceptItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <RenewItemResponse>
-      <ItemId>
-         <ItemIdentifierValue>11</ItemIdentifierValue>
-      </ItemId>
-      <UserId>
-         <UserIdentifierValue>00001497Q</UserIdentifierValue>
-      </UserId>
-      <DateDue>2014-04-17T18:30:00Z</DateDue>
-      <DateForReturn>2014-04-28T18:30:00Z</DateForReturn>
-      <RenewalCount>1</RenewalCount>
-   </RenewItemResponse>
+  <RenewItemResponse>
+    <ItemId>
+      <ItemIdentifierValue>11</ItemIdentifierValue>
+    </ItemId>
+    <UserId>
+      <UserIdentifierValue>00001497Q</UserIdentifierValue>
+    </UserId>
+    <DateDue>2014-04-17T18:30:00Z</DateDue>
+    <DateForReturn>2014-04-28T18:30:00Z</DateForReturn>
+    <RenewalCount>1</RenewalCount>
+  </RenewItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <RenewItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>Renew failed</ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>No patron information</ProblemValue>
-      </Problem>
-   </RenewItemResponse>
+  <RenewItemResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>Renew failed</ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>No patron information</ProblemValue>
+    </Problem>
+  </RenewItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <RequestItemResponse>
-      <RequestId>
-         <RequestIdentifierValue>2</RequestIdentifierValue>
-      </RequestId>
-      <ItemId>
-         <ItemIdentifierValue>11</ItemIdentifierValue>
-      </ItemId>
-      <UserId>
-         <UserIdentifierValue>00100055U</UserIdentifierValue>
-      </UserId>
-      <RequestType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm">Recall/Delivery Request</RequestType>
-      <RequestScopeType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requestscopetype/requestscopetype.scm">Bibliographic Item</RequestScopeType>
-      <DateAvailable>2014-04-19T18:30:00Z</DateAvailable>
-      <Ext>
-         <HoldQueuePosition>1</HoldQueuePosition>
-      </Ext>
-   </RequestItemResponse>
+  <RequestItemResponse>
+    <RequestId>
+      <RequestIdentifierValue>2</RequestIdentifierValue>
+    </RequestId>
+    <ItemId>
+      <ItemIdentifierValue>11</ItemIdentifierValue>
+    </ItemId>
+    <UserId>
+      <UserIdentifierValue>00100055U</UserIdentifierValue>
+    </UserId>
+    <RequestType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requesttype/requesttype.scm">Recall/Delivery Request</RequestType>
+    <RequestScopeType Scheme="http://www.niso.org/ncip/v1_0/imp1/schemes/requestscopetype/requestscopetype.scm">Bibliographic Item</RequestScopeType>
+    <DateAvailable>2014-04-19T18:30:00Z</DateAvailable>
+    <Ext>
+      <HoldQueuePosition>1</HoldQueuePosition>
+    </Ext>
+  </RequestItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <RequestItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>Request failed</ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>Invalid request type Code</ProblemValue>
-      </Problem>
-   </RequestItemResponse>
+  <RequestItemResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>Request failed</ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>Invalid request type Code</ProblemValue>
+    </Problem>
+  </RequestItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CancelRequestItemResponse>
-      <ItemId>
-         <ItemIdentifierValue>11</ItemIdentifierValue>
-      </ItemId>
-      <UserId>
-         <UserIdentifierValue>6010570003043558</UserIdentifierValue>
-      </UserId>
-   </CancelRequestItemResponse>
+  <CancelRequestItemResponse>
+    <ItemId>
+      <ItemIdentifierValue>11</ItemIdentifierValue>
+    </ItemId>
+    <UserId>
+      <UserIdentifierValue>6010570003043558</UserIdentifierValue>
+    </UserId>
+  </CancelRequestItemResponse>
 </NCIPMessage>
 <NCIPMessage>
-   <CancelRequestItemResponse>
-      <Problem>
-         <ProblemType/>
-         <ProblemDetail>Cancel Request Failed</ProblemDetail>
-         <ProblemElement>Item</ProblemElement>
-         <ProblemValue>No Request Found For The Given Request Id</ProblemValue>
-      </Problem>
-   </CancelRequestItemResponse>
+  <CancelRequestItemResponse>
+    <Problem>
+      <ProblemType></ProblemType>
+      <ProblemDetail>Cancel Request Failed</ProblemDetail>
+      <ProblemElement>Item</ProblemElement>
+      <ProblemValue>No Request Found For The Given Request Id</ProblemValue>
+    </Problem>
+  </CancelRequestItemResponse>
 </NCIPMessage>

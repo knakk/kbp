@@ -68,6 +68,7 @@ type responseType int
 
 const (
 	illegalResponse responseType = iota
+	TypeAcceptItemResponse
 	TypeAgencyCreatedResponse
 	TypeAgencyUpdatedResponse
 	TypeCancelRecallItemResponse

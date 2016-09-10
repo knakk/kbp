@@ -35,7 +35,7 @@ type AcceptItemResponse struct {
 	// xs:choice ->
 	Problem []Problem
 	// xs:sequence ->
-	RequestId RequestId
+	RequestId *RequestId
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
@@ -125,6 +125,7 @@ type CancelRequestItem struct {
 }
 
 type CancelRequestItemResponse struct {
+	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
 	// xs:choice ->
 	Problem []Problem
@@ -132,11 +133,11 @@ type CancelRequestItemResponse struct {
 	// xs:choice ->
 	//ItemId *ItemId
 	// xs:sequence ->
-	RequestId RequestId
+	RequestId *RequestId
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
-	UserId                       UserId
+	UserId                       *UserId
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
@@ -156,11 +157,12 @@ type CheckInItem struct {
 }
 
 type CheckInItemResponse struct {
+	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
 	// xs:choice ->
 	Problem []Problem
 	// xs:sequence ->
-	ItemId                       ItemId
+	ItemId                       *ItemId
 	UserId                       *UserId
 	RoutingInformation           *RoutingInformation
 	FiscalTransactionInformation *FiscalTransactionInformation
@@ -193,6 +195,7 @@ type CheckOutItem struct {
 }
 
 type CheckOutItemResponse struct {
+	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
 	// xs:choice ->
 	// xs:sequence ->
@@ -201,8 +204,8 @@ type CheckOutItemResponse struct {
 	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	// xs:sequence ->
-	ItemId ItemId
-	UserId UserId
+	ItemId *ItemId
+	UserId *UserId
 	// xs:choice ->
 	DateDue                     string `xml:",omitempty"` // xs:dateTime
 	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
@@ -829,6 +832,7 @@ type RenewItem struct {
 }
 
 type RenewItemResponse struct {
+	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
 	// xs:choice ->
 	// xs:sequence ->
@@ -838,7 +842,7 @@ type RenewItemResponse struct {
 	// <- xs:sequence
 	Pending *Pending
 	// xs:sequence ->
-	ItemId                       ItemId
+	ItemId                       *ItemId
 	UserId                       *UserId
 	DateDue                      string `xml:",omitempty"` // xs:dateTime
 	DateForReturn                string `xml:",omitempty"` // xs:dateTime
@@ -917,6 +921,7 @@ type RequestItem struct {
 }
 
 type RequestItemResponse struct {
+	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
 	// xs:choice ->
 	// xs:sequence ->
@@ -928,13 +933,13 @@ type RequestItemResponse struct {
 	// xs:choice ->
 	//ItemId *ItemId
 	// xs:sequence ->
-	RequestId RequestId
+	RequestId *RequestId
 	ItemId    *ItemId
 	// <- xs:sequence
 	// <- xs:choice
-	UserId                       UserId
-	RequestType                  SchemeValue
-	RequestScopeType             SchemeValue
+	UserId                       *UserId
+	RequestType                  *SchemeValue
+	RequestScopeType             *SchemeValue
 	ShippingInformation          *ShippingInformation
 	DateAvailable                string `xml:",omitempty"` // xs:dateTime
 	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
@@ -1088,10 +1093,10 @@ type UpdateRequestItemResponse struct {
 	RequiredItemUseRestrictionType []SchemeValue
 	// <- xs:sequence
 	// xs:sequence ->
-	ItemId                       ItemId
-	UserId                       UserId
-	RequestType                  SchemeValue
-	RequestScopeType             SchemeValue
+	ItemId                       *ItemId
+	UserId                       *UserId
+	RequestType                  *SchemeValue
+	RequestScopeType             *SchemeValue
 	DateAvailable                string `xml:",omitempty"` // xs:dateTime
 	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
 	FiscalTransactionInformation *FiscalTransactionInformation
@@ -1461,6 +1466,7 @@ type EnumerationLevelInstance struct {
 }
 
 type Ext struct {
+	V []byte `xml:",innerxml"`
 }
 
 type FiscalTransactionInformation struct {
@@ -1950,3 +1956,4 @@ func (r CheckOutItemResponse) Type() responseType      { return TypeCheckOutItem
 func (r CheckInItemResponse) Type() responseType       { return TypeCheckInItemResponse }
 func (r RenewItemResponse) Type() responseType         { return TypeRenewItemResponse }
 func (r CancelRequestItemResponse) Type() responseType { return TypeCancelRequestItemResponse }
+func (r AcceptItemResponse) Type() responseType        { return TypeAcceptItemResponse }

@@ -76,6 +76,18 @@ func DecodeResponse(r io.Reader) (Response, error) {
 				continue
 			case "LookupUserResponse":
 				respItem = &LookupUserResponse{}
+			case "CheckOutItemResponse":
+				respItem = &CheckOutItemResponse{}
+			case "CheckInItemResponse":
+				respItem = &CheckInItemResponse{}
+			case "AcceptItemResponse":
+				respItem = &AcceptItemResponse{}
+			case "RenewItemResponse":
+				respItem = &RenewItemResponse{}
+			case "RequestItemResponse":
+				respItem = &RequestItemResponse{}
+			case "CancelRequestItemResponse":
+				respItem = &CancelRequestItemResponse{}
 			default:
 				return respItem, fmt.Errorf("TODO: Decode %s", elem.Name.Local)
 			}
