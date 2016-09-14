@@ -696,6 +696,9 @@ type ConferenceRole struct {
 // an identifier, or one or other of <PersonName> or <CorporateName>, or both
 // an identifier and a name, must be present in each occurrence of the composite.
 type ConferenceSponsor struct {
+	ConferenceSponsorIdentifier []ConferenceSponsorIdentifier
+	PersonName                  *PersonName
+	CorporateName               *CorporateName
 	GeneralAttributes
 }
 
@@ -921,6 +924,9 @@ type CopiesSold struct {
 // composite must carry a single name (personal or corporate), or an
 // identifier, or both.
 type CopyrightOwner struct {
+	CopyrightOwnerIdentifier []CopyrightOwnerIdentifier
+	PersonName               *PersonName
+	CorporateName            *CorporateName
 	GeneralAttributes
 }
 
@@ -1511,6 +1517,9 @@ type EventRole struct {
 // or other of <PersonName> or <CorporateName>, or both an identifier and a
 // name, must be present in each occurrence of the composite.
 type EventSponsor struct {
+	EventSponsorIdentifier []EventSponsorIdentifier
+	PersonName             *PersonName
+	CorporateName          *CorporateName
 	GeneralAttributes
 }
 
@@ -1769,6 +1778,8 @@ type IllustrationsNote struct {
 // identify an imprint or brand under which the product is marketed. The
 // composite must carry either a name identifier or a name or both.
 type Imprint struct {
+	ImprintIdentifier []ImprintIdentifier
+	ImprintName       *ImprintName
 	GeneralAttributes
 }
 
@@ -3145,7 +3156,8 @@ type ProductSupply struct {
 // elements which together identify a contributor’s professional position and/or
 // affiliation, allowing multiple positions and affiliations to be specified.
 type ProfessionalAffiliation struct {
-	// TODO missing data elements
+	ProfessionalPosition []ProfessionalPosition
+	Affiliation          *Affiliation
 	GeneralAttributes
 }
 
@@ -3548,7 +3560,9 @@ type RelatedWork struct {
 // to enable other devotional texts to be included if need arises without
 // requiring a new ONIX release.
 type ReligiousText struct {
-	// TODO missing data elements
+	ReligiousTextIdentifier ReligiousTextIdentifier
+	ReligiousTextFeature    []ReligiousTextFeature
+	Bible                   *Bible
 	GeneralAttributes
 }
 
