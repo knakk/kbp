@@ -415,11 +415,11 @@ type CitedContent struct {
 	ContentAudience  []ContentAudience
 	Territory        *Territory
 	SourceType       *SourceType
+	SourceTitle      []SourceTitle
 	CitationNote     []CitationNote
 	ResourceLink     []ResourceLink
 	ContentDate      []ContentDate
-	ReviewRating     ReviewRating
-	SourceTitle      []SourceTitle
+	ReviewRating     *ReviewRating
 	ListName         []ListName
 	PositionOnList   *PositionOnList
 	GeneralAttributes
@@ -807,23 +807,23 @@ type Contributor struct {
 	ContributorDate         []ContributorDate
 	ProfessionalAffiliation []ProfessionalAffiliation
 	Prize                   []Prize
-	BiographicalNote        []BiographicalNote
 	Website                 []Website
 	ContributorDescription  []ContributorDescription
 	ContributorPlace        []ContributorPlace
 	NameIdentifier          []NameIdentifier
-	PersonName              PersonName
+	PersonName              *PersonName
 	PersonNameInverted      *PersonNameInverted
 	TitlesBeforeNames       *TitlesBeforeNames
 	NamesBeforeKey          *NamesBeforeKey
 	PrefixToKey             *PrefixToKey
 	KeyNames                KeyNames
+	BiographicalNote        []BiographicalNote
 	NamesAfterKey           *NamesAfterKey
 	SuffixToKey             *SuffixToKey
 	LettersAfterNames       *LettersAfterNames
 	TitlesAfterNames        *TitlesAfterNames
 	Gender                  *Gender
-	UnnamedPersons          UnnamedPersons
+	UnnamedPersons          *UnnamedPersons
 	GeneralAttributes
 }
 
@@ -1156,7 +1156,7 @@ type DescriptiveDetail struct {
 	ProductClassification   []ProductClassification
 	ProductPart             []ProductPart
 	Collection              []Collection
-	NoCollection            NoCollection
+	NoCollection            *NoCollection
 	TitleDetail             []TitleDetail
 	NoContributor           *NoContributor
 	Contributor             []Contributor
@@ -1567,8 +1567,8 @@ type ExpectedDate struct {
 // book or paginated ebook, or to give the running time of an audiobook.
 type Extent struct {
 	ExtentType       ExtentType
-	ExtentUnit       ExtentUnit
 	ExtentValue      ExtentValue
+	ExtentUnit       ExtentUnit
 	ExtentValueRoman *ExtentValueRoman
 	GeneralAttributes
 }
@@ -1955,6 +1955,7 @@ type LocationName struct {
 // different schemes, each carrying the <MainSubject/> flag. Optional and non-
 // repeating in each occurrence of the <Subject> composite.
 type MainSubject struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2216,6 +2217,7 @@ type NewSupplier struct {
 // instances of the <Collection> composite and has no collection level title
 // elements in Group P.6.
 type NoCollection struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2225,6 +2227,7 @@ type NoCollection struct {
 // consistently supplied in publisher ONIX feeds. Optional and non-repeating.
 // Must only be sent in a record that has no other elements from Group P.7.
 type NoContributor struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2235,6 +2238,7 @@ type NoContributor struct {
 // Must only be sent in a record that has no instances of any of the four
 // preceding Edition elements.
 type NoEdition struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2243,6 +2247,7 @@ type NoEdition struct {
 // sorting purposes. Optional and non-repeating, and must only be used when
 // <TitleWithoutPrefix> is used and no <TitlePrefix> element is present.
 type NoPrefix struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2252,6 +2257,7 @@ type NoPrefix struct {
 // been no updates since the previous message. Optional and non-repeating, but
 // must be used in an ONIX message that contains no <Product> composites.
 type NoProduct struct {
+	Dummy string `xml:",innerxml"` // An empty element, but needed for encoding/xml to marshal it
 	GeneralAttributes
 }
 
@@ -2521,17 +2527,17 @@ type Price struct {
 	DiscountCoded          []DiscountCoded
 	Discount               []Discount
 	PriceStatus            *PriceStatus
-	CurrencyCode           *CurrencyCode
-	Territory              *Territory
+	PriceAmount            PriceAmount
 	CurrencyZone           *CurrencyZone
 	ComparisonProductPrice []ComparisonProductPrice
 	PriceDate              []PriceDate
+	Tax                    []Tax
+	CurrencyCode           *CurrencyCode
+	Territory              *Territory
 	PrintedOnProduct       *PrintedOnProduct
 	PositionOnProduct      *PositionOnProduct
-	Tax                    []Tax
-	PriceAmount            PriceAmount
-	PriceCoded             PriceCoded
-	UnpricedItemType       UnpricedItemType
+	PriceCoded             *PriceCoded
+	UnpricedItemType       *UnpricedItemType
 	GeneralAttributes
 }
 
@@ -3210,10 +3216,10 @@ type Proximity struct {
 // code and either a name identifier code or a name or both.
 type Publisher struct {
 	PublishingRole      PublishingRole
+	PublisherName       *PublisherName
 	Funding             []Funding
 	Website             []Website
 	PublisherIdentifier []PublisherIdentifier
-	PublisherName       *PublisherName
 	GeneralAttributes
 }
 
@@ -3286,12 +3292,15 @@ type PublishingDateRole struct {
 // indicates that the record is an update notice which carries only those
 // blocks in which changes have occurred.
 type PublishingDetail struct {
-	CityOfPublication    []CityOfPublication
-	CountryOfPublication *CountryOfPublication
-	ProductContact       []ProductContact
 	Imprint              []Imprint
 	Publisher            []Publisher
+	CityOfPublication    []CityOfPublication
+	CountryOfPublication *CountryOfPublication
+	PublishingStatus     []PublishingStatus
 	PublishingDate       []PublishingDate
+	SalesRights          []SalesRights
+	ROWSalesRightsType   ROWSalesRightsType
+	ProductContact       []ProductContact
 	LatestReprintNumber  *LatestReprintNumber
 	CopyrightStatement   []CopyrightStatement
 	SalesRestriction     []SalesRestriction
@@ -3862,7 +3871,7 @@ type SalesRestrictionType struct {
 // <NotForSale> composite, which is now redundant and has been deleted.)
 type SalesRights struct {
 	SalesRightsType   SalesRightsType
-	Territory         Territory
+	Territory         *Territory
 	SalesRestriction  []SalesRestriction
 	ProductIdentifier []ProductIdentifier
 	PublisherName     *PublisherName
@@ -3890,10 +3899,10 @@ type ScriptCode struct {
 // of an ONIX for Books message. Mandatory in any ONIX for Books message, and
 // non-repeating.
 type Sender struct {
+	SenderName       *SenderName
 	ContactName      *ContactName
 	EmailAddress     *EmailAddress
 	SenderIdentifier []SenderIdentifier
-	SenderName       *SenderName
 	GeneralAttributes
 }
 
@@ -4050,7 +4059,7 @@ type Subject struct {
 	SubjectSchemeIdentifier SubjectSchemeIdentifier
 	SubjectSchemeName       *SubjectSchemeName
 	SubjectSchemeVersion    *SubjectSchemeVersion
-	SubjectCode             SubjectCode
+	SubjectCode             *SubjectCode
 	SubjectHeadingText      []SubjectHeadingText
 	GeneralAttributes
 }
@@ -4161,12 +4170,12 @@ type SuffixToKey struct {
 // not repeatable.
 type Supplier struct {
 	SupplierRole       SupplierRole
+	SupplierIdentifier []SupplierIdentifier
+	SupplierName       *SupplierName
 	TelephoneNumber    []TelephoneNumber
 	FaxNumber          []FaxNumber
 	EmailAddress       []EmailAddress
 	Website            []Website
-	SupplierIdentifier []SupplierIdentifier
-	SupplierName       *SupplierName
 	GeneralAttributes
 }
 
@@ -4275,7 +4284,7 @@ type SupplyDetail struct {
 	Stock               []Stock
 	PackQuantity        *PackQuantity
 	Reissue             *Reissue
-	UnpricedItemType    UnpricedItemType
+	UnpricedItemType    *UnpricedItemType
 	Price               []Price
 	GeneralAttributes
 }
@@ -4375,8 +4384,8 @@ type TelephoneNumber struct {
 // Specify Markets and Suppliers in ONIX 3.
 type Territory struct {
 	RegionsExcluded   *RegionsExcluded
-	CountriesIncluded CountriesIncluded
-	RegionsIncluded   RegionsIncluded
+	CountriesIncluded *CountriesIncluded
+	RegionsIncluded   *RegionsIncluded
 	CountriesExcluded *CountriesExcluded
 	GeneralAttributes
 }
@@ -4528,12 +4537,12 @@ type TitleElement struct {
 	SequenceNumber     *SequenceNumber
 	TitleElementLevel  TitleElementLevel
 	Subtitle           *Subtitle
-	PartNumber         PartNumber
+	PartNumber         *PartNumber
 	YearOfAnnual       *YearOfAnnual
-	TitleWithoutPrefix TitleWithoutPrefix
-	TitlePrefix        TitlePrefix
-	NoPrefix           NoPrefix
-	TitleText          TitleText
+	TitlePrefix        *TitlePrefix
+	NoPrefix           *NoPrefix
+	TitleWithoutPrefix *TitleWithoutPrefix
+	TitleText          *TitleText
 	GeneralAttributes
 }
 
