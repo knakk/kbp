@@ -8,18 +8,16 @@ type SchemeValue struct {
 }
 
 type AcceptItem struct {
-	XMLName             xml.Name
-	InitiationHeader    *InitiationHeader
-	MandatedAction      *MandatedAction
-	RequestId           RequestId
-	RequestedActionType SchemeValue
-	UserId              *UserId
-	ItemId              *ItemId
-	// xs:choice ->
-	DateForReturn               string `xml:",omitempty"` // xs:dateTime
-	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
-	NonReturnableFlag           *NonReturnableFlag
-	// <- xs:choice
+	XMLName                      xml.Name
+	InitiationHeader             *InitiationHeader
+	MandatedAction               *MandatedAction
+	RequestId                    RequestId
+	RequestedActionType          SchemeValue
+	UserId                       *UserId
+	ItemId                       *ItemId
+	DateForReturn                string `xml:",omitempty"` // xs:dateTime
+	IndeterminateLoanPeriodFlag  *IndeterminateLoanPeriodFlag
+	NonReturnableFlag            *NonReturnableFlag
 	RenewalNotPermitted          *RenewalNotPermitted
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
@@ -32,14 +30,10 @@ type AcceptItem struct {
 type AcceptItemResponse struct {
 	XMLName        xml.Name
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
-	RequestId *RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	RequestId      *RequestId
+	ItemId         *ItemId
+	Ext            *Ext
 }
 
 type AgencyCreated struct {
@@ -86,35 +80,24 @@ type CancelRecallItem struct {
 }
 
 type CancelRecallItemResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
 	ItemId                       ItemId
 	UserId                       *UserId
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type CancelRequestItem struct {
-	XMLName          xml.Name
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId *RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	XMLName               xml.Name
+	InitiationHeader      *InitiationHeader
+	MandatedAction        *MandatedAction
+	UserId                *UserId
+	AuthenticationInput   []AuthenticationInput
+	RequestId             *RequestId
+	ItemId                *ItemId
 	RequestType           SchemeValue
 	RequestScopeType      *SchemeValue
 	AcknowledgedFeeAmount *AcknowledgedFeeAmount
@@ -125,25 +108,16 @@ type CancelRequestItem struct {
 }
 
 type CancelRequestItemResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId *RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	XMLName                      xml.Name
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
+	RequestId                    *RequestId
+	ItemId                       *ItemId
 	UserId                       *UserId
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type CheckInItem struct {
@@ -157,30 +131,24 @@ type CheckInItem struct {
 }
 
 type CheckInItemResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	XMLName                      xml.Name
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
 	ItemId                       *ItemId
 	UserId                       *UserId
 	RoutingInformation           *RoutingInformation
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type CheckOutItem struct {
-	XMLName          xml.Name
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
+	XMLName                            xml.Name
+	InitiationHeader                   *InitiationHeader
+	MandatedAction                     *MandatedAction
+	UserId                             *UserId
+	AuthenticationInput                []AuthenticationInput
 	ItemId                             ItemId
 	RequestId                          *RequestId
 	AcknowledgedFeeAmount              *AcknowledgedFeeAmount
@@ -195,42 +163,32 @@ type CheckOutItem struct {
 }
 
 type CheckOutItemResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	// xs:sequence ->
+	XMLName                        xml.Name
+	ResponseHeader                 *ResponseHeader
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
 	RequiredItemUseRestrictionType []SchemeValue
-	// <- xs:sequence
-	// xs:sequence ->
-	ItemId *ItemId
-	UserId *UserId
-	// xs:choice ->
-	DateDue                     string `xml:",omitempty"` // xs:dateTime
-	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
-	NonReturnableFlag           *NonReturnableFlag
-	// <- xs:choice
-	RenewalCount                 *int // xs:nonnegativeInteger
-	ElectronicResource           *ElectronicResource
-	FiscalTransactionInformation *FiscalTransactionInformation
-	ItemOptionalFields           *ItemOptionalFields
-	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	ItemId                         *ItemId
+	UserId                         *UserId
+	DateDue                        string `xml:",omitempty"` // xs:dateTime
+	IndeterminateLoanPeriodFlag    *IndeterminateLoanPeriodFlag
+	NonReturnableFlag              *NonReturnableFlag
+	RenewalCount                   *int // xs:nonnegativeInteger
+	ElectronicResource             *ElectronicResource
+	FiscalTransactionInformation   *FiscalTransactionInformation
+	ItemOptionalFields             *ItemOptionalFields
+	UserOptionalFields             *UserOptionalFields
+	Ext                            *Ext
 }
 
 type CirculationStatusChangeReported struct {
-	InitiationHeader *InitiationHeader
-	ItemId           ItemId
-	UserId           UserId
-	// xs:choice ->
-	ItemReportedReturned      *ItemReportedReturned
-	ItemReportedNeverBorrowed *ItemReportedNeverBorrowed
-	ItemReportedLost          *ItemReportedLost
-	ItemReportedMissing       *ItemReportedMissing
-	// <- xs:choice
+	InitiationHeader             *InitiationHeader
+	ItemId                       ItemId
+	UserId                       UserId
+	ItemReportedReturned         *ItemReportedReturned
+	ItemReportedNeverBorrowed    *ItemReportedNeverBorrowed
+	ItemReportedLost             *ItemReportedLost
+	ItemReportedMissing          *ItemReportedMissing
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
 	FiscalTransactionInformation *FiscalTransactionInformation
@@ -271,11 +229,9 @@ type CreateAgency struct {
 
 type CreateAgencyResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem  []Problem
-	AgencyId *SchemeValue
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	AgencyId       *SchemeValue
+	Ext            *Ext
 }
 
 type CreateItem struct {
@@ -296,20 +252,16 @@ type CreateItem struct {
 
 type CreateItemResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	ItemId  *ItemId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	ItemId         *ItemId
+	Ext            *Ext
 }
 
 type CreateUser struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
+	InitiationHeader       *InitiationHeader
+	MandatedAction         *MandatedAction
+	UserId                 *UserId
+	AuthenticationInput    []AuthenticationInput
 	NameInformation        NameInformation
 	UserAddressInformation []UserAddressInformation
 	DateOfBirth            string `xml:",omitempty"` // xs:dateTime
@@ -321,34 +273,26 @@ type CreateUser struct {
 
 type CreateUserResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	UserId  *UserId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	UserId         *UserId
+	Ext            *Ext
 }
 
 type CreateUserFiscalTransaction struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
+	InitiationHeader             *InitiationHeader
+	MandatedAction               *MandatedAction
+	UserId                       *UserId
+	AuthenticationInput          []AuthenticationInput
 	FiscalTransactionInformation FiscalTransactionInformation
 	Ext                          *Ext
 }
 
 type CreateUserFiscalTransactionResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
 	UserId                       UserId
 	FiscalTransactionReferenceId FiscalTransactionReferenceId
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type DeleteItem struct {
@@ -360,30 +304,24 @@ type DeleteItem struct {
 
 type DeleteItemResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	ItemId  *ItemId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	ItemId         *ItemId
+	Ext            *Ext
 }
 
 type DeleteUser struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
+	InitiationHeader    *InitiationHeader
+	MandatedAction      *MandatedAction
 	UserId              *UserId
 	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	Ext *Ext
+	Ext                 *Ext
 }
 
 type DeleteUserResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	UserId  *UserId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	UserId         *UserId
+	Ext            *Ext
 }
 
 type ItemCheckedIn struct {
@@ -404,15 +342,13 @@ type ItemCheckedInResponse struct {
 }
 
 type ItemCheckedOut struct {
-	InitiationHeader *InitiationHeader
-	UserId           UserId
-	ItemId           ItemId
-	RequestId        *RequestId
-	// xs:choice ->
-	DateDue                     string `xml:",omitempty"` // xs:dateTime
-	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
-	NonReturnableFlag           *NonReturnableFlag
-	// <- xs:choice
+	InitiationHeader               *InitiationHeader
+	UserId                         UserId
+	ItemId                         ItemId
+	RequestId                      *RequestId
+	DateDue                        string `xml:",omitempty"` // xs:dateTime
+	IndeterminateLoanPeriodFlag    *IndeterminateLoanPeriodFlag
+	NonReturnableFlag              *NonReturnableFlag
 	ElectronicResourceProvidedFlag *ElectronicResourceProvidedFlag
 	RenewalCount                   *int // xs:nonnegativeInteger
 	FiscalTransactionInformation   *FiscalTransactionInformation
@@ -518,15 +454,10 @@ type ItemRenewedResponse struct {
 }
 
 type ItemRequestCancelled struct {
-	InitiationHeader *InitiationHeader
-	UserId           UserId
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	InitiationHeader             *InitiationHeader
+	UserId                       UserId
+	RequestId                    RequestId
+	ItemId                       *ItemId
 	RequestType                  SchemeValue
 	RequestScopeType             *SchemeValue
 	FiscalTransactionInformation *FiscalTransactionInformation
@@ -542,15 +473,11 @@ type ItemRequestCancelledResponse struct {
 }
 
 type ItemRequestUpdated struct {
-	InitiationHeader *InitiationHeader
-	// xs:choice ->
-	// xs:sequence ->
-	UserId      UserId
-	ItemId      ItemId
-	RequestType SchemeValue
-	// <- xs:sequence
-	RequestId *RequestId
-	// <- xs:choice
+	InitiationHeader    *InitiationHeader
+	UserId              UserId
+	ItemId              ItemId
+	RequestType         SchemeValue
+	RequestId           *RequestId
 	DeleteRequestFields *DeleteRequestFields
 	AddRequestFields    *AddRequestFields
 	ItemOptionalFields  *ItemOptionalFields
@@ -565,15 +492,11 @@ type ItemRequestUpdatedResponse struct {
 }
 
 type ItemRequested struct {
-	InitiationHeader *InitiationHeader
-	UserId           UserId
-	// xs:choice ->
-	ItemId *ItemId
-	// xs:sequence ->
-	BibliographicId BibliographicId
-	RequestId       RequestId
-	// <- xs:sequence
-	// <- xs:choice
+	InitiationHeader    *InitiationHeader
+	UserId              UserId
+	ItemId              *ItemId
+	BibliographicId     BibliographicId
+	RequestId           RequestId
 	RequestType         SchemeValue
 	RequestScopeType    SchemeValue
 	ShippingInformation *ShippingInformation
@@ -595,14 +518,9 @@ type ItemRequestedResponse struct {
 }
 
 type ItemShipped struct {
-	InitiationHeader *InitiationHeader
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	InitiationHeader    *InitiationHeader
+	RequestId           RequestId
+	ItemId              *ItemId
 	UserId              *UserId
 	DateShipped         string // xs:dateTime
 	ShippingInformation ShippingInformation
@@ -639,10 +557,8 @@ type LookupAgency struct {
 }
 
 type LookupAgencyResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader                  *ResponseHeader
+	Problem                         []Problem
 	AgencyId                        SchemeValue
 	OrganizationNameInformation     []OrganizationNameInformation
 	AgencyAddressInformation        []AgencyAddressInformation
@@ -650,17 +566,13 @@ type LookupAgencyResponse struct {
 	ApplicationProfileSupportedType []SchemeValue
 	ConsortiumAgreement             []SchemeValue
 	AgencyUserPrivilegeType         []SchemeValue
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                             *Ext
 }
 
 type LookupItem struct {
-	InitiationHeader *InitiationHeader
-	// xs:choice ->
-	ItemId    *ItemId
-	RequestId *RequestId
-	// <- xs:choice
+	InitiationHeader         *InitiationHeader
+	ItemId                   *ItemId
+	RequestId                *RequestId
 	ItemElementType          []SchemeValue
 	CurrentBorrowerDesired   *CurrentBorrowerDesired
 	CurrentRequestersDesired *CurrentRequestersDesired
@@ -668,57 +580,35 @@ type LookupItem struct {
 }
 
 type LookupItemResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	ResponseHeader     *ResponseHeader
+	Problem            []Problem
+	RequestId          RequestId
+	ItemId             *ItemId
 	HoldPickupDate     string `xml:",omitempty"` // xs:dateTime
 	DateRecalled       string `xml:",omitempty"` // xs:dateTime
 	ItemTransaction    *ItemTransaction
 	ItemOptionalFields *ItemOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
-}
-
-type LookupRequest struct {
-	InitiationHeader *InitiationHeader
-	// xs:choice ->
-	// xs:sequence ->
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	ItemId      ItemId
-	RequestType SchemeValue
-	// <- xs:sequence
-	RequestId *RequestId
-	// <- xs:choice
-	RequestElementType []SchemeValue
-	ItemElementType    []SchemeValue
-	UserElementType    []SchemeValue
 	Ext                *Ext
 }
 
+type LookupRequest struct {
+	InitiationHeader    *InitiationHeader
+	UserId              *UserId
+	AuthenticationInput []AuthenticationInput
+	ItemId              ItemId
+	RequestType         SchemeValue
+	RequestId           *RequestId
+	RequestElementType  []SchemeValue
+	ItemElementType     []SchemeValue
+	UserElementType     []SchemeValue
+	Ext                 *Ext
+}
+
 type LookupRequestResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	ResponseHeader        *ResponseHeader
+	Problem               []Problem
+	RequestId             RequestId
+	ItemId                *ItemId
 	UserId                *UserId
 	RequestType           *SchemeValue
 	RequestScopeType      *SchemeValue
@@ -736,18 +626,14 @@ type LookupRequestResponse struct {
 	PaidFeeAmount         *PaidFeeAmount
 	ItemOptionalFields    *ItemOptionalFields
 	UserOptionalFields    *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                   *Ext
 }
 
 type LookupUser struct {
-	XMLName          xml.Name
-	InitiationHeader *InitiationHeader
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
+	XMLName                  xml.Name
+	InitiationHeader         *InitiationHeader
+	UserId                   *UserId
+	AuthenticationInput      []AuthenticationInput
 	UserElementType          []SchemeValue
 	LoanedItemsDesired       *LoanedItemsDesired       `xml:",omitempty"`
 	RequestedItemsDesired    *RequestedItemsDesired    `xml:",omitempty"`
@@ -756,11 +642,9 @@ type LookupUser struct {
 }
 
 type LookupUserResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	XMLName             xml.Name
+	ResponseHeader      *ResponseHeader
+	Problem             []Problem
 	UserId              *UserId
 	UserFiscalAccount   []UserFiscalAccount
 	LoanedItemsCount    []LoanedItemsCount
@@ -768,9 +652,7 @@ type LookupUserResponse struct {
 	RequestedItemsCount []RequestedItemsCount
 	RequestedItem       []RequestedItem
 	UserOptionalFields  *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                 *Ext
 }
 
 type RecallItem struct {
@@ -785,29 +667,23 @@ type RecallItem struct {
 }
 
 type RecallItemResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
 	ItemId                       ItemId
 	UserId                       *UserId
 	DateDue                      string `xml:",omitempty"` // xs:dateTime
 	FiscalTransactionInformation *FiscalTransactionInformation
 	ItemOptionalFields           *ItemOptionalFields
 	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type RenewItem struct {
-	XMLName          xml.Name
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
+	XMLName                            xml.Name
+	InitiationHeader                   *InitiationHeader
+	MandatedAction                     *MandatedAction
+	UserId                             *UserId
+	AuthenticationInput                []AuthenticationInput
 	ItemId                             ItemId
 	ItemElementType                    []SchemeValue
 	UserElementType                    []SchemeValue
@@ -820,77 +696,56 @@ type RenewItem struct {
 }
 
 type RenewItemResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	// xs:sequence ->
+	XMLName                        xml.Name
+	ResponseHeader                 *ResponseHeader
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
 	RequiredItemUseRestrictionType []SchemeValue
-	// <- xs:sequence
-	Pending *Pending
-	// xs:sequence ->
-	ItemId                       *ItemId
-	UserId                       *UserId
-	DateDue                      string `xml:",omitempty"` // xs:dateTime
-	DateForReturn                string `xml:",omitempty"` // xs:dateTime
-	RenewalCount                 *int   // xs:nonnegativeInteger
-	FiscalTransactionInformation *FiscalTransactionInformation
-	ItemOptionalFields           *ItemOptionalFields
-	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Pending                        *Pending
+	ItemId                         *ItemId
+	UserId                         *UserId
+	DateDue                        string `xml:",omitempty"` // xs:dateTime
+	DateForReturn                  string `xml:",omitempty"` // xs:dateTime
+	RenewalCount                   *int   // xs:nonnegativeInteger
+	FiscalTransactionInformation   *FiscalTransactionInformation
+	ItemOptionalFields             *ItemOptionalFields
+	UserOptionalFields             *UserOptionalFields
+	Ext                            *Ext
 }
 
 type ReportCirculationStatusChange struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	ItemId           ItemId
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	// xs:choice ->
+	InitiationHeader          *InitiationHeader
+	MandatedAction            *MandatedAction
+	ItemId                    ItemId
+	UserId                    *UserId
+	AuthenticationInput       []AuthenticationInput
 	ItemReportedReturned      *ItemReportedReturned
 	ItemReportedNeverBorrowed *ItemReportedNeverBorrowed
 	ItemReportedLost          *ItemReportedLost
 	ItemReportedMissing       *ItemReportedMissing
-	// <- xs:choice
-	ItemElementType []SchemeValue
-	UserElementType []SchemeValue
-	Ext             *Ext
+	ItemElementType           []SchemeValue
+	UserElementType           []SchemeValue
+	Ext                       *Ext
 }
 
 type ReportCirculationStatusChangeResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader     *ResponseHeader
+	Problem            []Problem
 	ItemId             ItemId
 	UserId             *UserId
 	ItemOptionalFields *ItemOptionalFields
 	UserOptionalFields *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                *Ext
 }
 
 type RequestItem struct {
-	XMLName          xml.Name
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	UserId              *UserId
-	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	// xs:choice ->
-	//ItemId []ItemId
-	// xs:sequence ->
-	BibliographicId []BibliographicId
-	ItemId          []ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	XMLName                            xml.Name
+	InitiationHeader                   *InitiationHeader
+	MandatedAction                     *MandatedAction
+	UserId                             *UserId
+	AuthenticationInput                []AuthenticationInput
+	BibliographicId                    []BibliographicId
+	ItemId                             []ItemId
 	RequestId                          *RequestId
 	RequestType                        SchemeValue
 	RequestScopeType                   SchemeValue
@@ -909,34 +764,23 @@ type RequestItem struct {
 }
 
 type RequestItemResponse struct {
-	XMLName        xml.Name
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	// xs:sequence ->
+	XMLName                        xml.Name
+	ResponseHeader                 *ResponseHeader
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
 	RequiredItemUseRestrictionType []SchemeValue
-	// <- xs:sequence
-	// xs:sequence ->
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId *RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
-	UserId                       *UserId
-	RequestType                  *SchemeValue
-	RequestScopeType             *SchemeValue
-	ShippingInformation          *ShippingInformation
-	DateAvailable                string `xml:",omitempty"` // xs:dateTime
-	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
-	FiscalTransactionInformation *FiscalTransactionInformation
-	ItemOptionalFields           *ItemOptionalFields
-	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	RequestId                      *RequestId
+	ItemId                         *ItemId
+	UserId                         *UserId
+	RequestType                    *SchemeValue
+	RequestScopeType               *SchemeValue
+	ShippingInformation            *ShippingInformation
+	DateAvailable                  string `xml:",omitempty"` // xs:dateTime
+	HoldPickupDate                 string `xml:",omitempty"` // xs:dateTime
+	FiscalTransactionInformation   *FiscalTransactionInformation
+	ItemOptionalFields             *ItemOptionalFields
+	UserOptionalFields             *UserOptionalFields
+	Ext                            *Ext
 }
 
 type SendUserNotice struct {
@@ -950,42 +794,30 @@ type SendUserNotice struct {
 
 type SendUserNoticeResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
-	UserId UserId
-	// xs:choice ->
-	DateSent     string `xml:",omitempty"` // xs:dateTime
-	DateWillSend string `xml:",omitempty"` // xs:dateTime
-	// <- xs:choice
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	UserId         UserId
+	DateSent       string `xml:",omitempty"` // xs:dateTime
+	DateWillSend   string `xml:",omitempty"` // xs:dateTime
+	Ext            *Ext
 }
 
 type UndoCheckOutItem struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	ItemId           ItemId
-	// xs:choice ->
+	InitiationHeader    *InitiationHeader
+	MandatedAction      *MandatedAction
+	ItemId              ItemId
 	UserId              *UserId
 	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	RequestId *RequestId
-	Ext       *Ext
+	RequestId           *RequestId
+	Ext                 *Ext
 }
 
 type UndoCheckOutItemResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	// xs:sequence ->
+	ResponseHeader               *ResponseHeader
+	Problem                      []Problem
 	ItemId                       ItemId
 	UserId                       *UserId
 	FiscalTransactionInformation *FiscalTransactionInformation
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type UpdateAgency struct {
@@ -999,11 +831,9 @@ type UpdateAgency struct {
 
 type UpdateAgencyResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem  []Problem
-	AgencyId *SchemeValue
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	AgencyId       *SchemeValue
+	Ext            *Ext
 }
 
 type UpdateCirculationStatus struct {
@@ -1016,11 +846,9 @@ type UpdateCirculationStatus struct {
 
 type UpdateCirculationStatusResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	ItemId  *ItemId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	ItemId         *ItemId
+	Ext            *Ext
 }
 
 type UpdateItem struct {
@@ -1034,27 +862,19 @@ type UpdateItem struct {
 
 type UpdateItemResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	ItemId  *ItemId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	ItemId         *ItemId
+	Ext            *Ext
 }
 
 type UpdateRequestItem struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
-	// xs:sequence ->
-	// xs:choice ->
+	InitiationHeader    *InitiationHeader
+	MandatedAction      *MandatedAction
 	UserId              *UserId
 	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	ItemId      ItemId
-	RequestType SchemeValue
-	// <- xs:sequence
-	RequestId *RequestId
-	// <- xs:choice
+	ItemId              ItemId
+	RequestType         SchemeValue
+	RequestId           *RequestId
 	DeleteRequestFields *DeleteRequestFields
 	AddRequestFields    *AddRequestFields
 	ItemElementType     []SchemeValue
@@ -1063,47 +883,37 @@ type UpdateRequestItem struct {
 }
 
 type UpdateRequestItemResponse struct {
-	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	// xs:sequence ->
+	ResponseHeader                 *ResponseHeader
 	Problem                        []Problem
 	RequiredFeeAmount              *RequiredFeeAmount
 	RequiredItemUseRestrictionType []SchemeValue
-	// <- xs:sequence
-	// xs:sequence ->
-	ItemId                       *ItemId
-	UserId                       *UserId
-	RequestType                  *SchemeValue
-	RequestScopeType             *SchemeValue
-	DateAvailable                string `xml:",omitempty"` // xs:dateTime
-	HoldPickupDate               string `xml:",omitempty"` // xs:dateTime
-	FiscalTransactionInformation *FiscalTransactionInformation
-	ItemOptionalFields           *ItemOptionalFields
-	UserOptionalFields           *UserOptionalFields
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	ItemId                         *ItemId
+	UserId                         *UserId
+	RequestType                    *SchemeValue
+	RequestScopeType               *SchemeValue
+	DateAvailable                  string `xml:",omitempty"` // xs:dateTime
+	HoldPickupDate                 string `xml:",omitempty"` // xs:dateTime
+	FiscalTransactionInformation   *FiscalTransactionInformation
+	ItemOptionalFields             *ItemOptionalFields
+	UserOptionalFields             *UserOptionalFields
+	Ext                            *Ext
 }
 
 type UpdateUser struct {
-	InitiationHeader *InitiationHeader
-	MandatedAction   *MandatedAction
-	// xs:choice ->
+	InitiationHeader    *InitiationHeader
+	MandatedAction      *MandatedAction
 	UserId              *UserId
 	AuthenticationInput []AuthenticationInput
-	// <- xs:choice
-	DeleteUserFields *DeleteUserFields
-	AddUserFields    *AddUserFields
-	Ext              *Ext
+	DeleteUserFields    *DeleteUserFields
+	AddUserFields       *AddUserFields
+	Ext                 *Ext
 }
 
 type UpdateUserResponse struct {
 	ResponseHeader *ResponseHeader
-	// xs:choice ->
-	Problem []Problem
-	UserId  *UserId
-	// <- xs:choice
-	Ext *Ext
+	Problem        []Problem
+	UserId         *UserId
+	Ext            *Ext
 }
 
 type UserCreated struct {
@@ -1261,11 +1071,9 @@ type AgencyAddressInformation struct {
 	AgencyAddressRoleType SchemeValue
 	ValidFromDate         string `xml:",omitempty"` // xs:dateTime
 	ValidToDate           string `xml:",omitempty"` // xs:dateTime
-	// xs:choice ->
-	PhysicalAddress   *PhysicalAddress
-	ElectronicAddress *ElectronicAddress
-	// <- xs:choice
-	Ext *Ext
+	PhysicalAddress       *PhysicalAddress
+	ElectronicAddress     *ElectronicAddress
+	Ext                   *Ext
 }
 
 type Amount struct {
@@ -1311,11 +1119,9 @@ type BibliographicDescription struct {
 }
 
 type BibliographicId struct {
-	// xs:choice ->
 	BibliographicItemId   *BibliographicItemId
 	BibliographicRecordId *BibliographicRecordId
-	// <- xs:choice
-	Ext *Ext
+	Ext                   *Ext
 }
 
 type BibliographicItemId struct {
@@ -1325,12 +1131,10 @@ type BibliographicItemId struct {
 }
 
 type BibliographicRecordId struct {
-	BibliographicRecordIdentifier string
-	// xs:choice ->
+	BibliographicRecordIdentifier     string
 	AgencyId                          *SchemeValue
 	BibliographicRecordIdentifierCode *SchemeValue
-	// <- xs:choice
-	Ext *Ext
+	Ext                               *Ext
 }
 
 type BlockOrTrap struct {
@@ -1342,15 +1146,11 @@ type BlockOrTrap struct {
 }
 
 type ChronologyLevelInstance struct {
-	// xs:choice ->
 	//ChronologyCaption string `xml:",omitempty"`
-	// xs:sequence ->
 	ChronologyLevel   int    // xs:positiveInteger
 	ChronologyCaption string `xml:",omitempty"`
-	// <- xs:sequence
-	// <- xs:choice
-	ChronologyValue string
-	Ext             *Ext
+	ChronologyValue   string
+	Ext               *Ext
 }
 
 type ComponentId struct {
@@ -1426,14 +1226,9 @@ type DeleteUserFields struct {
 }
 
 type Destination struct {
-	// xs:choice ->
-	//Location *Location
-	// xs:sequence ->
 	BinNumber string
 	Location  *Location
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext       *Ext
 }
 
 type ElectronicAddress struct {
@@ -1443,28 +1238,20 @@ type ElectronicAddress struct {
 }
 
 type ElectronicResource struct {
-	// xs:choice ->
 	ElectronicDataFormatType *SchemeValue
 	ActualResource           string `xml:",omitempty"`
-	// <- xs:sequence
-	ReferenceToResource string
-	Ext                 *Ext
+	ReferenceToResource      string
+	Ext                      *Ext
 }
 
 type ElectronicResourceProvidedFlag struct {
 }
 
 type EnumerationLevelInstance struct {
-	// xs:choice ->
-	//EnumerationCaption string `xml:",omitempty"`
-	// xs:sequence ->
 	EnumerationLevel   int    // xs:positiveInteger
 	EnumerationCaption string `xml:",omitempty"`
 	Ext                *Ext
-	// <- xs:sequence
-	// <- xs:choice
-	EnumerationValue string
-	//Ext              *Ext
+	EnumerationValue   string
 }
 
 type Ext struct {
@@ -1508,11 +1295,9 @@ type HoldingsEnumeration struct {
 }
 
 type HoldingsInformation struct {
-	// xs:choice ->
 	StructuredHoldingsData   []StructuredHoldingsData
 	UnstructuredHoldingsData string `xml:",omitempty"`
-	// <- xs:choice
-	Ext *Ext
+	Ext                      *Ext
 }
 
 type IndeterminateLoanPeriodFlag struct {
@@ -1528,17 +1313,15 @@ type ItemDescription struct {
 }
 
 type ItemDetails struct {
-	ItemId                   ItemId
-	BibliographicDescription BibliographicDescription
-	DateCheckedOut           string   `xml:",omitempty"` // xs:dateTime
-	DateRenewed              []string `xml:",omitempty"` // xs:dateTime
-	// xs:choice ->
-	DateDue                     string `xml:",omitempty"` // xs:dateTime
+	ItemId                      ItemId
+	BibliographicDescription    BibliographicDescription
+	DateCheckedOut              string   `xml:",omitempty"` // xs:dateTime
+	DateRenewed                 []string `xml:",omitempty"` // xs:dateTime
+	DateDue                     string   `xml:",omitempty"` // xs:dateTime
 	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
 	NonReturnableFlag           *NonReturnableFlag
-	// <- xs:choice
-	DateReturned string `xml:",omitempty"` // xs:dateTime
-	Ext          *Ext
+	DateReturned                string `xml:",omitempty"` // xs:dateTime
+	Ext                         *Ext
 }
 
 type ItemId struct {
@@ -1583,25 +1366,21 @@ type ItemTransaction struct {
 }
 
 type LoanedItem struct {
-	ItemId        ItemId
-	ReminderLevel int // xs:positiveInteger
-	// xs:choice ->
+	ItemId                      ItemId
+	ReminderLevel               int    // xs:positiveInteger
 	DateDue                     string `xml:",omitempty"` // xs:dateTime
 	IndeterminateLoanPeriodFlag *IndeterminateLoanPeriodFlag
-	// <- xs:choice
-	Amount     Amount
-	Title      string `xml:",omitempty"`
-	MediumType *SchemeValue
-	Ext        *Ext
+	Amount                      Amount
+	Title                       string `xml:",omitempty"`
+	MediumType                  *SchemeValue
+	Ext                         *Ext
 }
 
 type LoanedItemsCount struct {
-	// xs:choice ->
 	CirculationStatus      *SchemeValue
 	ItemUseRestrictionType *SchemeValue
-	// <- xs:choice
-	LoanedItemCountValue int // xs:nonnegativeInteger
-	Ext                  *Ext
+	LoanedItemCountValue   int // xs:nonnegativeInteger
+	Ext                    *Ext
 }
 
 type LoanedItemsDesired []byte // TODO
@@ -1631,11 +1410,9 @@ type MandatedAction struct {
 }
 
 type NameInformation struct {
-	// xs:choice ->
 	PersonalNameInformation     *PersonalNameInformation
 	OrganizationNameInformation []OrganizationNameInformation
-	// <- xs:choice
-	Ext *Ext
+	Ext                         *Ext
 }
 
 type NonReturnableFlag struct {
@@ -1670,21 +1447,15 @@ type Pending struct {
 }
 
 type PersonalNameInformation struct {
-	// xs:choice ->
 	//UnstructuredPersonalUserName string `xml:",omitempty"`
-	// xs:sequence ->
 	StructuredPersonalUserName   StructuredPersonalUserName
 	UnstructuredPersonalUserName string `xml:",omitempty"`
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                          *Ext
 }
 
 type PhysicalAddress struct {
-	// xs:choice ->
 	StructuredAddress   *StructuredAddress
 	UnstructuredAddress *UnstructuredAddress
-	// <- xs:choice
 	PhysicalAddressType SchemeValue
 	Ext                 *Ext
 }
@@ -1743,13 +1514,8 @@ type RequestId struct {
 }
 
 type RequestedItem struct {
-	// xs:choice ->
-	//ItemId *ItemId
-	// xs:sequence ->
-	RequestId RequestId
-	ItemId    *ItemId
-	// <- xs:sequence
-	// <- xs:choice
+	RequestId         RequestId
+	ItemId            *ItemId
 	RequestType       SchemeValue
 	RequestStatusType SchemeValue
 	DatePlaced        string // xs:dateTime
@@ -1764,11 +1530,9 @@ type RequestedItem struct {
 }
 
 type RequestedItemsCount struct {
-	// xs:choice ->
-	RequestType            *SchemeValue
-	CirculationStatus      *SchemeValue
-	ItemUseRestrictionType *SchemeValue
-	// <- xs:choice
+	RequestType             *SchemeValue
+	CirculationStatus       *SchemeValue
+	ItemUseRestrictionType  *SchemeValue
 	RequestedItemCountValue int // xs:nonnegativeInteger
 	Ext                     *Ext
 }
@@ -1800,51 +1564,31 @@ type SensitizationFlag struct {
 type ShippingInformation struct {
 	ShippingInstructions string `xml:",omitempty"`
 	ShippingNote         string `xml:",omitempty"`
-	// xs:choice ->
-	PhysicalAddress   *PhysicalAddress
-	ElectronicAddress *ElectronicAddress
-	// <- xs:choice
-	Ext *Ext
+	PhysicalAddress      *PhysicalAddress
+	ElectronicAddress    *ElectronicAddress
+	Ext                  *Ext
 }
 
 type StructuredAddress struct {
-	// xs:choice ->
 	LocationWithinBuilding string `xml:",omitempty"`
 	HouseName              string `xml:",omitempty"`
-	// xs:choice ->
-	//District string `xml:",omitempty"`
-	// xs:sequence ->
-	//PostOfficeBox string
-	//District      string `xml:",omitempty"`
-	// <- xs:sequence
-	// xs:sequence ->
-	Street        string `xml:",omitempty"`
-	PostOfficeBox string `xml:",omitempty"`
-	District      string `xml:",omitempty"`
-	// <- xs:sequence
-	// <- xs:choice
-	// <- xs:sequence
-	// xs:sequence ->
-	Line1 string
-	Line2 string `xml:",omitempty"`
-	// <- xs:sequence
-	Locality   string `xml:",omitempty"`
-	Region     string `xml:",omitempty"`
-	Country    string `xml:",omitempty"`
-	PostalCode string `xml:",omitempty"`
-	CareOf     string `xml:",omitempty"`
-	Ext        *Ext
+	Street                 string `xml:",omitempty"`
+	PostOfficeBox          string `xml:",omitempty"`
+	District               string `xml:",omitempty"`
+	Line1                  string
+	Line2                  string `xml:",omitempty"`
+	Locality               string `xml:",omitempty"`
+	Region                 string `xml:",omitempty"`
+	Country                string `xml:",omitempty"`
+	PostalCode             string `xml:",omitempty"`
+	CareOf                 string `xml:",omitempty"`
+	Ext                    *Ext
 }
 
 type StructuredHoldingsData struct {
-	// xs:choice ->
-	//HoldingsChronology *HoldingsChronology
-	// xs:sequence ->
 	HoldingsEnumeration HoldingsEnumeration
 	HoldingsChronology  *HoldingsChronology
-	// <- xs:sequence
-	// <- xs:choice
-	Ext *Ext
+	Ext                 *Ext
 }
 
 type StructuredPersonalUserName struct {
@@ -1871,19 +1615,15 @@ type UserAddressInformation struct {
 	UserAddressRoleType SchemeValue
 	ValidFromDate       string `xml:",omitempty"` // xs:dateTime
 	ValidToDate         string `xml:",omitempty"` // xs:dateTime
-	// xs:choice ->
-	PhysicalAddress   *PhysicalAddress
-	ElectronicAddress *ElectronicAddress
-	// <- xs:choice
-	Ext *Ext
+	PhysicalAddress     *PhysicalAddress
+	ElectronicAddress   *ElectronicAddress
+	Ext                 *Ext
 }
 
 type UserElementEnum struct {
-	// xs:sequence ->
 	AccountBalance AccountBalance
 	AccountDetails []AccountDetails
 	Ext            *Ext
-	// <- xs:sequence
 }
 
 type UserFiscalAccountDesired []byte
@@ -1896,14 +1636,12 @@ type UserId struct {
 }
 
 type UserNoticeDetails struct {
-	NoticeType    SchemeValue
-	NoticeContent string `xml:",omitempty"`
-	// xs:choice ->
+	NoticeType        SchemeValue
+	NoticeContent     string `xml:",omitempty"`
 	NoticeItem        []NoticeItem
 	UserFiscalAccount *UserFiscalAccount
 	UserPrivilege     *UserPrivilege
-	// <- xs:choice
-	Ext *Ext
+	Ext               *Ext
 }
 
 type UserOptionalFields struct {
