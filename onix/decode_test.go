@@ -5,29 +5,36 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 )
 
 func TestDecodeEncodeRoundtrip(t *testing.T) {
-	var msg Message
-
-	want, err := ioutil.ReadFile("testdata/sample.xml")
+	files, err := ioutil.ReadDir("testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, file := range files {
+		want, err := ioutil.ReadFile(filepath.Join("testdata", file.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var msg Message
 
-	if err := xml.Unmarshal(want, &msg); err != nil {
-		t.Fatal(err)
+		if err := xml.Unmarshal(want, &msg); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := xml.MarshalIndent(msg, "  ", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := ignoreWhiteSpaceEqual(want, got); err != nil {
+			t.Fatalf("%s: %v", file.Name(), err)
+		}
 	}
 
-	got, err := xml.MarshalIndent(msg, "  ", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := ignoreWhiteSpaceEqual(want, got); err != nil {
-		t.Fatal(err)
-	}
 }
 
 // ignoreWhiteSpaceEqual returns an error with the diff of the first which is

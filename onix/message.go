@@ -816,7 +816,7 @@ type Contributor struct {
 	TitlesBeforeNames       *TitlesBeforeNames
 	NamesBeforeKey          *NamesBeforeKey
 	PrefixToKey             *PrefixToKey
-	KeyNames                KeyNames
+	KeyNames                *KeyNames
 	BiographicalNote        []BiographicalNote
 	NamesAfterKey           *NamesAfterKey
 	SuffixToKey             *SuffixToKey
@@ -3299,7 +3299,7 @@ type PublishingDetail struct {
 	PublishingStatus     []PublishingStatus
 	PublishingDate       []PublishingDate
 	SalesRights          []SalesRights
-	ROWSalesRightsType   ROWSalesRightsType
+	ROWSalesRightsType   *ROWSalesRightsType
 	ProductContact       []ProductContact
 	LatestReprintNumber  *LatestReprintNumber
 	CopyrightStatement   []CopyrightStatement
@@ -4536,13 +4536,13 @@ type TitleDetail struct {
 type TitleElement struct {
 	SequenceNumber     *SequenceNumber
 	TitleElementLevel  TitleElementLevel
-	Subtitle           *Subtitle
 	PartNumber         *PartNumber
 	YearOfAnnual       *YearOfAnnual
 	TitlePrefix        *TitlePrefix
 	NoPrefix           *NoPrefix
 	TitleWithoutPrefix *TitleWithoutPrefix
 	TitleText          *TitleText
+	Subtitle           *Subtitle
 	GeneralAttributes
 }
 
