@@ -29,8 +29,6 @@ const (
 // String returns a string representation of a Format.
 func (f Format) String() string {
 	switch f {
-	case unknownFormat:
-		return "Unknown MARC format"
 	case MARC:
 		return "Standard MARC (ISO2709)"
 	case LineMARC:
@@ -38,7 +36,7 @@ func (f Format) String() string {
 	case MARCXML:
 		return "MarcXchange (ISO25577)"
 	default:
-		panic("unreachable")
+		return "Unknown MARC format"
 	}
 }
 
