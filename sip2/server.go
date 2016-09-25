@@ -2,7 +2,9 @@ package sip2
 
 import (
 	"bufio"
+	"bytes"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"time"
@@ -35,6 +37,9 @@ type Server struct {
 	// When validateMsg is true, incoming and outgoing SIP messages are validated
 	// according to the SIP2 specification, with any violation logged.
 	validateMsg bool
+
+	// Log all incoming requests and outgoing responses.
+	Log bool
 }
 
 // NewServer returns a new SIP2 Server using the given handler. It will return an
@@ -83,6 +88,9 @@ func (s *Server) handle(c net.Conn) {
 			return
 		}
 
+		if s.Log {
+			log.Printf("[%v] -> %s", c.RemoteAddr(), string(b))
+		}
 		req, err := Decode(b)
 		if err != nil {
 			println(err.Error())
@@ -95,6 +103,13 @@ func (s *Server) handle(c net.Conn) {
 			}
 			return
 		}
+		if s.Log {
+			// TODO avoid encoding twice
+			var b bytes.Buffer
+			resp.Encode(&b)
+			log.Printf("[%v] <- %s", c.RemoteAddr(), b.String())
+		}
+
 	}
 }
 
