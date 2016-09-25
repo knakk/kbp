@@ -262,6 +262,9 @@ func (mf MessageFactory) NewMessage(t msgType) Message {
 	switch msg.typ {
 	case MsgReqStatus, MsgReqResend, MsgReqLogin, MsgRespStatus, MsgRespLogin:
 		// No timestamp
+	case MsgReqCheckin:
+		msg.AddField(Field{Type: FieldReturnDate, Value: time.Now().Format(DateLayout)})
+		fallthrough
 	case MsgReqCheckout, MsgReqRenew:
 		msg.AddField(Field{Type: FieldNbDueDate, Value: now})
 		fallthrough
