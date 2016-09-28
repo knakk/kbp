@@ -53,7 +53,7 @@ func Decode(msg []byte) (Message, error) {
 
 	// Parse variable-length fields:
 outer:
-	for {
+	for len(msg) > p {
 		start := p + 2 // start of current field
 		f := codeToField[string(msg[p:start])]
 		p = start
