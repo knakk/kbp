@@ -79,6 +79,7 @@ func (s *Server) Run() {
 
 func (s *Server) handle(c net.Conn) {
 	r := bufio.NewReader(c)
+	defer c.Close()
 	for {
 		b, err := r.ReadBytes('\r')
 		if err != nil {
