@@ -813,6 +813,8 @@ type Contributor struct {
 	NameIdentifier          []NameIdentifier
 	PersonName              *PersonName
 	PersonNameInverted      *PersonNameInverted
+	CorporateName           *CorporateName
+	CorporateNameInverted   *CorporateNameInverted
 	TitlesBeforeNames       *TitlesBeforeNames
 	NamesBeforeKey          *NamesBeforeKey
 	PrefixToKey             *PrefixToKey
