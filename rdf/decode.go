@@ -171,11 +171,29 @@ func (d *Decoder) Decode() (Triple, error) {
 // If an error occurs, it will return it along with the graph parsed so far.
 func (d *Decoder) DecodeGraph() (*Graph, error) {
 	g := NewGraph()
+	bnodeTriples := make(map[BlankNode][]Triple)
+
 	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
 		if err != nil {
 			return g, err
 		}
+		switch t := tr.Subj.(type) {
+		case BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		switch t := tr.Obj.(type) {
+		case BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
 		g.Insert(tr)
+	}
+
+	// Insert triples with bnodes in batches by ID, so that they get assigned
+	// the same (new) blank node ID in the Graph
+	for _, trs := range bnodeTriples {
+		g.Insert(trs...)
 	}
 	return g, nil
 }
@@ -201,5 +219,6 @@ func (e *Encoder) EncodeGraph(g *Graph) error {
 			}
 		}
 	}
+
 	return e.w.Flush()
 }

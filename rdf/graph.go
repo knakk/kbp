@@ -1,6 +1,9 @@
 package rdf
 
-import "sort"
+import (
+	"sort"
+	"strconv"
+)
 
 // Graph is an in-memory representation of an RDF graph:
 // a colllection of triples which can be queried for subgraphs
@@ -69,26 +72,47 @@ func (g *Graph) Contains(tr Triple) bool {
 
 // Insert adds one or more triples to the Graph. It returns the number
 // of triples inserted which where not allready present.
-func (g *Graph) Insert(tr ...Triple) int {
+func (g *Graph) Insert(trs ...Triple) int {
 	n := 0
+	bnodes := make(map[string]string)
 outer:
-	for _, t := range tr {
-		if _, ok := g.nodes[t.Subj]; !ok {
+	for _, tr := range trs {
+		switch t := tr.Subj.(type) {
+		case BlankNode:
+			if newID, ok := bnodes[t.id]; ok {
+				tr.Subj = BlankNode{id: newID}
+			} else {
+				g.nextID++
+				bnodes[t.id] = strconv.Itoa(g.nextID)
+				tr.Subj = BlankNode{id: bnodes[t.id]}
+			}
+		}
+		switch t := tr.Obj.(type) {
+		case BlankNode:
+			if newID, ok := bnodes[t.id]; ok {
+				tr.Obj = BlankNode{id: newID}
+			} else {
+				g.nextID++
+				bnodes[t.id] = strconv.Itoa(g.nextID)
+				tr.Obj = BlankNode{id: bnodes[t.id]}
+			}
+		}
+		if _, ok := g.nodes[tr.Subj]; !ok {
 			// new subject
-			g.nodes[t.Subj] = make(map[URI][]Term)
+			g.nodes[tr.Subj] = make(map[URI][]Term)
 		}
-		if _, ok := g.nodes[t.Subj][t.Pred]; !ok {
+		if _, ok := g.nodes[tr.Subj][tr.Pred]; !ok {
 			// new predicate
-			g.nodes[t.Subj][t.Pred] = make([]Term, 0, 1)
+			g.nodes[tr.Subj][tr.Pred] = make([]Term, 0, 1)
 		}
-		for _, o := range g.nodes[t.Subj][t.Pred] {
-			if o == t.Obj {
+		for _, o := range g.nodes[tr.Subj][tr.Pred] {
+			if o == tr.Obj {
 				// triple already in graph
 				continue outer
 			}
 		}
 		// add object
-		g.nodes[t.Subj][t.Pred] = append(g.nodes[t.Subj][t.Pred], t.Obj)
+		g.nodes[tr.Subj][tr.Pred] = append(g.nodes[tr.Subj][tr.Pred], tr.Obj)
 		n++
 	}
 	return n
