@@ -14,24 +14,24 @@ func TestGraphIsomorphism(t *testing.T) {
 			true,
 		},
 		{
-			`<a> <b> "c" .`,
-			`<a> <b> "c" .`,
+			`<s> <p> "o" .`,
+			`<s> <p> "o" .`,
 			true,
 		},
 		{
-			`<a> <b> "c" .`,
-			`<a> <b> "c"^^<http://www.w3.org/2001/XMLSchema#string> .`,
+			`<s> <p> "o" .`,
+			`<s> <p> "o"^^<http://www.w3.org/2001/XMLSchema#string> .`,
 			true,
 		},
 		{
-			`<a> <b> "c" .`,
-			`<a> <b> "C" .`,
+			`<s> <p> "o" .`,
+			`<s> <p> "o2" .`,
 			false,
 		},
 		{
-			`<a> <b> "c" .
-			 <a> <b> "xyz" .`,
-			`<a> <b> "c" .`,
+			`<s> <p> "o" .
+			 <s> <p> "xyz" .`,
+			`<s> <p> "o" .`,
 			false,
 		},
 		{
@@ -45,14 +45,54 @@ func TestGraphIsomorphism(t *testing.T) {
 			true,
 		},
 		{
-			`<a> <b> _:a .`,
-			`<a> <b> _:a .`,
+			`<s> <p> _:a .`,
+			`<s> <p> _:a .`,
 			true,
 		},
 		{
-			`<a> <b> _:a .`,
-			`<a> <b> _:b .`,
+			`<s> <p> _:a .`,
+			`<s> <p> _:b .`,
 			true,
+		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" . `,
+			`<s> <p> _:b .
+			 _:b <p> "xyz" . `,
+			true,
+		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" .
+			 _:a <p> "æøå" . `,
+			`<s> <p> _:a .
+			_:a <p> "xyz" . `,
+			false,
+		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" .
+			 _:a <p> "æøå" .`,
+			`<s> <p> _:b .
+			 _:b <p> "xyz" .
+			 _:b <p> "æøå" .`,
+			true,
+		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" . `,
+			`<s> <p> _:a .
+			 _:a <p> "XYZ" . `,
+			false,
+		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" .
+			 _:a <p> "æøå" .`,
+			`<s> <p> _:b .
+			 _:b <p> "xyz" .
+			 _:b <p> "æøå!!!" .`,
+			false,
 		},
 	}
 
@@ -60,7 +100,7 @@ func TestGraphIsomorphism(t *testing.T) {
 		a := mustDecode(test.a)
 		b := mustDecode(test.b)
 		if got := a.Eq(b); got != test.eq {
-			t.Errorf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
+			t.Fatalf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
 		}
 	}
 }

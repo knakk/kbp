@@ -95,6 +95,10 @@ outer:
 }
 
 // Eq checks if two graphs are equal (isomorphic).
+//
+// The algorithm for checking for isomporphism is rather naive and
+// inefficient, and will be slow for large graphs with lots of
+// blank nodes. For graphs with few blank nodes it will be fast enough.
 func (g *Graph) Eq(other *Graph) bool {
 	if g.Size() != other.Size() {
 		return false
@@ -130,7 +134,7 @@ func (g *Graph) Eq(other *Graph) bool {
 				return other.nodes[subj][pred][i].String() < other.nodes[subj][pred][j].String()
 			})
 			for i, obj := range objs {
-				switch t := subj.(type) {
+				switch t := obj.(type) {
 				case BlankNode:
 					aBNodesAsObj[t] = append(aBNodesAsObj[t],
 						Triple{Subj: subj, Pred: pred, Obj: obj})
@@ -152,7 +156,7 @@ func (g *Graph) Eq(other *Graph) bool {
 		}
 		for pred, objs := range po {
 			for _, obj := range objs {
-				switch t := subj.(type) {
+				switch t := obj.(type) {
 				case BlankNode:
 					bBNodesAsObj[t] = append(bBNodesAsObj[t],
 						Triple{Subj: subj, Pred: pred, Obj: obj})
@@ -170,20 +174,62 @@ func (g *Graph) Eq(other *Graph) bool {
 		return false
 	}
 
-	matchA := make(map[BlankNode]bool)
-	matchB := make(map[BlankNode]bool)
-	for _, aNode := range aBNodes {
-		for _, bNode := range bBNodes {
-			if len(other.nodes[bNode]) == len(g.nodes[aNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
-				// check if we have a match
-			}
+	nAEmptyBNodes := 0
+	nBEmptyBNodes := 0
+	for bnode, _ := range aBNodesAsObj {
+		if _, ok := g.nodes[bnode]; !ok {
+			nAEmptyBNodes++
 		}
 	}
-
-	if len(matchA) != len(matchB) || len(matchA) != len(aBNodes) {
+	for bnode, _ := range bBNodesAsObj {
+		if _, ok := other.nodes[bnode]; !ok {
+			nBEmptyBNodes++
+		}
+	}
+	if nAEmptyBNodes != nBEmptyBNodes {
 		return false
 	}
 
+	matchA := make(map[BlankNode]bool)
+	matchB := make(map[BlankNode]bool)
+outer:
+	for _, aNode := range aBNodes {
+		for _, bNode := range bBNodes {
+			if len(other.nodes[bNode]) == len(g.nodes[aNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
+				if isMatch(g, other, aNode, bNode, aBNodesAsObj[aNode], bBNodesAsObj[bNode]) {
+					matchA[aNode] = true
+					matchB[bNode] = true
+					continue outer
+				}
+			}
+			// no match was found for aNode in range bBNodes loop
+			return false
+		}
+	}
+
+	//log.Printf("%d == %d\n", len(matchA), len(aBNodes))
+	return len(matchA) == len(aBNodes)
+}
+
+func isMatch(a, b *Graph, aNode, bNode BlankNode, aAsObj, bAsObj []Triple) bool {
+	for pred, objs := range a.nodes[aNode] {
+		if _, ok := b.nodes[bNode][pred]; !ok {
+			return false
+		}
+		if len(objs) != len(b.nodes[bNode][pred]) {
+			return false
+		}
+		// objs are assumed to allready be sorted
+		for i, obj := range objs {
+			switch obj.(type) {
+			case BlankNode:
+				panic("TODO handle blank node pointing to anohter blanknode")
+			}
+			if !obj.Eq(b.nodes[bNode][pred][i]) {
+				return false
+			}
+		}
+	}
 	return true
 }
 
