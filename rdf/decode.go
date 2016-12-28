@@ -180,14 +180,17 @@ func (d *Decoder) DecodeGraph() (*Graph, error) {
 	return g, nil
 }
 
+// Encoder is a streaming N-Triples encoder.
 type Encoder struct {
 	w *bufio.Writer
 }
 
+// NewEncoder returns a new Encoder.
 func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: bufio.NewWriter(w)}
 }
 
+// EncodeGraph serializes the given Graph in N-Triples format.
 func (e *Encoder) EncodeGraph(g *Graph) error {
 	for s, po := range g.nodes {
 		for p, objs := range po {

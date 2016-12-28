@@ -24,8 +24,7 @@ func mustEncode(g *Graph) string {
 }
 
 func TestDecode(t *testing.T) {
-	// Testcase lifted from W3C testsuite at:
-	// https://www.w3.org/2013/N-TriplesTests/
+	// Testcase lifted from W3C testsuite at: https://www.w3.org/2013/N-TriplesTests/
 	const input = `
 <http://example.org/resource1> <http://example.org/property> <http://example.org/resource2> .
 _:anon <http://example.org/property> <http://example.org/resource2> .
@@ -78,10 +77,8 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 # Typed Literals
 <http://example.org/resource32> <http://example.org/property> "abc"^^<http://example.org/datatype1> .
 `
-
 	g := mustDecode(input)
 	nt := mustEncode(g)
-
 	g2 := mustDecode(nt)
 
 	if !g.Eq(g2) {

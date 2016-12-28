@@ -120,6 +120,7 @@ runeSwitch:
 	case '#':
 		if !s.scanTo('\n') {
 			tok = tokenEOF
+			break runeSwitch
 		}
 		s.ignore()
 		tok = tokenEOL

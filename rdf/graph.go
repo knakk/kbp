@@ -176,12 +176,12 @@ func (g *Graph) Eq(other *Graph) bool {
 
 	nAEmptyBNodes := 0
 	nBEmptyBNodes := 0
-	for bnode, _ := range aBNodesAsObj {
+	for bnode := range aBNodesAsObj {
 		if _, ok := g.nodes[bnode]; !ok {
 			nAEmptyBNodes++
 		}
 	}
-	for bnode, _ := range bBNodesAsObj {
+	for bnode := range bBNodesAsObj {
 		if _, ok := other.nodes[bnode]; !ok {
 			nBEmptyBNodes++
 		}
@@ -207,7 +207,6 @@ outer:
 		}
 	}
 
-	//log.Printf("%d == %d\n", len(matchA), len(aBNodes))
 	return len(matchA) == len(aBNodes)
 }
 
@@ -223,7 +222,7 @@ func isMatch(a, b *Graph, aNode, bNode BlankNode, aAsObj, bAsObj []Triple) bool 
 		for i, obj := range objs {
 			switch obj.(type) {
 			case BlankNode:
-				panic("TODO handle blank node pointing to anohter blanknode")
+				panic("TODO handle blank node pointing to another blank node")
 			}
 			if !obj.Eq(b.nodes[bNode][pred][i]) {
 				return false
