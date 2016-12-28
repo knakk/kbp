@@ -136,7 +136,7 @@ func (d *Decoder) Decode() (Triple, error) {
 		switch next.Type {
 		case tokenDot:
 			// plain literal xsd:String
-			tr.Obj = Literal{val: obj, dt: URI{val: "http://www.w3.org/2001/XMLSchema#String"}}
+			tr.Obj = Literal{val: obj, dt: URI{val: "http://www.w3.org/2001/XMLSchema#string"}}
 			d.ignoreLine()
 			return tr, nil
 		case tokenLangTag:

@@ -94,19 +94,23 @@ outer:
 	return n
 }
 
-// Eq checks if two graphs contains the same triples (if they are isomorphic).
+// Eq checks if two graphs are equal (isomorphic).
 func (g *Graph) Eq(other *Graph) bool {
 	if g.Size() != other.Size() {
 		return false
 	}
+
 	var (
-		gBNodes []BlankNode
-		//otherBNodes []BlankNode
+		aBNodes []BlankNode
+		bBNodes []BlankNode
 	)
+	aBNodesAsObj := make(map[BlankNode][]Triple)
+	bBNodesAsObj := make(map[BlankNode][]Triple)
+
 	for subj, po := range g.nodes {
 		switch t := subj.(type) {
 		case BlankNode:
-			gBNodes = append(gBNodes, t)
+			aBNodes = append(aBNodes, t)
 			continue
 		}
 		if _, ok := other.nodes[subj]; !ok {
@@ -126,9 +130,10 @@ func (g *Graph) Eq(other *Graph) bool {
 				return other.nodes[subj][pred][i].String() < other.nodes[subj][pred][j].String()
 			})
 			for i, obj := range objs {
-				switch subj.(type) {
+				switch t := subj.(type) {
 				case BlankNode:
-					// TODO: store bnode as obj
+					aBNodesAsObj[t] = append(aBNodesAsObj[t],
+						Triple{Subj: subj, Pred: pred, Obj: obj})
 					continue
 				}
 				if obj != other.nodes[subj][pred][i] {
@@ -136,6 +141,47 @@ func (g *Graph) Eq(other *Graph) bool {
 				}
 			}
 		}
+	}
+
+	// collect bnodes from other graph
+	for subj, po := range other.nodes {
+		switch t := subj.(type) {
+		case BlankNode:
+			bBNodes = append(bBNodes, t)
+			continue
+		}
+		for pred, objs := range po {
+			for _, obj := range objs {
+				switch t := subj.(type) {
+				case BlankNode:
+					bBNodesAsObj[t] = append(bBNodesAsObj[t],
+						Triple{Subj: subj, Pred: pred, Obj: obj})
+					continue
+				}
+			}
+		}
+	}
+
+	if len(aBNodes) != len(bBNodes) {
+		return false
+	}
+
+	if len(aBNodesAsObj) != len(bBNodesAsObj) {
+		return false
+	}
+
+	matchA := make(map[BlankNode]bool)
+	matchB := make(map[BlankNode]bool)
+	for _, aNode := range aBNodes {
+		for _, bNode := range bBNodes {
+			if len(other.nodes[bNode]) == len(g.nodes[aNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
+				// check if we have a match
+			}
+		}
+	}
+
+	if len(matchA) != len(matchB) || len(matchA) != len(aBNodes) {
+		return false
 	}
 
 	return true

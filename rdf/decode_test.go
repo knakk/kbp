@@ -81,7 +81,6 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 
 	g := mustDecode(input)
 	nt := mustEncode(g)
-	t.Log(nt)
 
 	g2 := mustDecode(nt)
 

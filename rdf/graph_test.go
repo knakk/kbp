@@ -20,7 +20,7 @@ func TestGraphIsomorphism(t *testing.T) {
 		},
 		{
 			`<a> <b> "c" .`,
-			`<a> <b> "c"^^<http://www.w3.org/2001/XMLSchema#String> .`,
+			`<a> <b> "c"^^<http://www.w3.org/2001/XMLSchema#string> .`,
 			true,
 		},
 		{
@@ -34,13 +34,33 @@ func TestGraphIsomorphism(t *testing.T) {
 			`<a> <b> "c" .`,
 			false,
 		},
+		{
+			`_:a <p> "1" .`,
+			`_:a <p> "1" .`,
+			true,
+		},
+		{
+			`_:a <p> "1" .`,
+			`_:b <p> "1" .`,
+			true,
+		},
+		{
+			`<a> <b> _:a .`,
+			`<a> <b> _:a .`,
+			true,
+		},
+		{
+			`<a> <b> _:a .`,
+			`<a> <b> _:b .`,
+			true,
+		},
 	}
 
 	for _, test := range tests {
 		a := mustDecode(test.a)
 		b := mustDecode(test.b)
 		if got := a.Eq(b); got != test.eq {
-			t.Errorf("%v \nEq\n %v = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
+			t.Errorf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
 		}
 	}
 }
