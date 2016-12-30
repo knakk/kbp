@@ -94,6 +94,17 @@ func TestGraphIsomorphism(t *testing.T) {
 			 _:b <p> "æøå!!!" .`,
 			false,
 		},
+		{
+			`<s> <p> _:a .
+			 _:a <p> "xyz" .
+			 <s> <p> _:a2 .
+			 _:a2 <p> "123" .`,
+			`<s> <p> _:a .
+			 _:a <p> "xyz" .
+			 <s> <p> _:a2 .
+			 _:a2 <p> "123" .`,
+			true,
+		},
 	}
 
 	for _, test := range tests {

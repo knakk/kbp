@@ -46,12 +46,12 @@ func (b BlankNode) String() string { return "_:" + b.id }
 
 // Eq checks for equality against another RDF term.
 //
-// Note that comparing a single BNode against another BNode does not make
-// sense without considering the whole Graphs they belong to.
+// A BNode is always equal to another BNode, as it does not
+// make sense to compare without the graph it is part of.
 func (b BlankNode) Eq(other Term) bool {
-	switch t := other.(type) {
+	switch other.(type) {
 	case BlankNode:
-		return b.id == t.id
+		return true
 	default:
 		return false
 	}
@@ -156,4 +156,9 @@ type TriplePattern struct {
 	Subj subject
 	Pred predicate
 	Obj  object
+}
+
+// Eq checks if two triples are equal.
+func (tr Triple) Eq(other Triple) bool {
+	return tr.Subj.Eq(other.Subj) && tr.Pred.Eq(other.Pred) && tr.Obj.Eq(other.Obj)
 }

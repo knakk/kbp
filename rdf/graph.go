@@ -214,27 +214,53 @@ func (g *Graph) Eq(other *Graph) bool {
 		return false
 	}
 
+	// Sort triples with Bnode in obj position here,
+	// as not to risk sort them multiple times in isMatch function.
+	for _, objs := range aBNodesAsObj {
+		sort.Slice(objs, func(i, j int) bool {
+			return objs[i].String() < objs[j].String()
+		})
+	}
+	for _, objs := range bBNodesAsObj {
+		sort.Slice(objs, func(i, j int) bool {
+			return objs[i].String() < objs[j].String()
+		})
+	}
+
 	matchA := make(map[BlankNode]bool)
 	matchB := make(map[BlankNode]bool)
 outer:
 	for _, aNode := range aBNodes {
 		for _, bNode := range bBNodes {
-			if len(other.nodes[bNode]) == len(g.nodes[aNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
+			if matchB[bNode] {
+				continue
+			}
+			if len(g.nodes[aNode]) == len(other.nodes[bNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
 				if isMatch(g, other, aNode, bNode, aBNodesAsObj[aNode], bBNodesAsObj[bNode]) {
 					matchA[aNode] = true
 					matchB[bNode] = true
 					continue outer
 				}
 			}
-			// no match was found for aNode in range bBNodes loop
-			return false
 		}
+		// no match was found for aNode in range bBNodes loop
+		return false
 	}
 
 	return len(matchA) == len(aBNodes)
 }
 
 func isMatch(a, b *Graph, aNode, bNode BlankNode, aAsObj, bAsObj []Triple) bool {
+
+	// Check for match in obj position first, as it is likely
+	// less triples to compare, so we can return early if it's no match.
+	for i, tr := range aAsObj {
+		// Triples are allready sorted
+		if !tr.Eq(bAsObj[i]) {
+			return false
+		}
+	}
+
 	for pred, objs := range a.nodes[aNode] {
 		if _, ok := b.nodes[bNode][pred]; !ok {
 			return false
