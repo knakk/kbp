@@ -329,7 +329,7 @@ var (
 				FieldStatusUpdateOK,
 				FieldOffLineOK,
 				FieldTimeoutPeriod,
-				FieldRetriesAllowd,
+				FieldRetriesAllowed,
 				FieldDateTimeSync,
 				FieldProtocolVersion,
 			},
@@ -573,7 +573,7 @@ var (
 		FieldRenewalOK:             1,
 		FieldRenewedCount:          4,
 		FieldResentisize:           1,
-		FieldRetriesAllowd:         3,
+		FieldRetriesAllowed:        3,
 		FieldReturnDate:            18,
 		FieldRenewalPolicy:         1,
 		FieldSecurityInhibit:       1,
@@ -628,7 +628,7 @@ var (
 		FieldRenewalOK:             rxpYesNo,
 		FieldRenewedCount:          rxpDigits, // {4}
 		FieldResentisize:           rxpYesNo,
-		FieldRetriesAllowd:         rxpDigits, // {3}
+		FieldRetriesAllowed:        rxpDigits, // {3}
 		FieldReturnDate:            rxpTimestamp,
 		FieldRenewalPolicy:         rxpYesNo,
 		FieldSecurityMarker:        rxpDigits, // {2}

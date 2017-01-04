@@ -375,7 +375,7 @@ const (
 	FieldRenewalOK             // 1 char: Y or N
 	FieldRenewedCount          // 4 char: 0000 to 9999
 	FieldResentisize           // 1 char: Y or N
-	FieldRetriesAllowd         // 3 char: ?
+	FieldRetriesAllowed        // 3 char: ?
 	FieldReturnDate            // 18 char: YYYYMMDDZZZZHHMMSS
 	FieldRenewalPolicy         // 1 char: Y or N
 	FieldSecurityMarker        // 2 char: 00=other, 01=none, 02,03=3M specific
