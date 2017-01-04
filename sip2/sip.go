@@ -253,13 +253,15 @@ func NewMessageFactory(defaults ...Field) MessageFactory {
 // NewMessage returns a new Message, with the default values defined in the MessageFactory, but
 // only when applicable to the message type.
 //
-// In addition, the fields FieldTransactionDate and FieldNbDueDate are set with the current timestamp,
-// again, only when required by given the message type.
+// In addition, the fields FieldDateTieSync, FieldTransactionDate and FieldNbDueDate are set with
+// the current timestamp when required by given the message type.
 func (mf MessageFactory) NewMessage(t msgType) Message {
 	now := time.Now().Format(DateLayout)
 
 	msg := NewMessage(t)
 	switch msg.typ {
+	case MsgReqStatus:
+		msg.AddField(Field{Type: FieldDateTimeSync, Value: time.Now().Format(DateLayout)})
 	case MsgReqStatus, MsgReqResend, MsgReqLogin, MsgRespStatus, MsgRespLogin:
 		// No timestamp
 	case MsgReqCheckin:
