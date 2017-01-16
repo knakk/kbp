@@ -8,6 +8,9 @@ import (
 // Graph is an in-memory representation of an RDF graph:
 // a colllection of triples which can be queried for subgraphs
 // and mutated with inserting and deleting triples.
+//
+// A Graph is not thread-safe; concurrent writes/reads must be
+// synchronized.
 type Graph struct {
 	// The graph is stored internally as a map of subjects to a map of
 	// predicates to a slice of objects.

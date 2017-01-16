@@ -1,6 +1,7 @@
 package rdf
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -62,6 +63,24 @@ type URI struct {
 	val string
 }
 
+// NewURI creates and returns an URI from the given string, along with an error if it's not valid.
+func NewURI(uri string) (URI, error) {
+	// A valid URI cannot be empty or contain any of disallowed characters.
+	// http://www.ietf.org/rfc/rfc3987.txt
+	if len(uri) == 0 {
+		return URI{}, errors.New("URI cannot be empty")
+	}
+	for _, r := range uri {
+		if r >= '\x00' && r <= '\x20' {
+			return URI{}, fmt.Errorf("disallowed character in URI: %q", r)
+		}
+		switch r {
+		case '<', '>', '"', '{', '}', '|', '^', '`', '\\':
+			return URI{}, fmt.Errorf("disallowed character in URI: %q", r)
+		}
+	}
+	return URI{val: uri}, nil
+}
 func (u URI) validAsTerm()      {}
 func (u URI) validAsPredicate() {}
 func (u URI) validAsSubject()   {}
@@ -85,6 +104,21 @@ type Literal struct {
 	val  string
 	lang string
 	dt   URI
+}
+
+func NewStrLiteral(s string) Literal {
+	return Literal{
+		val: s,
+		dt:  URI{val: "http://www.w3.org/2001/XMLSchema#string"},
+	}
+}
+
+func NewLangLiteral(s string, lang string) Literal {
+	return Literal{
+		val:  s,
+		lang: lang,
+		dt:   URI{val: "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"},
+	}
 }
 
 func (l Literal) validAsTerm()   {}
