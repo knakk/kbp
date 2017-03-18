@@ -6,50 +6,71 @@ import (
 	"strconv"
 )
 
-// Triple represent an RDF Triple, also known as an RDF statement.
+const (
+	xsdString     = "http://www.w3.org/2001/XMLSchema#string"
+	rdfLangString = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+)
+
+// A Triple is the basic unit of information in an RDF graph.
+// By itself, a triple is a statement describing a fact about a resource (subject),
+// stating that it has a property (predicate) with a specific value (object).
+//
+// In the context of a RDF graph, a triple can be seen as two nodes with
+// an edge between them.
 type Triple struct {
-	Subj Subject
-	Pred URI
-	Obj  Term
+
+	// The subject denotes the node which the triple statement is about.
+	// It can be either named or blank.
+	Subject SubjectNode
+
+	// The predicate denotes the property of the subject. It is always named.
+	Predicate NamedNode
+
+	// The object denotes the value of the property. It can be any kind of node.
+	Object Node
 }
 
-// String returns a string representation of a Triple in N-Triples format.
+// String returns a string representation of a triple in N-Triples format.
 func (t Triple) String() string {
-	return fmt.Sprintf("%s %s %s .\n", t.Subj, t.Pred, t.Obj)
+	return fmt.Sprintf("%s %s %s .\n", t.Subject, t.Predicate, t.Object)
 }
 
-// Term is the interface for an RDF Term, which can be either an URI,
-// Literal or Blank Node.
-type Term interface {
-	Eq(Term) bool
+// Eq tests if two triples are equal.
+func (t Triple) Eq(other Triple) bool {
+	return t.Subject.Eq(other.Subject) && t.Predicate.Eq(other.Predicate) && t.Object.Eq(other.Object)
+}
+
+// Node represents a node in an RDF graph.
+type Node interface {
+	Eq(Node) bool // TODO is this that usefull?
 	String() string
 
-	validAsTerm()
+	validAsNode()
 }
 
-// Subject represents the subject of a Triple, which can be either
-// an URI or a Blank Node.
-type Subject interface {
-	Term
+// SubjectNode represents the subject of a triple, which can be either
+// a named node or a blank node.
+type SubjectNode interface {
+	Node
 	subject
 }
 
-// BlankNode represents a Blank Node; that is, an unnamed RDF node.
+// BlankNode represents a blank node; that is, an unnamed RDF node.
 type BlankNode struct {
 	id string
 }
 
-func (b BlankNode) validAsTerm()    {}
+func (b BlankNode) validAsNode()    {}
 func (b BlankNode) validAsSubject() {}
 
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
 
-// Eq checks for equality against another RDF term.
+// Eq tests for equality against another RDF term.
 //
-// A BNode is always equal to another BNode, as it does not
-// make sense to compare without the graph it is part of.
-func (b BlankNode) Eq(other Term) bool {
+// Comparing a blank node with another will always return true. A blank
+// really node only carries information in relation to it's position in a graph.
+func (b BlankNode) Eq(other Node) bool {
 	switch other.(type) {
 	case BlankNode:
 		return true
@@ -58,41 +79,41 @@ func (b BlankNode) Eq(other Term) bool {
 	}
 }
 
-// URI represent an URI; a globally unique named RDF node.
-type URI struct {
+// NamedNode represent an named node; an RDF node identified by an URI.
+type NamedNode struct {
 	val string
 }
 
-// NewURI creates and returns an URI from the given string, along with an error if it's not valid.
-func NewURI(uri string) (URI, error) {
+// NewNamedNode creates and returns an URI from the given string, along with an error if it's not valid.
+func NewNamedNode(uri string) (NamedNode, error) {
 	// A valid URI cannot be empty or contain any of disallowed characters.
 	// http://www.ietf.org/rfc/rfc3987.txt
 	if len(uri) == 0 {
-		return URI{}, errors.New("URI cannot be empty")
+		return NamedNode{}, errors.New("URI cannot be empty")
 	}
 	for _, r := range uri {
 		if r >= '\x00' && r <= '\x20' {
-			return URI{}, fmt.Errorf("disallowed character in URI: %q", r)
+			return NamedNode{}, fmt.Errorf("disallowed character in URI: %q", r)
 		}
 		switch r {
 		case '<', '>', '"', '{', '}', '|', '^', '`', '\\':
-			return URI{}, fmt.Errorf("disallowed character in URI: %q", r)
+			return NamedNode{}, fmt.Errorf("disallowed character in URI: %q", r)
 		}
 	}
-	return URI{val: uri}, nil
+	return NamedNode{val: uri}, nil
 }
-func (u URI) validAsTerm()      {}
-func (u URI) validAsPredicate() {}
-func (u URI) validAsSubject()   {}
-func (u URI) validAsObject()    {}
+func (u NamedNode) validAsNode()      {}
+func (u NamedNode) validAsPredicate() {}
+func (u NamedNode) validAsSubject()   {}
+func (u NamedNode) validAsObject()    {}
 
 // String returns a string representation of an URI in N-Triples format.
-func (u URI) String() string { return "<" + u.val + ">" }
+func (u NamedNode) String() string { return "<" + u.val + ">" }
 
-// Eq checks for euality against another RDF term.
-func (u URI) Eq(other Term) bool {
+// Eq tests for equality against another RDF term.
+func (u NamedNode) Eq(other Node) bool {
 	switch t := other.(type) {
-	case URI:
+	case NamedNode:
 		return u.val == t.val
 	default:
 		return false
@@ -103,29 +124,31 @@ func (u URI) Eq(other Term) bool {
 type Literal struct {
 	val  string
 	lang string
-	dt   URI
+	dt   NamedNode
 }
 
+// NewStrLiteral returns a new string literal.
 func NewStrLiteral(s string) Literal {
 	return Literal{
 		val: s,
-		dt:  URI{val: "http://www.w3.org/2001/XMLSchema#string"},
+		dt:  NamedNode{val: xsdString},
 	}
 }
 
+// NewLangLiteral returns a new language-tagged literal.
 func NewLangLiteral(s string, lang string) Literal {
 	return Literal{
 		val:  s,
 		lang: lang,
-		dt:   URI{val: "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"},
+		dt:   NamedNode{val: rdfLangString},
 	}
 }
 
-func (l Literal) validAsTerm()   {}
+func (l Literal) validAsNode()   {}
 func (l Literal) validAsObject() {}
 
 // DataType returns the Datatype of a Literal.
-func (l Literal) DataType() URI { return l.dt }
+func (l Literal) DataType() NamedNode { return l.dt }
 
 // Lang returns the language tag of a Literal, or an empty
 // string if it is not a rdf:langString.
@@ -136,14 +159,14 @@ func (l Literal) String() string {
 	if (l.lang) != "" {
 		return fmt.Sprintf("%q@%s", l.val, l.lang)
 	}
-	if (l.dt.val) == "http://www.w3.org/2001/XMLSchema#string" {
+	if (l.dt.val) == xsdString {
 		return strconv.Quote(l.val)
 	}
 	return fmt.Sprintf("%q^^%s", l.val, l.dt)
 }
 
-// Eq checks for euality against another RDF term.
-func (l Literal) Eq(other Term) bool {
+// Eq tests for equality against another RDF term.
+func (l Literal) Eq(other Node) bool {
 	switch t := other.(type) {
 	case Literal:
 		return l.val == t.val &&
@@ -153,16 +176,6 @@ func (l Literal) Eq(other Term) bool {
 		return false
 	}
 }
-
-// func (l Literal) LangTag() (language.Tag, error) { return language.Parse(l.l) }
-
-// func (l Literal) Int() (int, bool)
-// func (l Literal) String() (string, bool)
-// func (l Literal) Time() time.Time
-
-// func (l Literal) MustInt() int
-// func (l Literal) MustString() string
-// func (l Literal) MustTime() time.Time
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
@@ -190,9 +203,4 @@ type TriplePattern struct {
 	Subj subject
 	Pred predicate
 	Obj  object
-}
-
-// Eq checks if two triples are equal.
-func (tr Triple) Eq(other Triple) bool {
-	return tr.Subj.Eq(other.Subj) && tr.Pred.Eq(other.Pred) && tr.Obj.Eq(other.Obj)
 }

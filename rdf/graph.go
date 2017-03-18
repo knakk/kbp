@@ -14,7 +14,7 @@ import (
 type Graph struct {
 	// The graph is stored internally as a map of subjects to a map of
 	// predicates to a slice of objects.
-	nodes map[Subject]map[URI][]Term
+	nodes map[SubjectNode]map[NamedNode][]Node
 
 	// nextID is the next unique integer to be used as Blank Node ID.
 	nextID int
@@ -23,7 +23,7 @@ type Graph struct {
 // NewGraph returns a new Graph.
 func NewGraph() *Graph {
 	return &Graph{
-		nodes: make(map[Subject]map[URI][]Term),
+		nodes: make(map[SubjectNode]map[NamedNode][]Node),
 	}
 }
 
@@ -45,9 +45,9 @@ func (g *Graph) Triples() []Triple {
 		for p, objs := range po {
 			for _, o := range objs {
 				res = append(res, Triple{
-					Subj: s,
-					Pred: p,
-					Obj:  o,
+					Subject:   s,
+					Predicate: p,
+					Object:    o,
 				})
 			}
 		}
@@ -58,15 +58,15 @@ func (g *Graph) Triples() []Triple {
 // Contains returns true if the given Triple is present in Graph, otherwise false.
 // TODO handle Blank Node subj/obj.
 func (g *Graph) Contains(tr Triple) bool {
-	if _, ok := g.nodes[tr.Subj]; !ok {
+	if _, ok := g.nodes[tr.Subject]; !ok {
 		return false
 	}
-	if _, ok := g.nodes[tr.Subj][tr.Pred]; !ok {
+	if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
 		return false
 	}
 
-	for _, o := range g.nodes[tr.Subj][tr.Pred] {
-		if o.Eq(tr.Obj) {
+	for _, o := range g.nodes[tr.Subject][tr.Predicate] {
+		if o.Eq(tr.Object) {
 			return true
 		}
 	}
@@ -81,42 +81,42 @@ func (g *Graph) Insert(trs ...Triple) int {
 	bnodes := make(map[string]string)
 outer:
 	for _, tr := range trs {
-		switch t := tr.Subj.(type) {
+		switch t := tr.Subject.(type) {
 		case BlankNode:
 			if newID, ok := bnodes[t.id]; ok {
-				tr.Subj = BlankNode{id: newID}
+				tr.Subject = BlankNode{id: newID}
 			} else {
 				g.nextID++
 				bnodes[t.id] = strconv.Itoa(g.nextID)
-				tr.Subj = BlankNode{id: bnodes[t.id]}
+				tr.Subject = BlankNode{id: bnodes[t.id]}
 			}
 		}
-		switch t := tr.Obj.(type) {
+		switch t := tr.Object.(type) {
 		case BlankNode:
 			if newID, ok := bnodes[t.id]; ok {
-				tr.Obj = BlankNode{id: newID}
+				tr.Object = BlankNode{id: newID}
 			} else {
 				g.nextID++
 				bnodes[t.id] = strconv.Itoa(g.nextID)
-				tr.Obj = BlankNode{id: bnodes[t.id]}
+				tr.Object = BlankNode{id: bnodes[t.id]}
 			}
 		}
-		if _, ok := g.nodes[tr.Subj]; !ok {
+		if _, ok := g.nodes[tr.Subject]; !ok {
 			// new subject
-			g.nodes[tr.Subj] = make(map[URI][]Term)
+			g.nodes[tr.Subject] = make(map[NamedNode][]Node)
 		}
-		if _, ok := g.nodes[tr.Subj][tr.Pred]; !ok {
+		if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
 			// new predicate
-			g.nodes[tr.Subj][tr.Pred] = make([]Term, 0, 1)
+			g.nodes[tr.Subject][tr.Predicate] = make([]Node, 0, 1)
 		}
-		for _, o := range g.nodes[tr.Subj][tr.Pred] {
-			if o == tr.Obj {
+		for _, o := range g.nodes[tr.Subject][tr.Predicate] {
+			if o == tr.Object {
 				// triple already in graph
 				continue outer
 			}
 		}
 		// add object
-		g.nodes[tr.Subj][tr.Pred] = append(g.nodes[tr.Subj][tr.Pred], tr.Obj)
+		g.nodes[tr.Subject][tr.Predicate] = append(g.nodes[tr.Subject][tr.Predicate], tr.Object)
 		n++
 	}
 	return n
@@ -165,7 +165,7 @@ func (g *Graph) Eq(other *Graph) bool {
 				switch t := obj.(type) {
 				case BlankNode:
 					aBNodesAsObj[t] = append(aBNodesAsObj[t],
-						Triple{Subj: subj, Pred: pred, Obj: obj})
+						Triple{Subject: subj, Predicate: pred, Object: obj})
 					continue
 				}
 				if obj != other.nodes[subj][pred][i] {
@@ -187,7 +187,7 @@ func (g *Graph) Eq(other *Graph) bool {
 				switch t := obj.(type) {
 				case BlankNode:
 					bBNodesAsObj[t] = append(bBNodesAsObj[t],
-						Triple{Subj: subj, Pred: pred, Obj: obj})
+						Triple{Subject: subj, Predicate: pred, Object: obj})
 					continue
 				}
 			}

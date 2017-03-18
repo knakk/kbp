@@ -105,9 +105,9 @@ func (d *Decoder) Decode() (Triple, error) {
 		return Triple{}, fmt.Errorf("%d:%d: error parsing subject: %q", d.s.Row, d.s.Col, err)
 	}
 	if tok.Type == tokenBNode {
-		tr.Subj = BlankNode{id: tok.Text}
+		tr.Subject = BlankNode{id: tok.Text}
 	} else {
-		tr.Subj = URI{val: tok.Text}
+		tr.Subject = NamedNode{val: tok.Text}
 	}
 
 	// predicate
@@ -116,7 +116,7 @@ func (d *Decoder) Decode() (Triple, error) {
 		d.ignoreLine()
 		return Triple{}, fmt.Errorf("%d:%d: error parsing predicate: %q", d.s.Row, d.s.Col, err)
 	}
-	tr.Pred = URI{val: tok.Text}
+	tr.Predicate = NamedNode{val: tok.Text}
 
 	// object
 	tok, err = d.parseObject()
@@ -125,9 +125,9 @@ func (d *Decoder) Decode() (Triple, error) {
 		return Triple{}, fmt.Errorf("%d:%d: error parsing object: %q", d.s.Row, d.s.Col, err)
 	}
 	if tok.Type == tokenBNode {
-		tr.Obj = BlankNode{id: tok.Text}
+		tr.Object = BlankNode{id: tok.Text}
 	} else if tok.Type == tokenURI {
-		tr.Obj = URI{val: tok.Text}
+		tr.Object = NamedNode{val: tok.Text}
 	} else {
 		// literal
 		obj := tok.Text
@@ -136,12 +136,12 @@ func (d *Decoder) Decode() (Triple, error) {
 		switch next.Type {
 		case tokenDot:
 			// plain literal xsd:String
-			tr.Obj = Literal{val: obj, dt: URI{val: "http://www.w3.org/2001/XMLSchema#string"}}
+			tr.Object = Literal{val: obj, dt: NamedNode{val: "http://www.w3.org/2001/XMLSchema#string"}}
 			d.ignoreLine()
 			return tr, nil
 		case tokenLangTag:
 			// rdf:langString
-			tr.Obj = Literal{val: obj, lang: next.Text, dt: URI{val: "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"}}
+			tr.Object = Literal{val: obj, lang: next.Text, dt: NamedNode{val: "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"}}
 		case tokenTypeMarker:
 			// typed literal
 			next = d.s.Scan()
@@ -149,7 +149,7 @@ func (d *Decoder) Decode() (Triple, error) {
 				d.ignoreLine()
 				return Triple{}, fmt.Errorf("%d: expected URI as literal datatype, got %v: %q", d.s.line, tok.Type, next.Text)
 			}
-			tr.Obj = Literal{val: tok.Text, dt: URI{val: next.Text}}
+			tr.Object = Literal{val: tok.Text, dt: NamedNode{val: next.Text}}
 		case tokenIllegal:
 			d.ignoreLine()
 			return Triple{}, fmt.Errorf("%d:%d: error parsing object: %s: %v", d.s.Row, d.s.Col, d.s.Error, next.Text)
@@ -177,12 +177,12 @@ func (d *Decoder) DecodeGraph() (*Graph, error) {
 		if err != nil {
 			return g, err
 		}
-		switch t := tr.Subj.(type) {
+		switch t := tr.Subject.(type) {
 		case BlankNode:
 			bnodeTriples[t] = append(bnodeTriples[t], tr)
 			continue
 		}
-		switch t := tr.Obj.(type) {
+		switch t := tr.Object.(type) {
 		case BlankNode:
 			bnodeTriples[t] = append(bnodeTriples[t], tr)
 			continue
@@ -213,7 +213,7 @@ func (e *Encoder) EncodeGraph(g *Graph) error {
 	for s, po := range g.nodes {
 		for p, objs := range po {
 			for _, o := range objs {
-				if _, err := e.w.WriteString(Triple{Subj: s, Pred: p, Obj: o}.String()); err != nil {
+				if _, err := e.w.WriteString(Triple{Subject: s, Predicate: p, Object: o}.String()); err != nil {
 					return err
 				}
 			}
