@@ -56,6 +56,7 @@ func (g *Graph) Triples() []Triple {
 }
 
 // Contains returns true if the given Triple is present in Graph, otherwise false.
+// TODO handle Blank Node subj/obj.
 func (g *Graph) Contains(tr Triple) bool {
 	if _, ok := g.nodes[tr.Subj]; !ok {
 		return false
@@ -288,3 +289,6 @@ func isMatch(a, b *Graph, aNode, bNode BlankNode, aAsObj, bAsObj []Triple) bool 
 //func (g *Graph) Union(other *Graph) *Graph {}
 //func (g *Graph) Delete(tr ...Triple) {}
 //func (g *Graph) Merge(other *Graph)  {}
+
+//func (g *Graph) Describe(u URI, depth int) *Graph {}
+//func (g *Graph) Describe(u URI, depth int) *Graph {}
