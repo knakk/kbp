@@ -60,13 +60,10 @@ type BlankNode struct {
 	id string
 }
 
-func (b BlankNode) validAsNode()    {}
-func (b BlankNode) validAsSubject() {}
-
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
 
-// Eq tests for equality against another RDF term.
+// Eq tests for equality against another RDF node.
 //
 // Comparing a blank node with another will always return true. A blank
 // really node only carries information in relation to it's position in a graph.
@@ -78,6 +75,9 @@ func (b BlankNode) Eq(other Node) bool {
 		return false
 	}
 }
+
+func (b BlankNode) validAsNode()    {}
+func (b BlankNode) validAsSubject() {}
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
@@ -102,15 +102,11 @@ func NewNamedNode(uri string) (NamedNode, error) {
 	}
 	return NamedNode{val: uri}, nil
 }
-func (u NamedNode) validAsNode()      {}
-func (u NamedNode) validAsPredicate() {}
-func (u NamedNode) validAsSubject()   {}
-func (u NamedNode) validAsObject()    {}
 
 // String returns a string representation of an URI in N-Triples format.
 func (u NamedNode) String() string { return "<" + u.val + ">" }
 
-// Eq tests for equality against another RDF term.
+// Eq tests for equality against another RDF node.
 func (u NamedNode) Eq(other Node) bool {
 	switch t := other.(type) {
 	case NamedNode:
@@ -119,6 +115,11 @@ func (u NamedNode) Eq(other Node) bool {
 		return false
 	}
 }
+
+func (u NamedNode) validAsNode()      {}
+func (u NamedNode) validAsPredicate() {}
+func (u NamedNode) validAsSubject()   {}
+func (u NamedNode) validAsObject()    {}
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -144,16 +145,6 @@ func NewLangLiteral(s string, lang string) Literal {
 	}
 }
 
-func (l Literal) validAsNode()   {}
-func (l Literal) validAsObject() {}
-
-// DataType returns the Datatype of a Literal.
-func (l Literal) DataType() NamedNode { return l.dt }
-
-// Lang returns the language tag of a Literal, or an empty
-// string if it is not a rdf:langString.
-func (l Literal) Lang() string { return l.lang }
-
 // String returns a string representation of a Literal in N-Triples format.
 func (l Literal) String() string {
 	if (l.lang) != "" {
@@ -165,7 +156,7 @@ func (l Literal) String() string {
 	return fmt.Sprintf("%q^^%s", l.val, l.dt)
 }
 
-// Eq tests for equality against another RDF term.
+// Eq tests for equality against another RDF node.
 func (l Literal) Eq(other Node) bool {
 	switch t := other.(type) {
 	case Literal:
@@ -176,6 +167,16 @@ func (l Literal) Eq(other Node) bool {
 		return false
 	}
 }
+
+// DataType returns the Datatype of a Literal.
+func (l Literal) DataType() NamedNode { return l.dt }
+
+// Lang returns the language tag of a Literal, or an empty
+// string if it is not a rdf:langString.
+func (l Literal) Lang() string { return l.lang }
+
+func (l Literal) validAsNode()   {}
+func (l Literal) validAsObject() {}
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
@@ -200,7 +201,7 @@ type object interface {
 
 // TriplePattern represents a pattern which can be used to match against a graph.
 type TriplePattern struct {
-	Subj subject
-	Pred predicate
-	Obj  object
+	Subject   subject
+	Predicate predicate
+	Object    object
 }
