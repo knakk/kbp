@@ -116,42 +116,7 @@ func TestGraphIsomorphism(t *testing.T) {
 	}
 }
 
-/*
-func mustURI(s string) URI {
-	uri, err := NewURI(s)
-	if err != nil {
-		panic(err)
-	}
-	return uri
-}
-
-func mustVar(s string) Variable {
-	v, err := NewVar(s)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func mustLit(v interface{}) Literal {
-	l, err := NewLiteral(v)
-	if err != nil {
-		panic(err)
-	}
-	return l
-}
-
-func mustBNode(s string) BlankNode {
-	b, err := NewBlankNode(s)
-	if err != nil {
-		panic(b)
-	}
-	return b
-}
-
-//func mustConstructQuery(s string) *ConstructQuery {}
-
-func TestGraphConstruct(t *testing.T) {
+func TestGraphWhere(t *testing.T) {
 	g := mustDecode(`
 		<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 		<a1> <hasName> "Italo Calvino" .
@@ -230,27 +195,82 @@ func TestGraphConstruct(t *testing.T) {
 		`)
 
 	tests := []struct {
-		q    *ConstructQuery
-		want *Graph
+		patterns []TriplePattern
+		want     string
 	}{
 		{
-			NewConstructQuery().
-				Construt(Pattern{Var("s"), Var("p"), Var("o")}).
-				Where(Pattern{Var("s"), Var("p"), Var("o")}),
-			g,
+			[]TriplePattern{},
+			"",
 		},
 		{
-
-			NewConstructQuery(),
-			nil,
+			[]TriplePattern{
+				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
+			},
+			mustEncode(g),
+		},
+		{
+			[]TriplePattern{
+				{
+					NewVariable("pub"),
+					mustNamedNode("hasMainTitle"),
+					NewVariable("title"),
+				},
+			},
+			`
+			<w1> <hasMainTitle> "Le Cosmicomiche" .
+			<p1> <hasMainTitle> "The Complete Cosmicomics" .
+			<w2> <hasMainTitle> "Il barone rampante" .
+			<p2> <hasMainTitle> "Klatrebaronen" .`,
+		},
+		{
+			[]TriplePattern{
+				{
+					mustNamedNode("p2"),
+					mustNamedNode("hasPublishYear"),
+					NewTypedLiteral("1961", mustNamedNode("http://www.w3.org/2001/XMLSchema#gYear")),
+				},
+			},
+			`<p2> <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
+		},
+		{
+			[]TriplePattern{
+				{
+					mustNamedNode("p2"),
+					NewVariable("p"),
+					NewVariable("o"),
+				},
+			},
+			`
+			<p2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Publication> .
+			<p2> <isPublicationOf> <w2> .
+			<p2> <hasMainTitle> "Klatrebaronen" .
+			<p2> <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			<p2> <isPublishedBy> <c2> .
+			<p2> <hasContributor> _:1 .`,
+		},
+		{
+			[]TriplePattern{
+				{
+					NewVariable("s"),
+					NewVariable("p"),
+					NewStrLiteral("Penguin"),
+				},
+			},
+			`<c1> <hasName> "Penguin" .`,
 		},
 	}
 
 	for _, test := range tests {
-		if got := g.Construct(test.q); !got.Eq(test.want) {
-			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), mustEncode(test.want))
+		if got := g.Where(test.patterns); !got.Eq(mustDecode(test.want)) {
+			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), test.want)
 		}
 	}
 }
 
-*/
+func mustNamedNode(s string) NamedNode {
+	node, err := NewNamedNode(s)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}

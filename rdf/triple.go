@@ -145,6 +145,14 @@ func NewLangLiteral(s string, lang string) Literal {
 	}
 }
 
+// NewTypedLiteral returns a new literal with the give datatype.
+func NewTypedLiteral(s string, dt NamedNode) Literal {
+	return Literal{
+		val: s,
+		dt:  dt,
+	}
+}
+
 // String returns a string representation of a Literal in N-Triples format.
 func (l Literal) String() string {
 	if (l.lang) != "" {
@@ -180,12 +188,17 @@ func (l Literal) validAsObject() {}
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
-	id string
+	name string
+}
+
+// NewVarible returns a new variable with the given name.
+func NewVariable(name string) Variable {
+	return Variable{name: name}
 }
 
 func (v Variable) validAsSubject()   {}
 func (v Variable) validAsPredicate() {}
-func (v Variable) validAsObj()       {}
+func (v Variable) validAsObject()    {}
 
 type subject interface {
 	validAsSubject()
@@ -197,11 +210,4 @@ type predicate interface {
 
 type object interface {
 	validAsObject()
-}
-
-// TriplePattern represents a pattern which can be used to match against a graph.
-type TriplePattern struct {
-	Subject   subject
-	Predicate predicate
-	Object    object
 }

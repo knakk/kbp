@@ -122,6 +122,72 @@ outer:
 	return n
 }
 
+// TriplePattern represents a pattern which can be used to match against a graph.
+type TriplePattern struct {
+	Subject   subject
+	Predicate predicate
+	Object    object
+}
+
+// Where returns a new graph with the triples matching the given patterns.
+// It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
+// and patterns are identical.
+func (g *Graph) Where(patterns []TriplePattern) *Graph {
+	var matches []Triple
+	for _, pattern := range patterns {
+		for subj, po := range g.nodes {
+			if !matchSubj(pattern.Subject, subj) {
+				continue
+			}
+
+			for p, objs := range po {
+				if !matchPred(pattern.Predicate, p) {
+					continue
+				}
+				for _, o := range objs {
+					if !matchObj(pattern.Object, o) {
+						continue
+					}
+					// We have a match!
+					matches = append(matches, Triple{subj, p, o})
+				}
+			}
+
+		}
+	}
+
+	res := NewGraph()
+	res.Insert(matches...)
+	return res
+}
+
+func matchSubj(s subject, other SubjectNode) bool {
+	switch s.(type) {
+	case Variable:
+		return true
+	default:
+		return s.(SubjectNode).Eq(other)
+	}
+}
+
+func matchPred(p predicate, other NamedNode) bool {
+	switch p.(type) {
+	case Variable:
+		return true
+	default:
+		return p.(NamedNode).Eq(other)
+	}
+}
+
+func matchObj(o object, other Node) bool {
+	switch o.(type) {
+	case Variable:
+		return true
+	default:
+		return o.(Node).Eq(other)
+	}
+}
+
 // Eq checks if two graphs are equal (isomorphic).
 //
 // The algorithm for checking for isomporphism is rather naive and
