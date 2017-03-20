@@ -129,36 +129,76 @@ type TriplePattern struct {
 	Object    object
 }
 
+// Eq tests the euality between two TriplePatterns.
+func (p TriplePattern) Eq(other TriplePattern) bool {
+	return p.Subject == other.Subject &&
+		p.Predicate == other.Predicate &&
+		p.Object == other.Object
+}
+
+func (p TriplePattern) variables() (res []Variable) {
+	if v, ok := p.Subject.(Variable); ok {
+		res = append(res, v)
+	}
+	if v, ok := p.Predicate.(Variable); ok {
+		res = append(res, v)
+	}
+	if v, ok := p.Object.(Variable); ok {
+		res = append(res, v)
+	}
+	return res
+}
+
 // Where returns a new graph with the triples matching the given patterns.
 // It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
 // and patterns are identical.
 func (g *Graph) Where(patterns []TriplePattern) *Graph {
-	var matches []Triple
-	for _, pattern := range patterns {
-		for subj, po := range g.nodes {
-			if !matchSubj(pattern.Subject, subj) {
-				continue
-			}
+	if len(patterns) == 0 {
+		return NewGraph()
+	}
 
-			for p, objs := range po {
-				if !matchPred(pattern.Predicate, p) {
-					continue
-				}
-				for _, o := range objs {
-					if !matchObj(pattern.Object, o) {
-						continue
-					}
-					// We have a match!
-					matches = append(matches, Triple{subj, p, o})
-				}
-			}
-
-		}
+	if len(patterns) == 1 {
+		res := NewGraph()
+		res.Insert(g.solutionsFor(patterns[0])...)
+		return res
 	}
 
 	res := NewGraph()
-	res.Insert(matches...)
+
+	// Group patterns by shared variables, either direct or transitive.
+	// Disjoint groups can be processed separately and its solutions merged by union.
+	for _, group := range groupPatternsByVariable(patterns) {
+		var matches []Triple
+		for _, pattern := range group {
+			matches = append(matches, g.solutionsFor(pattern)...)
+		}
+		res.Insert(matches...)
+	}
+
 	return res
+}
+
+func (g *Graph) solutionsFor(pattern TriplePattern) []Triple {
+	var solutions []Triple
+	for subj, po := range g.nodes {
+		if !matchSubj(pattern.Subject, subj) {
+			continue
+		}
+
+		for p, objs := range po {
+			if !matchPred(pattern.Predicate, p) {
+				continue
+			}
+			for _, o := range objs {
+				if !matchObj(pattern.Object, o) {
+					continue
+				}
+
+				solutions = append(solutions, Triple{subj, p, o})
+			}
+		}
+	}
+	return solutions
 }
 
 func matchSubj(s subject, other SubjectNode) bool {
@@ -186,6 +226,65 @@ func matchObj(o object, other Node) bool {
 	default:
 		return o.(Node).Eq(other)
 	}
+}
+
+func matchPattern(p TriplePattern, t Triple) bool {
+	return matchSubj(p.Subject, t.Subject) &&
+		matchPred(p.Predicate, t.Predicate) &&
+		matchObj(p.Object, t.Object)
+}
+
+func commonVar(p, other TriplePattern) bool {
+	if a, ok := p.Subject.(Variable); ok {
+		if b, ok := other.Subject.(Variable); ok {
+			if a == b {
+				return true
+			}
+		}
+		if b, ok := other.Object.(Variable); ok {
+			if a == b {
+				return true
+			}
+			if c, ok := p.Object.(Variable); ok {
+				if c == b {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
+	variables := make(map[Variable]int) // variable to group number
+	groups := make([][]TriplePattern, 0)
+	n := 0
+
+	// TODO first sort patterns by variable name?
+
+	for _, pattern := range patterns {
+		assignedTo := 0
+		for _, v := range pattern.variables() {
+			if g, ok := variables[v]; ok {
+				assignedTo = g
+			}
+		}
+		if assignedTo == 0 {
+			n++
+			assignedTo = n
+		}
+		for _, v := range pattern.variables() {
+			variables[v] = assignedTo
+		}
+		if len(groups) < n {
+			groups = append(groups, []TriplePattern{pattern})
+		} else {
+			groups[n-1] = append(groups[n-1], pattern)
+		}
+	}
+
+	return groups
 }
 
 // Eq checks if two graphs are equal (isomorphic).

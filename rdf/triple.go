@@ -191,7 +191,7 @@ type Variable struct {
 	name string
 }
 
-// NewVarible returns a new variable with the given name.
+// NewVariable returns a new variable with the given name.
 func NewVariable(name string) Variable {
 	return Variable{name: name}
 }

@@ -1,6 +1,9 @@
 package rdf
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestGraphIsomorphism(t *testing.T) {
 	tests := []struct {
@@ -112,6 +115,77 @@ func TestGraphIsomorphism(t *testing.T) {
 		b := mustDecode(test.b)
 		if got := a.Eq(b); got != test.eq {
 			t.Fatalf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
+		}
+	}
+}
+
+func TestGroupPatternsByVariable(t *testing.T) {
+	tests := []struct {
+		patterns []TriplePattern
+		want     [][]TriplePattern
+	}{
+		{
+			[]TriplePattern{},
+			[][]TriplePattern{},
+		},
+		{
+			[]TriplePattern{
+				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
+			},
+			[][]TriplePattern{{
+				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
+			}},
+		},
+		{
+			[]TriplePattern{
+				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
+			},
+			[][]TriplePattern{
+				{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")}},
+				{{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")}}},
+		},
+		{
+			[]TriplePattern{
+				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), mustNamedNode("h2")},
+			},
+			[][]TriplePattern{{
+				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), mustNamedNode("h2")},
+			}},
+		},
+		{
+			[]TriplePattern{
+				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
+				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
+				{NewVariable("c"), mustNamedNode("related"), mustNamedNode("h1")},
+			},
+			[][]TriplePattern{{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
+				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
+			},
+				{{NewVariable("c"), mustNamedNode("related"), mustNamedNode("h1")}}},
+		},
+		{
+			[]TriplePattern{
+				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
+				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
+				{NewVariable("c"), mustNamedNode("related"), NewVariable("a")},
+			},
+			[][]TriplePattern{{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
+				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
+				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
+				{NewVariable("c"), mustNamedNode("related"), NewVariable("a")}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		if groups := groupPatternsByVariable(test.patterns); !reflect.DeepEqual(groups, test.want) {
+			t.Errorf("groupPatternsByVariable(%v) => %v; want %v", test.patterns, groups, test.want)
 		}
 	}
 }
@@ -257,6 +331,40 @@ func TestGraphWhere(t *testing.T) {
 				},
 			},
 			`<c1> <hasName> "Penguin" .`,
+		},
+		{
+			[]TriplePattern{
+				{
+					NewVariable("s"),
+					NewVariable("p"),
+					NewLangLiteral("Penguin", "en"),
+				},
+			},
+			"",
+		},
+		{
+			[]TriplePattern{
+				{
+					NewVariable("w"),
+					mustNamedNode("hasMainTitle"),
+					NewStrLiteral("Le Cosmicomiche"),
+				},
+				{
+					NewVariable("p"),
+					mustNamedNode("isPublicationOf"),
+					NewVariable("w"),
+				},
+				{
+					NewVariable("p"),
+					mustNamedNode("hasMainTitle"),
+					NewVariable("pubTitle"),
+				},
+			},
+			`
+			<w1> <hasMainTitle> "Le Cosmicomiche" .
+			<p1> <isPublicationOf> <w1> .
+			<p1> <hasMainTitle> "The Complete Cosmicomics" .
+			`,
 		},
 	}
 
