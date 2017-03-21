@@ -78,6 +78,7 @@ func (b BlankNode) Eq(other Node) bool {
 
 func (b BlankNode) validAsNode()    {}
 func (b BlankNode) validAsSubject() {}
+func (b BlankNode) validAsObject()  {}
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {

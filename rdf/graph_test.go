@@ -125,60 +125,68 @@ func TestGroupPatternsByVariable(t *testing.T) {
 		want     [][]TriplePattern
 	}{
 		{
-			[]TriplePattern{},
+			mustParsePatterns(""),
 			[][]TriplePattern{},
 		},
 		{
-			[]TriplePattern{
-				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
-			},
-			[][]TriplePattern{{
-				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
-			}},
-		},
-		{
-			[]TriplePattern{
-				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
-			},
+			mustParsePatterns("?s ?p ?o ."),
 			[][]TriplePattern{
-				{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")}},
-				{{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")}}},
+				mustParsePatterns("?s ?p ?o ."),
+			},
 		},
 		{
-			[]TriplePattern{
-				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), mustNamedNode("h2")},
+			mustParsePatterns(`
+				<h1> <knows> ?a .
+				?b <knows> <h2> .`,
+			),
+			[][]TriplePattern{
+				mustParsePatterns("<h1> <knows> ?a ."),
+				mustParsePatterns("?b <knows> <h2> ."),
 			},
-			[][]TriplePattern{{
-				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), mustNamedNode("h2")},
-			}},
 		},
 		{
-			[]TriplePattern{
-				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
-				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
-				{NewVariable("c"), mustNamedNode("related"), mustNamedNode("h1")},
-			},
-			[][]TriplePattern{{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
-				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
-			},
-				{{NewVariable("c"), mustNamedNode("related"), mustNamedNode("h1")}}},
+			mustParsePatterns(`
+				<h1> <knows> ?a .
+				?a <knows> <h2> .`,
+			),
+			[][]TriplePattern{
+				mustParsePatterns(`
+				<h1> <knows> ?a .
+				?a <knows> <h2> .`)},
 		},
 		{
-			[]TriplePattern{
-				{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
-				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
-				{NewVariable("c"), mustNamedNode("related"), NewVariable("a")},
+			mustParsePatterns(`
+				<h1> <knows> ?a .
+				?a <knows> ?b .
+				?b <knows> <h2> .
+				?c <related> <h1> .
+				`,
+			),
+			[][]TriplePattern{
+				mustParsePatterns(`
+					<h1> <knows> ?a .
+					?a <knows> ?b .
+					?b <knows> <h2> .`,
+				),
+				mustParsePatterns("?c <related> <h1> ."),
 			},
-			[][]TriplePattern{{{mustNamedNode("h1"), mustNamedNode("knows"), NewVariable("a")},
-				{NewVariable("a"), mustNamedNode("knows"), NewVariable("b")},
-				{NewVariable("b"), mustNamedNode("knows"), mustNamedNode("h2")},
-				{NewVariable("c"), mustNamedNode("related"), NewVariable("a")}},
+		},
+		{
+			mustParsePatterns(`
+				<h1> <knows> ?a .
+				?a <knows> ?b .
+				?b <knows> <h2> .
+				?c <related> ?a .
+				`,
+			),
+			[][]TriplePattern{
+				mustParsePatterns(`
+				<h1> <knows> ?a .
+				?a <knows> ?b .
+				?b <knows> <h2> .
+				?c <related> ?a .
+				`,
+				),
 			},
 		},
 	}
@@ -273,23 +281,15 @@ func TestGraphWhere(t *testing.T) {
 		want     string
 	}{
 		{
-			[]TriplePattern{},
+			mustParsePatterns(""),
 			"",
 		},
 		{
-			[]TriplePattern{
-				{NewVariable("s"), NewVariable("p"), NewVariable("o")},
-			},
+			mustParsePatterns("?s ?p ?o ."),
 			mustEncode(g),
 		},
 		{
-			[]TriplePattern{
-				{
-					NewVariable("pub"),
-					mustNamedNode("hasMainTitle"),
-					NewVariable("title"),
-				},
-			},
+			mustParsePatterns("?pub <hasMainTitle> ?title ."),
 			`
 			<w1> <hasMainTitle> "Le Cosmicomiche" .
 			<p1> <hasMainTitle> "The Complete Cosmicomics" .
@@ -297,23 +297,11 @@ func TestGraphWhere(t *testing.T) {
 			<p2> <hasMainTitle> "Klatrebaronen" .`,
 		},
 		{
-			[]TriplePattern{
-				{
-					mustNamedNode("p2"),
-					mustNamedNode("hasPublishYear"),
-					NewTypedLiteral("1961", mustNamedNode("http://www.w3.org/2001/XMLSchema#gYear")),
-				},
-			},
+			mustParsePatterns(`?p2 <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .`),
 			`<p2> <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
 		},
 		{
-			[]TriplePattern{
-				{
-					mustNamedNode("p2"),
-					NewVariable("p"),
-					NewVariable("o"),
-				},
-			},
+			mustParsePatterns("<p2> ?p ?o ."),
 			`
 			<p2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Publication> .
 			<p2> <isPublicationOf> <w2> .
@@ -323,43 +311,19 @@ func TestGraphWhere(t *testing.T) {
 			<p2> <hasContributor> _:1 .`,
 		},
 		{
-			[]TriplePattern{
-				{
-					NewVariable("s"),
-					NewVariable("p"),
-					NewStrLiteral("Penguin"),
-				},
-			},
+			mustParsePatterns(`?s ?p "Penguin" .`),
 			`<c1> <hasName> "Penguin" .`,
 		},
 		{
-			[]TriplePattern{
-				{
-					NewVariable("s"),
-					NewVariable("p"),
-					NewLangLiteral("Penguin", "en"),
-				},
-			},
+			mustParsePatterns(`?s ?p "Penguin"@en .`),
 			"",
 		},
 		{
-			[]TriplePattern{
-				{
-					NewVariable("w"),
-					mustNamedNode("hasMainTitle"),
-					NewStrLiteral("Le Cosmicomiche"),
-				},
-				{
-					NewVariable("p"),
-					mustNamedNode("isPublicationOf"),
-					NewVariable("w"),
-				},
-				{
-					NewVariable("p"),
-					mustNamedNode("hasMainTitle"),
-					NewVariable("pubTitle"),
-				},
-			},
+			mustParsePatterns(`
+				?w <hasMainTitle> "Le Cosmicomiche" .
+				?p <isPublicationOf> ?w .
+				?p <hasMainTitle> ?pubTtile .`,
+			),
 			`
 			<w1> <hasMainTitle> "Le Cosmicomiche" .
 			<p1> <isPublicationOf> <w1> .

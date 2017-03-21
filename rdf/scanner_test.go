@@ -176,6 +176,15 @@ func TestScanTokens(t *testing.T) {
 				{tokenDot, ""},
 			},
 		},
+		{
+			"?s ?pred <o> .",
+			[]token{
+				{tokenVariable, "s"},
+				{tokenVariable, "pred"},
+				{tokenURI, "o"},
+				{tokenDot, ""},
+			},
+		},
 	}
 
 	for _, test := range tests {

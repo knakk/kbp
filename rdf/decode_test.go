@@ -2,6 +2,7 @@ package rdf
 
 import (
 	"bytes"
+	"io"
 	"testing"
 )
 
@@ -12,6 +13,18 @@ func mustDecode(s string) *Graph {
 		panic("mustDecode: " + err.Error())
 	}
 	return g
+}
+
+func mustParsePatterns(s string) (res []TriplePattern) {
+	dec := NewDecoder(bytes.NewBufferString(s))
+	dec.parseVariables = true
+	for p, err := dec.decodePattern(); err != io.EOF; p, err = dec.decodePattern() {
+		if err != nil {
+			panic("mustParsePatterns: " + err.Error())
+		}
+		res = append(res, p)
+	}
+	return res
 }
 
 func mustEncode(g *Graph) string {

@@ -22,6 +22,9 @@ const (
 	tokenLangTag
 	tokenTypeMarker
 	tokenDot
+
+	// Triple pattern
+	tokenVariable
 )
 
 const eof = rune(-1)
@@ -51,6 +54,8 @@ func (t tokenType) String() string {
 		return "DataType marker"
 	case tokenDot:
 		return "Dot"
+	case tokenVariable:
+		return "Variable"
 	default:
 		panic("token String() TODO")
 	}
@@ -168,6 +173,10 @@ runeSwitch:
 		s.scanUntilNextToken()
 		addStart = 2
 		tok = tokenBNode
+	case '?':
+		s.scanUntilNextToken()
+		addStart = 1
+		tok = tokenVariable
 	case eof:
 		tok = tokenEOF
 	case utf8.RuneError:
