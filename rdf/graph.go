@@ -180,16 +180,6 @@ func (g *Graph) Where(patterns []TriplePattern) *Graph {
 	return res
 }
 
-// anyBound returns true if any of the variables in p is bound to a node.
-func anyBound(p TriplePattern, variables map[Variable][]Node) bool {
-	for _, v := range p.variables() {
-		if _, ok := variables[v]; ok {
-			return true
-		}
-	}
-	return false
-}
-
 func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) []Triple {
 	var (
 		solutions  []Triple
@@ -350,12 +340,6 @@ func matchObj(o object, other Node) bool {
 	default:
 		return o.(Node).Eq(other)
 	}
-}
-
-func matchPattern(p TriplePattern, t Triple) bool {
-	return matchSubj(p.Subject, t.Subject) &&
-		matchPred(p.Predicate, t.Predicate) &&
-		matchObj(p.Object, t.Object)
 }
 
 func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
