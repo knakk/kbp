@@ -157,20 +157,22 @@ func (g *Graph) Where(patterns []TriplePattern) *Graph {
 		return NewGraph()
 	}
 
+	bound := make(map[Variable][]Node)
+	res := NewGraph()
+
 	if len(patterns) == 1 {
-		res := NewGraph()
-		res.Insert(g.solutionsFor(patterns[0])...)
+		res.Insert(g.solutionsFor(patterns[0], bound)...)
 		return res
 	}
-
-	res := NewGraph()
 
 	// Group patterns by shared variables, either direct or transitive.
 	// Disjoint groups can be processed separately and its solutions merged by union.
 	for _, group := range groupPatternsByVariable(patterns) {
 		var matches []Triple
 		for _, pattern := range group {
-			matches = append(matches, g.solutionsFor(pattern)...)
+			solutions := g.solutionsFor(pattern, bound)
+			//fmt.Printf("solutions for %v:\n%v\nbound:%v\n", pattern, solutions, bound)
+			matches = append(matches, solutions...)
 		}
 		res.Insert(matches...)
 	}
@@ -178,27 +180,149 @@ func (g *Graph) Where(patterns []TriplePattern) *Graph {
 	return res
 }
 
-func (g *Graph) solutionsFor(pattern TriplePattern) []Triple {
-	var solutions []Triple
-	for subj, po := range g.nodes {
+// anyBound returns true if any of the variables in p is bound to a node.
+func anyBound(p TriplePattern, variables map[Variable][]Node) bool {
+	for _, v := range p.variables() {
+		if _, ok := variables[v]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) []Triple {
+	var (
+		solutions  []Triple
+		subjects   []SubjectNode
+		predicates []NamedNode
+		objects    []Node
+	)
+
+	if nodes, ok := boundSubject(pattern.Subject, bound); ok {
+		subjects = nodes
+	} else {
+		subjects = g.subjects()
+	}
+
+	for _, subj := range subjects {
 		if !matchSubj(pattern.Subject, subj) {
 			continue
 		}
 
-		for p, objs := range po {
+		if nodes, ok := boundPredicate(pattern.Predicate, bound); ok {
+			predicates = nodes
+		} else {
+			predicates = g.predicatesForSubj(subj)
+		}
+
+		for _, p := range predicates {
 			if !matchPred(pattern.Predicate, p) {
 				continue
 			}
-			for _, o := range objs {
+
+			if nodes, ok := boundObject(pattern.Object, bound); ok {
+				objects = nodes
+			} else {
+				objects = g.nodes[subj][p]
+			}
+			for _, o := range objects {
+				if !includeNode(g.nodes[subj][p], o) {
+					continue
+				}
 				if !matchObj(pattern.Object, o) {
 					continue
 				}
 
-				solutions = append(solutions, Triple{subj, p, o})
+				match := Triple{subj, p, o}
+				solutions = append(solutions, match)
 			}
 		}
 	}
+
+	for _, match := range solutions {
+		updateBound(pattern, match, bound)
+	}
 	return solutions
+}
+
+func (g *Graph) subjects() (res []SubjectNode) {
+	for subj, _ := range g.nodes {
+		res = append(res, subj)
+	}
+	return res
+}
+
+func (g *Graph) predicatesForSubj(s SubjectNode) (res []NamedNode) {
+	for pred, _ := range g.nodes[s] {
+		res = append(res, pred)
+	}
+	return res
+}
+
+func updateBound(p TriplePattern, match Triple, bound map[Variable][]Node) {
+	if v, ok := p.Subject.(Variable); ok {
+		if !includeNode(bound[v], match.Subject) {
+			bound[v] = append(bound[v], match.Subject)
+		}
+	}
+	if v, ok := p.Predicate.(Variable); ok {
+		if !includeNode(bound[v], match.Predicate) {
+			bound[v] = append(bound[v], match.Predicate)
+		}
+	}
+	if v, ok := p.Object.(Variable); ok {
+		if !includeNode(bound[v], match.Object) {
+			bound[v] = append(bound[v], match.Object)
+		}
+	}
+}
+
+func includeNode(nodes []Node, find Node) bool {
+	for _, node := range nodes {
+		if node == find {
+			return true
+		}
+	}
+	return false
+}
+
+func boundSubject(s subject, variables map[Variable][]Node) ([]SubjectNode, bool) {
+	if v, ok := s.(Variable); ok {
+		if nodes, bound := variables[v]; bound {
+			var res []SubjectNode
+			for _, n := range nodes {
+				if subj, ok := n.(SubjectNode); ok {
+					res = append(res, subj)
+				}
+			}
+			return res, true
+		}
+	}
+	return nil, false
+}
+
+func boundPredicate(p predicate, variables map[Variable][]Node) ([]NamedNode, bool) {
+	if v, ok := p.(Variable); ok {
+		if nodes, bound := variables[v]; bound {
+			var res []NamedNode
+			for _, n := range nodes {
+				if subj, ok := n.(NamedNode); ok {
+					res = append(res, subj)
+				}
+			}
+			return res, true
+		}
+	}
+	return nil, false
+}
+
+func boundObject(o object, variables map[Variable][]Node) ([]Node, bool) {
+	if v, ok := o.(Variable); ok {
+		if nodes, bound := variables[v]; bound {
+			return nodes, true
+		}
+	}
+	return nil, false
 }
 
 func matchSubj(s subject, other SubjectNode) bool {
@@ -232,28 +356,6 @@ func matchPattern(p TriplePattern, t Triple) bool {
 	return matchSubj(p.Subject, t.Subject) &&
 		matchPred(p.Predicate, t.Predicate) &&
 		matchObj(p.Object, t.Object)
-}
-
-func commonVar(p, other TriplePattern) bool {
-	if a, ok := p.Subject.(Variable); ok {
-		if b, ok := other.Subject.(Variable); ok {
-			if a == b {
-				return true
-			}
-		}
-		if b, ok := other.Object.(Variable); ok {
-			if a == b {
-				return true
-			}
-			if c, ok := p.Object.(Variable); ok {
-				if c == b {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
 }
 
 func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
