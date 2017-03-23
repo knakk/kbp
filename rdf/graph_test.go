@@ -151,8 +151,9 @@ func TestGroupPatternsByVariable(t *testing.T) {
 			),
 			[][]TriplePattern{
 				mustParsePatterns(`
+				?a <knows> <h2> .
 				<h1> <knows> ?a .
-				?a <knows> <h2> .`)},
+				`)},
 		},
 		{
 			mustParsePatterns(`
@@ -164,9 +165,10 @@ func TestGroupPatternsByVariable(t *testing.T) {
 			),
 			[][]TriplePattern{
 				mustParsePatterns(`
+					?b <knows> <h2> .
 					<h1> <knows> ?a .
 					?a <knows> ?b .
-					?b <knows> <h2> .`,
+					`,
 				),
 				mustParsePatterns("?c <related> <h1> ."),
 			},
@@ -181,9 +183,9 @@ func TestGroupPatternsByVariable(t *testing.T) {
 			),
 			[][]TriplePattern{
 				mustParsePatterns(`
+				?b <knows> <h2> .
 				<h1> <knows> ?a .
 				?a <knows> ?b .
-				?b <knows> <h2> .
 				?c <related> ?a .
 				`,
 				),
@@ -348,6 +350,36 @@ func TestGraphWhere(t *testing.T) {
 			<a2> <hasName> "Martin L. McLaughlin" .
 			<a4> <hasName> "William Weaver" .
 			<a3> <hasName> "Tim Parks" .
+			`,
+		},
+		{
+			mustParsePatterns(`
+				?agent <hasName> "William Weaver" .
+				?c <hasAgent> ?agent .
+				?c <hasRole> <translator> .
+				`,
+			),
+			`
+			_:1 <hasAgent> <a4> .
+			_:1 <hasRole> <translator> .
+			_:4 <hasAgent> <a4> .
+			_:4 <hasRole> <translator> .
+			<a4> <hasName> "William Weaver" .
+			`,
+		},
+		{
+			mustParsePatterns(`
+				?c <hasRole> <translator> .
+				?c <hasAgent> ?agent .
+				?agent <hasName> "William Weaver" .
+				`,
+			),
+			`
+			_:1 <hasAgent> <a4> .
+			_:1 <hasRole> <translator> .
+			_:4 <hasAgent> <a4> .
+			_:4 <hasRole> <translator> .
+			<a4> <hasName> "William Weaver" .
 			`,
 		},
 	}

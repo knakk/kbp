@@ -149,6 +149,49 @@ func (p TriplePattern) variables() (res []Variable) {
 	return res
 }
 
+// specificity returns a specificity score, determined by the number
+// of and position of variables.
+func (p TriplePattern) specificity() int {
+	// {s,p,o} < {s,?,o} < {?,p,o} < {s,p,?} < {?,?,o} < {s,?,?} < {?,p,?} < {?,?,?}
+
+	vars := [3]bool{}
+	objLiteral := 0
+	if _, ok := p.Subject.(Variable); ok {
+		vars[0] = true
+	}
+	if _, ok := p.Predicate.(Variable); ok {
+		vars[1] = true
+	}
+	switch p.Object.(type) {
+	case Variable:
+		vars[2] = true
+	case Literal:
+		// A Literal in object position is more specific than an URI
+		objLiteral = 1
+	}
+
+	switch vars {
+	case [3]bool{false, false, false}:
+		return 1 - objLiteral
+	case [3]bool{false, true, false}:
+		return 2 - objLiteral
+	case [3]bool{true, false, false}:
+		return 3 - objLiteral
+	case [3]bool{false, false, true}:
+		return 4
+	case [3]bool{true, true, false}:
+		return 5 - objLiteral
+	case [3]bool{false, true, true}:
+		return 6
+	case [3]bool{true, false, true}:
+		return 7
+	case [3]bool{true, true, true}:
+		return 8
+	default:
+		panic("BUG: TriplePattern.specificity: unhandeled pattern")
+	}
+}
+
 // Where returns a new graph with the triples matching the given patterns.
 // It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
 // and patterns are identical.
@@ -169,15 +212,35 @@ func (g *Graph) Where(patterns []TriplePattern) *Graph {
 	// Disjoint groups can be processed separately and its solutions merged by union.
 	for _, group := range groupPatternsByVariable(patterns) {
 		var matches []Triple
-		for _, pattern := range group {
+		for len(group) > 0 {
+			pattern := group[0]
 			solutions := g.solutionsFor(pattern, bound)
-			//fmt.Printf("solutions for %v:\n%v\nbound:%v\n", pattern, solutions, bound)
 			matches = append(matches, solutions...)
+			group = group[1:]
+			reorderGroup(group, bound)
 		}
+
 		res.Insert(matches...)
 	}
 
 	return res
+}
+
+// reorderGroup moves pattern with bound variables to the top
+func reorderGroup(patterns []TriplePattern, bound map[Variable][]Node) {
+	if len(patterns) <= 1 {
+		return
+	}
+	for i, pattern := range patterns {
+		for _, v := range pattern.variables() {
+			if _, ok := bound[v]; ok {
+				if i > 0 {
+					patterns[i], patterns[i-1] = patterns[i-1], patterns[i]
+				}
+				return
+			}
+		}
+	}
 }
 
 func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) []Triple {
@@ -236,14 +299,14 @@ func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) [
 }
 
 func (g *Graph) subjects() (res []SubjectNode) {
-	for subj, _ := range g.nodes {
+	for subj := range g.nodes {
 		res = append(res, subj)
 	}
 	return res
 }
 
 func (g *Graph) predicatesForSubj(s SubjectNode) (res []NamedNode) {
-	for pred, _ := range g.nodes[s] {
+	for pred := range g.nodes[s] {
 		res = append(res, pred)
 	}
 	return res
@@ -347,8 +410,6 @@ func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
 	groups := make([][]TriplePattern, 0)
 	n := 0
 
-	// TODO first sort patterns by variable name?
-
 	for _, pattern := range patterns {
 		assignedTo := 0
 		for _, v := range pattern.variables() {
@@ -370,7 +431,18 @@ func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
 		}
 	}
 
+	// Sort the patterns in each group by specificity
+	for i := range groups {
+		sortBySpecificity(groups[i])
+	}
+
 	return groups
+}
+
+func sortBySpecificity(patterns []TriplePattern) {
+	sort.Slice(patterns, func(i, j int) bool {
+		return patterns[i].specificity() < patterns[j].specificity()
+	})
 }
 
 // Eq checks if two graphs are equal (isomorphic).
