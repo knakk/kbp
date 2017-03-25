@@ -76,6 +76,10 @@ func (g *Graph) Contains(tr Triple) bool {
 
 // Insert adds one or more triples to the Graph. It returns the number
 // of triples inserted which where not allready present.
+//
+// Blank nodes are assumed to be disjoint from the blank nodes allready
+// present in the graph, and will be inserted with "fresh" node IDs.
+// However, any blank nodes in with identical IDs will be inserted as identical.
 func (g *Graph) Insert(trs ...Triple) int {
 	n := 0
 	bnodes := make(map[string]string)
@@ -121,6 +125,44 @@ outer:
 	}
 	return n
 }
+
+// Delete removes one or more triples to the Graph. It returns the number
+// of triples deleted. The delete operation only supports deleting triples with
+// concrete data, that means, without blank nodes; use the DeleteWhere method for that.
+func (g *Graph) Delete(trs ...Triple) int {
+	n := 0
+outer:
+	for _, tr := range trs {
+		// Skip triples with blank nodes
+		if _, ok := tr.Subject.(BlankNode); ok {
+			continue
+		}
+		if _, ok := tr.Object.(BlankNode); ok {
+			continue
+		}
+
+		if _, ok := g.nodes[tr.Subject]; !ok {
+			// subject not in graph
+			continue
+		}
+		if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
+			// predicate not in graph
+			continue
+		}
+		for i, o := range g.nodes[tr.Subject][tr.Predicate] {
+			if o == tr.Object {
+				// Found match, remove triple
+				g.nodes[tr.Subject][tr.Predicate][i] = g.nodes[tr.Subject][tr.Predicate][len(g.nodes[tr.Subject][tr.Predicate])-1]
+				g.nodes[tr.Subject][tr.Predicate] = g.nodes[tr.Subject][tr.Predicate][:len(g.nodes[tr.Subject][tr.Predicate])-1]
+				n++
+				continue outer
+			}
+		}
+	}
+	return n
+}
+
+// func (g *Graph) DeleteWhere(trs...TriplePattern) int
 
 // TriplePattern represents a pattern which can be used to match against a graph.
 type TriplePattern struct {

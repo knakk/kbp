@@ -5,6 +5,98 @@ import (
 	"testing"
 )
 
+func wantGraph(t *testing.T, got *Graph, wantGraph string) {
+	want := mustDecode(wantGraph)
+	if !got.Eq(want) {
+		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(got), mustEncode(want))
+	}
+}
+
+func mustTriples(s string) []Triple {
+	return mustDecode(s).Triples()
+}
+
+func TestGraphOperations(t *testing.T) {
+	g := NewGraph()
+
+	g.Insert(mustTriples(`
+		<h1> <name> "A" .
+		<h1> <knows> <h2> .
+		<h2> <name> "B" .
+		<h2> <knows> <h1> .`)...,
+	)
+	wantGraph(t, g, `
+		<h1> <name> "A" .
+		<h1> <knows> <h2> .
+		<h2> <name> "B" .
+		<h2> <knows> <h1> .
+		`,
+	)
+
+	g.Insert(mustTriples(`
+		<b1> <title> "book" .
+		<b1> <contributor> _:c1 .
+		_:c1 <role> <author> .
+		_:c1 <agent> <h1> .
+		<b1> <contributor> _:c2 .
+		_:c2 <role> <illustrator> .
+		_:c2 <agent> <h2> .
+		`)...,
+	)
+	wantGraph(t, g, `
+		<h1> <name> "A" .
+		<h1> <knows> <h2> .
+		<h2> <name> "B" .
+		<h2> <knows> <h1> .
+		<b1> <title> "book" .
+		<b1> <contributor> _:123 .
+		_:123 <role> <author> .
+		_:123 <agent> <h1> .
+		<b1> <contributor> _:456 .
+		_:456 <role> <illustrator> .
+		_:456 <agent> <h2> .`,
+	)
+
+	g.Delete(mustTriples(`
+		<b1> <contributor> _:a .
+		_:a <role> <illustrator> .
+		_:a <agent> <h2> `)...,
+	)
+
+	wantGraph(t, g, `
+		<h1> <name> "A" .
+		<h1> <knows> <h2> .
+		<h2> <name> "B" .
+		<h2> <knows> <h1> .
+		<b1> <title> "book" .
+		<b1> <contributor> _:1 .
+		_:1 <role> <author> .
+		_:1 <agent> <h1> .
+		<b1> <contributor> _:2 .
+		_:2 <role> <illustrator> .
+		_:2 <agent> <h2> .`,
+	)
+
+	g.Delete(mustTriples(`
+		<h1> <knows> <h2> .
+		<h2> <knows> <h1> .
+		`)...,
+	)
+
+	wantGraph(t, g, `
+		<h1> <name> "A" .
+		<h2> <name> "B" .
+		<b1> <title> "book" .
+		<b1> <contributor> _:1 .
+		_:1 <role> <author> .
+		_:1 <agent> <h1> .
+		<b1> <contributor> _:2 .
+		_:2 <role> <illustrator> .
+		_:2 <agent> <h2> .
+		`,
+	)
+}
+
 func TestGraphIsomorphism(t *testing.T) {
 	tests := []struct {
 		a  string
@@ -389,12 +481,4 @@ func TestGraphWhere(t *testing.T) {
 			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), test.want)
 		}
 	}
-}
-
-func mustNamedNode(s string) NamedNode {
-	node, err := NewNamedNode(s)
-	if err != nil {
-		panic(err)
-	}
-	return node
 }
