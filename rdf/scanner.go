@@ -229,6 +229,8 @@ func (s *scanner) scanTo(stop rune) bool {
 		switch r {
 		case eof:
 			return false
+		case '\n':
+			return false
 		//case utf8.RuneError:
 		//	s.Error = "illegal UTF-8 encoding"
 		//	return false

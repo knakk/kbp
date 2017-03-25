@@ -207,6 +207,7 @@ func TestScanErrors(t *testing.T) {
 		{`"\u123"`, "illegal escape sequence", `\u123`},
 		{`"\u123ø.a"`, "illegal escape sequence", "\\u123\xc3"},
 		{`"hei`, "unterminated Literal", `"hei`},
+		{`"hei\n`, "unterminated Literal", "\"hei\n"},
 		{`abc <a>`, "unexpected token", "abc"},
 		{`^a b`, "unexpected token", "^a"},
 		{`@ <a>`, "invalid language tag", ""},
