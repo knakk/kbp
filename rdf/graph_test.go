@@ -7,7 +7,7 @@ import (
 
 func wantGraph(t *testing.T, got *Graph, wantGraph string) {
 	want := mustDecode(wantGraph)
-	if !got.Eq(want) {
+	if !want.Eq(got) {
 		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(got), mustEncode(want))
 	}
 }
@@ -477,7 +477,7 @@ func TestGraphWhere(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if got := g.Where(test.patterns); !got.Eq(mustDecode(test.want)) {
+		if got := g.Where(test.patterns...); !got.Eq(mustDecode(test.want)) {
 			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), test.want)
 		}
 	}

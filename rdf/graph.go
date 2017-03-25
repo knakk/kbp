@@ -3,6 +3,7 @@ package rdf
 import (
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // Graph is an in-memory representation of an RDF graph:
@@ -133,7 +134,7 @@ func (g *Graph) Delete(trs ...Triple) int {
 	n := 0
 outer:
 	for _, tr := range trs {
-		// Skip triples with blank nodes
+		// Skip triples with blank nodes.
 		if _, ok := tr.Subject.(BlankNode); ok {
 			continue
 		}
@@ -142,18 +143,19 @@ outer:
 		}
 
 		if _, ok := g.nodes[tr.Subject]; !ok {
-			// subject not in graph
+			// Subject not in graph.
 			continue
 		}
 		if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
-			// predicate not in graph
+			// Predicate not in graph.
 			continue
 		}
 		for i, o := range g.nodes[tr.Subject][tr.Predicate] {
 			if o == tr.Object {
-				// Found match, remove triple
-				g.nodes[tr.Subject][tr.Predicate][i] = g.nodes[tr.Subject][tr.Predicate][len(g.nodes[tr.Subject][tr.Predicate])-1]
-				g.nodes[tr.Subject][tr.Predicate] = g.nodes[tr.Subject][tr.Predicate][:len(g.nodes[tr.Subject][tr.Predicate])-1]
+				// Triple is stored, remove it.
+				l := len(g.nodes[tr.Subject][tr.Predicate]) - 1
+				g.nodes[tr.Subject][tr.Predicate][i] = g.nodes[tr.Subject][tr.Predicate][l]
+				g.nodes[tr.Subject][tr.Predicate] = g.nodes[tr.Subject][tr.Predicate][:l]
 				n++
 				continue outer
 			}
@@ -237,7 +239,7 @@ func (p TriplePattern) specificity() int {
 // Where returns a new graph with the triples matching the given patterns.
 // It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
 // and patterns are identical.
-func (g *Graph) Where(patterns []TriplePattern) *Graph {
+func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 	if len(patterns) == 0 {
 		return NewGraph()
 	}
@@ -497,158 +499,122 @@ func (g *Graph) Eq(other *Graph) bool {
 		return false
 	}
 
-	var (
-		aBNodes []BlankNode
-		bBNodes []BlankNode
-	)
-	aBNodesAsObj := make(map[BlankNode][]Triple)
-	bBNodesAsObj := make(map[BlankNode][]Triple)
+	set := make(map[BlankNode]bool)
 
-	for subj, po := range g.nodes {
-		switch t := subj.(type) {
-		case BlankNode:
-			aBNodes = append(aBNodes, t)
+	// Check if all triples without blank-nodes are present in other.
+	// Collect all blank nodes while iterating the graph.
+	for s, po := range g.nodes {
+		if bnode, ok := s.(BlankNode); ok {
+			set[bnode] = true
 			continue
 		}
-		if _, ok := other.nodes[subj]; !ok {
+		if _, ok := other.nodes[s]; !ok {
 			return false
 		}
-		for pred, objs := range po {
-			if _, ok := other.nodes[subj][pred]; !ok {
+		for p, objs := range po {
+			if _, ok := other.nodes[s][p]; !ok {
 				return false
 			}
-			if len(objs) != len(other.nodes[subj][pred]) {
-				return false
-			}
-			sort.Slice(objs, func(i, j int) bool {
-				return objs[i].String() < objs[j].String()
-			})
-			sort.Slice(other.nodes[subj][pred], func(i, j int) bool {
-				return other.nodes[subj][pred][i].String() < other.nodes[subj][pred][j].String()
-			})
-			for i, obj := range objs {
-				switch t := obj.(type) {
-				case BlankNode:
-					aBNodesAsObj[t] = append(aBNodesAsObj[t],
-						Triple{Subject: subj, Predicate: pred, Object: obj})
+			for _, o := range objs {
+				if bnode, ok := o.(BlankNode); ok {
+					set[bnode] = true
 					continue
 				}
-				if obj != other.nodes[subj][pred][i] {
+				if !includeNode(other.nodes[s][p], o) {
 					return false
 				}
 			}
 		}
 	}
 
-	// collect bnodes from other graph
-	for subj, po := range other.nodes {
-		switch t := subj.(type) {
-		case BlankNode:
-			bBNodes = append(bBNodes, t)
-			continue
-		}
-		for pred, objs := range po {
-			for _, obj := range objs {
-				switch t := obj.(type) {
-				case BlankNode:
-					bBNodesAsObj[t] = append(bBNodesAsObj[t],
-						Triple{Subject: subj, Predicate: pred, Object: obj})
-					continue
-				}
-			}
-		}
-	}
+	// Graphs excluding blank nodes are equal.
 
-	if len(aBNodes) != len(bBNodes) {
+	var aBlankNodes []BlankNode
+	for bnode, _ := range set {
+		aBlankNodes = append(aBlankNodes, bnode)
+	}
+	bBlankNodes := other.bnodes()
+	if len(bBlankNodes) != len(aBlankNodes) {
 		return false
 	}
+	var (
+		aSign []string
+		bSign []string
+	)
 
-	if len(aBNodesAsObj) != len(bBNodesAsObj) {
-		return false
+	for _, bnode := range aBlankNodes {
+		aSign = append(aSign, g.signature(bnode))
 	}
 
-	nAEmptyBNodes := 0
-	nBEmptyBNodes := 0
-	for bnode := range aBNodesAsObj {
-		if _, ok := g.nodes[bnode]; !ok {
-			nAEmptyBNodes++
+	for _, bnode := range bBlankNodes {
+		bSign = append(bSign, other.signature(bnode))
+	}
+
+	sort.Strings(aSign)
+	sort.Strings(bSign)
+	for i, s := range aSign {
+		if s != bSign[i] {
+			return false
 		}
 	}
-	for bnode := range bBNodesAsObj {
-		if _, ok := other.nodes[bnode]; !ok {
-			nBEmptyBNodes++
-		}
-	}
-	if nAEmptyBNodes != nBEmptyBNodes {
-		return false
-	}
 
-	// Sort triples with Bnode in obj position here,
-	// as not to risk sort them multiple times in isMatch function.
-	for _, objs := range aBNodesAsObj {
-		sort.Slice(objs, func(i, j int) bool {
-			return objs[i].String() < objs[j].String()
-		})
-	}
-	for _, objs := range bBNodesAsObj {
-		sort.Slice(objs, func(i, j int) bool {
-			return objs[i].String() < objs[j].String()
-		})
-	}
-
-	matchA := make(map[BlankNode]bool)
-	matchB := make(map[BlankNode]bool)
-outer:
-	for _, aNode := range aBNodes {
-		for _, bNode := range bBNodes {
-			if matchB[bNode] {
-				continue
-			}
-			if len(g.nodes[aNode]) == len(other.nodes[bNode]) && len(aBNodesAsObj[aNode]) == len(bBNodesAsObj[bNode]) {
-				if isMatch(g, other, aNode, bNode, aBNodesAsObj[aNode], bBNodesAsObj[bNode]) {
-					matchA[aNode] = true
-					matchB[bNode] = true
-					continue outer
-				}
-			}
-		}
-		// no match was found for aNode in range bBNodes loop
-		return false
-	}
-
-	return len(matchA) == len(aBNodes)
+	return true
 }
 
-func isMatch(a, b *Graph, aNode, bNode BlankNode, aAsObj, bAsObj []Triple) bool {
-
-	// Check for match in obj position first, as it is likely
-	// less triples to compare, so we can return early if it's no match.
-	for i, tr := range aAsObj {
-		// Triples are allready sorted
-		if !tr.Eq(bAsObj[i]) {
-			return false
+func (g *Graph) bnodes() []BlankNode {
+	set := make(map[BlankNode]bool)
+	for s, po := range g.nodes {
+		if bnode, ok := s.(BlankNode); ok {
+			set[bnode] = true
+			continue
 		}
-	}
-
-	for pred, objs := range a.nodes[aNode] {
-		if _, ok := b.nodes[bNode][pred]; !ok {
-			return false
-		}
-		if len(objs) != len(b.nodes[bNode][pred]) {
-			return false
-		}
-		// objs are assumed to allready be sorted
-		for i, obj := range objs {
-			switch obj.(type) {
-			case BlankNode:
-				panic("TODO handle blank node pointing to another blank node")
-			}
-			if !obj.Eq(b.nodes[bNode][pred][i]) {
-				return false
+		for _, objs := range po {
+			for _, o := range objs {
+				if bnode, ok := o.(BlankNode); ok {
+					set[bnode] = true
+				}
 			}
 		}
 	}
-	return true
+	var res []BlankNode
+	for bnode, _ := range set {
+		res = append(res, bnode)
+	}
+	return res
+}
+
+func (g *Graph) signature(bnode BlankNode) string {
+
+	// We keep track of visited blank nodes, as not to trigger infinite
+	// recursion if there is a ciruclar relationship between nodes.
+	//visited := make(map[BlankNode]bool)
+	// TODO
+
+	var (
+		incoming []string
+		outgoing []string
+	)
+
+	// incoming relations
+	for s, po := range g.nodes {
+		for p, objs := range po {
+			for _, o := range objs {
+				if o == bnode {
+					outgoing = append(outgoing, s.String()+p.String())
+				}
+			}
+		}
+	}
+	sort.Strings(incoming)
+
+	// outgoing relations
+	for p, objs := range g.nodes[bnode] {
+		for _, o := range objs {
+			outgoing = append(outgoing, p.String()+o.String())
+		}
+	}
+	sort.Strings(outgoing)
+	return strings.Join(incoming, "") + strings.Join(outgoing, "")
 }
 
 //func (g *Graph) Union(other *Graph) *Graph {}
