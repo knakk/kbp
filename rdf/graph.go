@@ -2,77 +2,59 @@ package rdf
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 )
 
 // Graph is an in-memory representation of an RDF graph:
 // a colllection of triples which can be queried for subgraphs
-// and mutated with inserting and deleting triples.
+// and mutated by inserting and deleting triples.
 //
-// A Graph is not thread-safe; concurrent writes/reads must be
+// Graph is not thread-safe, so concurrent writes/reads must be
 // synchronized.
 type Graph struct {
-	// The graph is stored internally as a map of subjects to a map of
-	// predicates to a slice of objects.
-	nodes map[SubjectNode]map[NamedNode][]Node
+	// mappings between node and integer id
+	node2id map[Node]int
+	id2node map[int]Node
 
-	// nextID is the next unique integer to be used as Blank Node ID.
-	nextID int
+	// indexes
+	spo index
+	osp index
+	pos index
 }
+
+type index map[int]map[int][]int
 
 // NewGraph returns a new Graph.
 func NewGraph() *Graph {
 	return &Graph{
-		nodes: make(map[SubjectNode]map[NamedNode][]Node),
+		node2id: make(map[Node]int),
+		id2node: make(map[int]Node),
+		spo:     make(index),
+		osp:     make(index),
+		pos:     make(index),
 	}
 }
 
 // Size returns the number of triples in the Graph.
 func (g *Graph) Size() int {
-	n := 0
-	for _, po := range g.nodes {
-		for _, objs := range po {
-			n += len(objs)
-		}
-	}
-	return n
+	return len(g.node2id)
 }
 
 // Triples returns all the triples in the Graph.
 func (g *Graph) Triples() []Triple {
 	var res []Triple
-	for s, po := range g.nodes {
+	for s, po := range g.spo {
 		for p, objs := range po {
 			for _, o := range objs {
 				res = append(res, Triple{
-					Subject:   s,
-					Predicate: p,
-					Object:    o,
+					Subject:   g.id2node[s].(SubjectNode),
+					Predicate: g.id2node[p].(NamedNode),
+					Object:    g.id2node[o],
 				})
 			}
 		}
 	}
 	return res
-}
-
-// Contains returns true if the given Triple is present in Graph, otherwise false.
-// TODO handle Blank Node subj/obj.
-func (g *Graph) Contains(tr Triple) bool {
-	if _, ok := g.nodes[tr.Subject]; !ok {
-		return false
-	}
-	if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
-		return false
-	}
-
-	for _, o := range g.nodes[tr.Subject][tr.Predicate] {
-		if o.Eq(tr.Object) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // Insert adds one or more triples to the Graph. It returns the number
@@ -83,48 +65,194 @@ func (g *Graph) Contains(tr Triple) bool {
 // However, any blank nodes in with identical IDs will be inserted as identical.
 func (g *Graph) Insert(trs ...Triple) int {
 	n := 0
-	bnodes := make(map[string]string)
-outer:
+	bnodes := make(map[BlankNode]int)
 	for _, tr := range trs {
-		switch t := tr.Subject.(type) {
-		case BlankNode:
-			if newID, ok := bnodes[t.id]; ok {
-				tr.Subject = BlankNode{id: newID}
-			} else {
-				g.nextID++
-				bnodes[t.id] = strconv.Itoa(g.nextID)
-				tr.Subject = BlankNode{id: bnodes[t.id]}
+
+		var sid, pid, oid int
+
+		// get subject id
+		if bnode, ok := tr.Subject.(BlankNode); ok {
+			if _, ok := bnodes[bnode]; !ok {
+				bnodes[bnode] = g.addNode(bnode)
 			}
+			sid = bnodes[bnode]
+		} else {
+			sid = g.addNode(tr.Subject)
 		}
-		switch t := tr.Object.(type) {
-		case BlankNode:
-			if newID, ok := bnodes[t.id]; ok {
-				tr.Object = BlankNode{id: newID}
-			} else {
-				g.nextID++
-				bnodes[t.id] = strconv.Itoa(g.nextID)
-				tr.Object = BlankNode{id: bnodes[t.id]}
+
+		// get predicate id
+		pid = g.addNode(tr.Predicate)
+
+		// get object id
+		if bnode, ok := tr.Object.(BlankNode); ok {
+			if _, ok := bnodes[bnode]; !ok {
+				bnodes[bnode] = g.addNode(bnode)
 			}
+			oid = bnodes[bnode]
+		} else {
+			oid = g.addNode(tr.Object)
 		}
-		if _, ok := g.nodes[tr.Subject]; !ok {
-			// new subject
-			g.nodes[tr.Subject] = make(map[NamedNode][]Node)
+
+		if g.index(sid, pid, oid) {
+			n++
 		}
-		if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
-			// new predicate
-			g.nodes[tr.Subject][tr.Predicate] = make([]Node, 0, 1)
-		}
-		for _, o := range g.nodes[tr.Subject][tr.Predicate] {
-			if o == tr.Object {
-				// triple already in graph
-				continue outer
-			}
-		}
-		// add object
-		g.nodes[tr.Subject][tr.Predicate] = append(g.nodes[tr.Subject][tr.Predicate], tr.Object)
-		n++
 	}
 	return n
+}
+
+// addNode adds a node to the node dictonaries, and returns its new ID, or
+// existing ID if allready present.
+func (g *Graph) addNode(node Node) int {
+	if id, ok := g.node2id[node]; ok {
+		return id
+	}
+	id := len(g.node2id) + 1
+	g.node2id[node] = id
+	g.id2node[id] = node
+	return id
+}
+
+func (g *Graph) removeNode(id int) bool {
+	node, ok := g.id2node[id]
+	if !ok {
+		return false
+	}
+	delete(g.node2id, node)
+	delete(g.id2node, id)
+	return true
+}
+
+// index indexes a triple in all three indexes. It returns false if the
+// triple was allready stored.
+func (g *Graph) index(sid, pid, oid int) bool {
+	// Add to spo index
+	if _, ok := g.spo[sid]; !ok {
+		// Subject is a new node.
+		g.spo[sid] = make(map[int][]int)
+	}
+	if _, ok := g.spo[sid][pid]; !ok {
+		// New predicate for subject.
+		g.spo[sid][pid] = []int{oid}
+	} else {
+		for _, o := range g.spo[sid][pid] {
+			if o == oid {
+				return false
+			}
+		}
+		// Triple not in graph, add it
+		g.spo[sid][pid] = append(g.spo[sid][pid], oid)
+	}
+
+	// Add to osp index
+	if _, ok := g.osp[oid]; !ok {
+		g.osp[oid] = make(map[int][]int)
+	}
+	if _, ok := g.osp[oid][sid]; !ok {
+		g.osp[oid][sid] = []int{pid}
+	} else {
+		g.osp[oid][sid] = append(g.osp[oid][sid], pid)
+	}
+
+	// Add to pos index
+	if _, ok := g.pos[pid]; !ok {
+		g.pos[pid] = make(map[int][]int)
+	}
+	if _, ok := g.pos[pid][oid]; !ok {
+		g.pos[pid][oid] = []int{sid}
+	} else {
+		g.pos[pid][oid] = append(g.pos[pid][oid], sid)
+	}
+
+	return true
+}
+
+// unindex removes a triple from all three indexes. It returns false if the
+// triple was not stored.
+func (g *Graph) unindex(sid, pid, oid int) bool {
+	// Remove from spo index
+	if _, ok := g.spo[sid]; !ok {
+		return false
+	}
+	if _, ok := g.spo[sid][pid]; !ok {
+		return false
+	}
+	found := false
+	for i, o := range g.spo[sid][pid] {
+		if o == oid {
+			found = true
+			if len(g.spo[sid][pid]) == 1 {
+				// It's the only object left for given SP
+				delete(g.spo[sid], pid)
+				break
+			}
+			l := len(g.spo[sid][pid]) - 1
+			g.spo[sid][pid][i] = g.spo[sid][pid][l]
+			g.spo[sid][pid] = g.spo[sid][pid][:l]
+			break
+		}
+	}
+	if !found {
+		return false
+	}
+
+	// Remove from osp index
+	for i, p := range g.osp[oid][sid] {
+		if p == pid {
+			if len(g.osp[oid][sid]) == 1 {
+				// It's the only predicate left for given OS
+				delete(g.osp[oid], sid)
+				break
+			}
+			l := len(g.osp[oid][sid]) - 1
+			g.osp[oid][sid][i] = g.osp[oid][sid][l]
+			g.osp[oid][sid] = g.osp[oid][sid][:l]
+			break
+		}
+	}
+
+	// Remove from pos index
+	for i, s := range g.pos[pid][oid] {
+		if s == sid {
+			if len(g.pos[pid][oid]) == 1 {
+				// It's the last subject left for given PO
+				delete(g.pos[pid], oid)
+				break
+			}
+			l := len(g.pos[pid][oid]) - 1
+			g.pos[pid][oid][i] = g.pos[pid][oid][l]
+			g.pos[pid][oid] = g.pos[pid][oid][:l]
+			break
+		}
+	}
+
+	g.removeOrphanNodes(sid, pid, oid)
+
+	return true
+}
+
+func (g *Graph) removeOrphanNodes(sid, pid, oid int) {
+	if len(g.spo[sid]) == 0 && len(g.pos[sid]) == 0 && len(g.osp[sid]) == 0 {
+		g.removeNode(sid)
+	}
+	if len(g.pos[pid]) == 0 && len(g.spo[pid]) == 0 && len(g.osp[pid]) == 0 {
+		g.removeNode(pid)
+	}
+	if len(g.osp[oid]) == 0 && len(g.spo[oid]) == 0 && len(g.pos[oid]) == 0 {
+		g.removeNode(oid)
+	}
+}
+
+func (g *Graph) ids(tr Triple) (sid, pid, oid int, found bool) {
+	sid, found = g.node2id[tr.Subject]
+	if !found {
+		return
+	}
+	pid, found = g.node2id[tr.Predicate]
+	if !found {
+		return
+	}
+	oid, found = g.node2id[tr.Object]
+	return
 }
 
 // Delete removes one or more triples to the Graph. It returns the number
@@ -132,7 +260,7 @@ outer:
 // concrete data, that means, without blank nodes; use the DeleteWhere method for that.
 func (g *Graph) Delete(trs ...Triple) int {
 	n := 0
-outer:
+
 	for _, tr := range trs {
 		// Skip triples with blank nodes.
 		if _, ok := tr.Subject.(BlankNode); ok {
@@ -142,24 +270,16 @@ outer:
 			continue
 		}
 
-		if _, ok := g.nodes[tr.Subject]; !ok {
-			// Subject not in graph.
+		sid, pid, oid, found := g.ids(tr)
+		if !found {
 			continue
 		}
-		if _, ok := g.nodes[tr.Subject][tr.Predicate]; !ok {
-			// Predicate not in graph.
-			continue
+
+		if g.unindex(sid, pid, oid) {
+			n++
+			// TODO remove orphanNodes
 		}
-		for i, o := range g.nodes[tr.Subject][tr.Predicate] {
-			if o == tr.Object {
-				// Triple is stored, remove it.
-				l := len(g.nodes[tr.Subject][tr.Predicate]) - 1
-				g.nodes[tr.Subject][tr.Predicate][i] = g.nodes[tr.Subject][tr.Predicate][l]
-				g.nodes[tr.Subject][tr.Predicate] = g.nodes[tr.Subject][tr.Predicate][:l]
-				n++
-				continue outer
-			}
-		}
+
 	}
 	return n
 }
@@ -244,7 +364,7 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 		return NewGraph()
 	}
 
-	bound := make(map[Variable][]Node)
+	bound := make(map[Variable][]int)
 	res := NewGraph()
 
 	if len(patterns) == 1 {
@@ -271,7 +391,7 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 }
 
 // reorderGroup moves pattern with bound variables to the top
-func reorderGroup(patterns []TriplePattern, bound map[Variable][]Node) {
+func reorderGroup(patterns []TriplePattern, bound map[Variable][]int) {
 	if len(patterns) <= 1 {
 		return
 	}
@@ -287,12 +407,12 @@ func reorderGroup(patterns []TriplePattern, bound map[Variable][]Node) {
 	}
 }
 
-func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) []Triple {
+func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]int) []Triple {
 	var (
-		solutions  []Triple
-		subjects   []SubjectNode
-		predicates []NamedNode
-		objects    []Node
+		solutions  [][3]int
+		subjects   []int
+		predicates []int
+		objects    []int
 	)
 
 	if nodes, ok := boundSubject(pattern.Subject, bound); ok {
@@ -301,80 +421,87 @@ func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]Node) [
 		subjects = g.subjects()
 	}
 
-	for _, subj := range subjects {
-		if !matchSubj(pattern.Subject, subj) {
+	for _, sid := range subjects {
+		if !isVarSubj(pattern.Subject) && g.node2id[pattern.Subject.(Node)] != sid {
 			continue
 		}
 
 		if nodes, ok := boundPredicate(pattern.Predicate, bound); ok {
 			predicates = nodes
 		} else {
-			predicates = g.predicatesForSubj(subj)
+			predicates = g.predicatesForSubj(sid)
 		}
 
-		for _, p := range predicates {
-			if !matchPred(pattern.Predicate, p) {
+		for _, pid := range predicates {
+			if !isVarPred(pattern.Predicate) && g.node2id[pattern.Predicate.(Node)] != pid {
 				continue
 			}
 
 			if nodes, ok := boundObject(pattern.Object, bound); ok {
 				objects = nodes
 			} else {
-				objects = g.nodes[subj][p]
+				objects = g.spo[sid][pid]
 			}
-			for _, o := range objects {
-				if !includeNode(g.nodes[subj][p], o) {
+			for _, oid := range objects {
+				if !includeNode(g.spo[sid][pid], oid) {
 					continue
 				}
-				if !matchObj(pattern.Object, o) {
+				if !isVarObj(pattern.Object) && g.node2id[pattern.Object.(Node)] != oid {
 					continue
 				}
 
-				match := Triple{subj, p, o}
-				solutions = append(solutions, match)
+				solutions = append(solutions, [3]int{sid, pid, oid})
 			}
 		}
 	}
 
 	for _, match := range solutions {
-		updateBound(pattern, match, bound)
+		updateBound(pattern, match[0], match[1], match[2], bound)
 	}
-	return solutions
-}
-
-func (g *Graph) subjects() (res []SubjectNode) {
-	for subj := range g.nodes {
-		res = append(res, subj)
-	}
-	return res
-}
-
-func (g *Graph) predicatesForSubj(s SubjectNode) (res []NamedNode) {
-	for pred := range g.nodes[s] {
-		res = append(res, pred)
+	var res []Triple
+	for _, sol := range solutions {
+		res = append(res, Triple{
+			g.id2node[sol[0]].(SubjectNode),
+			g.id2node[sol[1]].(NamedNode),
+			g.id2node[sol[2]],
+		})
 	}
 	return res
 }
 
-func updateBound(p TriplePattern, match Triple, bound map[Variable][]Node) {
+func (g *Graph) subjects() (res []int) {
+	for sid := range g.spo {
+		res = append(res, sid)
+	}
+	return res
+}
+
+func (g *Graph) predicatesForSubj(sid int) (res []int) {
+	for pid := range g.spo[sid] {
+		res = append(res, pid)
+	}
+	return res
+}
+
+func updateBound(p TriplePattern, sid, pid, oid int, bound map[Variable][]int) {
 	if v, ok := p.Subject.(Variable); ok {
-		if !includeNode(bound[v], match.Subject) {
-			bound[v] = append(bound[v], match.Subject)
+		if !includeNode(bound[v], sid) {
+			bound[v] = append(bound[v], sid)
 		}
 	}
 	if v, ok := p.Predicate.(Variable); ok {
-		if !includeNode(bound[v], match.Predicate) {
-			bound[v] = append(bound[v], match.Predicate)
+		if !includeNode(bound[v], pid) {
+			bound[v] = append(bound[v], pid)
 		}
 	}
 	if v, ok := p.Object.(Variable); ok {
-		if !includeNode(bound[v], match.Object) {
-			bound[v] = append(bound[v], match.Object)
+		if !includeNode(bound[v], oid) {
+			bound[v] = append(bound[v], oid)
 		}
 	}
 }
 
-func includeNode(nodes []Node, find Node) bool {
+func includeNode(nodes []int, find int) bool {
 	for _, node := range nodes {
 		if node == find {
 			return true
@@ -383,69 +510,54 @@ func includeNode(nodes []Node, find Node) bool {
 	return false
 }
 
-func boundSubject(s subject, variables map[Variable][]Node) ([]SubjectNode, bool) {
+func boundSubject(s subject, bound map[Variable][]int) ([]int, bool) {
 	if v, ok := s.(Variable); ok {
-		if nodes, bound := variables[v]; bound {
-			var res []SubjectNode
-			for _, n := range nodes {
-				if subj, ok := n.(SubjectNode); ok {
-					res = append(res, subj)
-				}
-			}
-			return res, true
-		}
+		nodes, ok := bound[v]
+		return nodes, ok
 	}
 	return nil, false
 }
 
-func boundPredicate(p predicate, variables map[Variable][]Node) ([]NamedNode, bool) {
+func boundPredicate(p predicate, bound map[Variable][]int) ([]int, bool) {
 	if v, ok := p.(Variable); ok {
-		if nodes, bound := variables[v]; bound {
-			var res []NamedNode
-			for _, n := range nodes {
-				if subj, ok := n.(NamedNode); ok {
-					res = append(res, subj)
-				}
-			}
-			return res, true
-		}
+		nodes, ok := bound[v]
+		return nodes, ok
 	}
 	return nil, false
 }
 
-func boundObject(o object, variables map[Variable][]Node) ([]Node, bool) {
+func boundObject(o object, bound map[Variable][]int) ([]int, bool) {
 	if v, ok := o.(Variable); ok {
-		if nodes, bound := variables[v]; bound {
-			return nodes, true
-		}
+		nodes, ok := bound[v]
+		return nodes, ok
 	}
 	return nil, false
 }
 
-func matchSubj(s subject, other SubjectNode) bool {
+func isVarSubj(s subject) bool {
 	switch s.(type) {
 	case Variable:
 		return true
 	default:
-		return s.(SubjectNode).Eq(other)
+		return false
 	}
 }
 
-func matchPred(p predicate, other NamedNode) bool {
-	switch p.(type) {
+func isVarPred(s predicate) bool {
+	switch s.(type) {
 	case Variable:
 		return true
 	default:
-		return p.(NamedNode).Eq(other)
+		return false
 	}
 }
 
-func matchObj(o object, other Node) bool {
+func isVarObj(o object) bool {
 	switch o.(type) {
 	case Variable:
 		return true
 	default:
-		return o.(Node).Eq(other)
+		return false
 	}
 }
 
@@ -503,24 +615,33 @@ func (g *Graph) Eq(other *Graph) bool {
 
 	// Check if all triples without blank-nodes are present in other.
 	// Collect all blank nodes while iterating the graph.
-	for s, po := range g.nodes {
-		if bnode, ok := s.(BlankNode); ok {
+	for s, po := range g.spo {
+		if bnode, ok := g.id2node[s].(BlankNode); ok {
 			set[bnode] = true
 			continue
 		}
-		if _, ok := other.nodes[s]; !ok {
+		others, ok := other.node2id[g.id2node[s]]
+		if !ok {
 			return false
 		}
 		for p, objs := range po {
-			if _, ok := other.nodes[s][p]; !ok {
+			otherp, ok := other.node2id[g.id2node[p]]
+			if !ok {
+				return false
+			}
+			if _, ok := other.spo[others][otherp]; !ok {
 				return false
 			}
 			for _, o := range objs {
-				if bnode, ok := o.(BlankNode); ok {
+				if bnode, ok := g.id2node[o].(BlankNode); ok {
 					set[bnode] = true
 					continue
 				}
-				if !includeNode(other.nodes[s][p], o) {
+				othero, ok := other.node2id[g.id2node[o]]
+				if !ok {
+					return false
+				}
+				if !includeNode(other.spo[others][otherp], othero) {
 					return false
 				}
 			}
@@ -530,7 +651,7 @@ func (g *Graph) Eq(other *Graph) bool {
 	// Graphs excluding blank nodes are equal.
 
 	var aBlankNodes []BlankNode
-	for bnode, _ := range set {
+	for bnode := range set {
 		aBlankNodes = append(aBlankNodes, bnode)
 	}
 	bBlankNodes := other.bnodes()
@@ -563,27 +684,28 @@ func (g *Graph) Eq(other *Graph) bool {
 
 func (g *Graph) bnodes() []BlankNode {
 	set := make(map[BlankNode]bool)
-	for s, po := range g.nodes {
-		if bnode, ok := s.(BlankNode); ok {
+	for s, po := range g.spo {
+		if bnode, ok := g.id2node[s].(BlankNode); ok {
 			set[bnode] = true
 			continue
 		}
 		for _, objs := range po {
 			for _, o := range objs {
-				if bnode, ok := o.(BlankNode); ok {
+				if bnode, ok := g.id2node[o].(BlankNode); ok {
 					set[bnode] = true
 				}
 			}
 		}
 	}
 	var res []BlankNode
-	for bnode, _ := range set {
+	for bnode := range set {
 		res = append(res, bnode)
 	}
 	return res
 }
 
 func (g *Graph) signature(bnode BlankNode) string {
+	// TODO function shoud take nodeID int
 
 	// We keep track of visited blank nodes, as not to trigger infinite
 	// recursion if there is a ciruclar relationship between nodes.
@@ -596,21 +718,17 @@ func (g *Graph) signature(bnode BlankNode) string {
 	)
 
 	// incoming relations
-	for s, po := range g.nodes {
-		for p, objs := range po {
-			for _, o := range objs {
-				if o == bnode {
-					outgoing = append(outgoing, s.String()+p.String())
-				}
-			}
+	for s, preds := range g.osp[g.node2id[bnode]] {
+		for _, p := range preds {
+			outgoing = append(outgoing, g.id2node[s].String()+g.id2node[p].String())
 		}
 	}
 	sort.Strings(incoming)
 
 	// outgoing relations
-	for p, objs := range g.nodes[bnode] {
+	for p, objs := range g.spo[g.node2id[bnode]] {
 		for _, o := range objs {
-			outgoing = append(outgoing, p.String()+o.String())
+			outgoing = append(outgoing, g.id2node[p].String()+g.id2node[o].String())
 		}
 	}
 	sort.Strings(outgoing)

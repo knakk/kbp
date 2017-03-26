@@ -310,10 +310,14 @@ func NewEncoder(w io.Writer) *Encoder {
 
 // EncodeGraph serializes the given Graph in N-Triples format.
 func (e *Encoder) EncodeGraph(g *Graph) error {
-	for s, po := range g.nodes {
+	for s, po := range g.spo {
 		for p, objs := range po {
 			for _, o := range objs {
-				if _, err := e.w.WriteString(Triple{Subject: s, Predicate: p, Object: o}.String()); err != nil {
+				if _, err := e.w.WriteString(Triple{
+					Subject:   g.id2node[s].(SubjectNode),
+					Predicate: g.id2node[p].(NamedNode),
+					Object:    g.id2node[o],
+				}.String()); err != nil {
 					return err
 				}
 			}
