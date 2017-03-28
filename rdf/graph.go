@@ -35,6 +35,58 @@ func NewGraph() *Graph {
 	}
 }
 
+// Stats returns statistics about the graph.
+func (g *Graph) Stats() Stats {
+	// Count node types
+	var bnode, literal, named int
+	for node := range g.node2id {
+		switch node.(type) {
+		case NamedNode:
+			named++
+		case BlankNode:
+			bnode++
+		case Literal:
+			literal++
+		}
+	}
+
+	var triples int
+	predicates := make(map[string]int)
+	for _, po := range g.spo {
+		for p, objs := range po {
+			pred := g.id2node[p].(NamedNode).val
+			triples += len(objs)
+			predicates[pred] = predicates[pred] + len(objs)
+		}
+	}
+
+	return Stats{
+		NumNodes:      len(g.node2id),
+		NumSubjects:   len(g.spo),
+		NumPredicates: len(g.pos),
+		NumObjects:    len(g.osp),
+		NumBlankNodes: bnode,
+		NumLiterals:   literal,
+		NumNamedNodes: named,
+		NumTriples:    triples,
+		Predicates:    predicates,
+	}
+}
+
+type Stats struct {
+	// Counts
+	NumNodes      int
+	NumNamedNodes int
+	NumLiterals   int
+	NumBlankNodes int
+	NumSubjects   int
+	NumPredicates int
+	NumObjects    int
+	NumTriples    int
+	// Distributions
+	Predicates map[string]int
+}
+
 // Size returns the number of triples in the Graph.
 func (g *Graph) Size() int {
 	return len(g.node2id)
