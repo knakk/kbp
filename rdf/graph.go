@@ -365,10 +365,19 @@ func (p TriplePattern) variables() (res []Variable) {
 	return res
 }
 
-// specificity returns a specificity score, determined by the number
-// of and position of variables.
-func (p TriplePattern) specificity() int {
-	// {s,p,o} < {s,?,o} < {?,p,o} < {s,p,?} < {?,?,o} < {s,?,?} < {?,p,?} < {?,?,?}
+// selectivity returns a selectivity score, determined by the number
+// of and position of variables. This score can be used to select the
+// execution order of graph patterns. This idea is proposed in the paper:
+// Tsialiamanis, Petros, et al. "Heuristics-based query optimisation for SPARQL."
+// Proceedings of the 15th International Conference on Extending Database Technology. ACM, 2012.
+func (p TriplePattern) selectivity() int {
+	// The pattern score from lowest (most selective) to highest (least selective) is
+	// using the following order:
+	//
+	//   {s,p,o} < {s,?,o} < {?,p,o} < {s,p,?} < {?,?,o} < {s,?,?} < {?,p,?} < {?,?,?}
+	//
+	// In addition, patterns where the node in object position is a literal are scored
+	// lower than if it is a named node/blank node, since an literal cannot have outgoing edges.
 
 	vars := [3]bool{}
 	objLiteral := 0
@@ -382,7 +391,6 @@ func (p TriplePattern) specificity() int {
 	case Variable:
 		vars[2] = true
 	case Literal:
-		// A Literal in object position is more specific than an URI
 		objLiteral = 1
 	}
 
@@ -404,7 +412,7 @@ func (p TriplePattern) specificity() int {
 	case [3]bool{true, true, true}:
 		return 8
 	default:
-		panic("BUG: TriplePattern.specificity: unhandeled pattern")
+		panic("BUG: TriplePattern.selectivity: unhandeled pattern")
 	}
 }
 
@@ -639,17 +647,17 @@ func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
 		}
 	}
 
-	// Sort the patterns in each group by specificity
+	// Sort the patterns in each group by selectivity
 	for i := range groups {
-		sortBySpecificity(groups[i])
+		sortBySelectivity(groups[i])
 	}
 
 	return groups
 }
 
-func sortBySpecificity(patterns []TriplePattern) {
+func sortBySelectivity(patterns []TriplePattern) {
 	sort.Slice(patterns, func(i, j int) bool {
-		return patterns[i].specificity() < patterns[j].specificity()
+		return patterns[i].selectivity() < patterns[j].selectivity()
 	})
 }
 
