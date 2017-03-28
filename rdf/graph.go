@@ -73,6 +73,7 @@ func (g *Graph) Stats() Stats {
 	}
 }
 
+// Stats represents statistics about a graph.
 type Stats struct {
 	// Counts
 	NumNodes      int
@@ -110,9 +111,9 @@ func (g *Graph) Triples() []Triple {
 }
 
 // Insert adds one or more triples to the Graph. It returns the number
-// of triples inserted which where not allready present.
+// of triples inserted which where not already present.
 //
-// Blank nodes are assumed to be disjoint from the blank nodes allready
+// Blank nodes are assumed to be disjoint from the blank nodes already
 // present in the graph, and will be inserted with "fresh" node IDs.
 // However, any blank nodes in with identical IDs will be inserted as identical.
 func (g *Graph) Insert(trs ...Triple) int {
@@ -153,7 +154,7 @@ func (g *Graph) Insert(trs ...Triple) int {
 }
 
 // addNode adds a node to the node dictonaries, and returns its new ID, or
-// existing ID if allready present.
+// existing ID if already present.
 func (g *Graph) addNode(node Node) int {
 	if id, ok := g.node2id[node]; ok {
 		return id
@@ -175,7 +176,7 @@ func (g *Graph) removeNode(id int) bool {
 }
 
 // index indexes a triple in all three indexes. It returns false if the
-// triple was allready stored.
+// triple was already stored.
 func (g *Graph) index(sid, pid, oid int) bool {
 	// Add to spo index
 	if _, ok := g.spo[sid]; !ok {
@@ -329,7 +330,6 @@ func (g *Graph) Delete(trs ...Triple) int {
 
 		if g.unindex(sid, pid, oid) {
 			n++
-			// TODO remove orphanNodes
 		}
 
 	}
@@ -377,10 +377,10 @@ func (p TriplePattern) selectivity() int {
 	//   {s,p,o} < {s,?,o} < {?,p,o} < {s,p,?} < {?,?,o} < {s,?,?} < {?,p,?} < {?,?,?}
 	//
 	// In addition, patterns where the node in object position is a literal are scored
-	// lower than if it is a named node/blank node, since an literal cannot have outgoing edges.
+	// lower than if it is a named node/blank node, since a literal cannot have outgoing edges.
 
 	vars := [3]bool{}
-	objLiteral := 0
+	objIsLiteral := 0
 	if _, ok := p.Subject.(Variable); ok {
 		vars[0] = true
 	}
@@ -391,20 +391,20 @@ func (p TriplePattern) selectivity() int {
 	case Variable:
 		vars[2] = true
 	case Literal:
-		objLiteral = 1
+		objIsLiteral = 1
 	}
 
 	switch vars {
 	case [3]bool{false, false, false}:
-		return 1 - objLiteral
+		return 1 - objIsLiteral
 	case [3]bool{false, true, false}:
-		return 2 - objLiteral
+		return 2 - objIsLiteral
 	case [3]bool{true, false, false}:
-		return 3 - objLiteral
+		return 3 - objIsLiteral
 	case [3]bool{false, false, true}:
 		return 4
 	case [3]bool{true, true, false}:
-		return 5 - objLiteral
+		return 5 - objIsLiteral
 	case [3]bool{false, true, true}:
 		return 6
 	case [3]bool{true, false, true}:
@@ -768,7 +768,7 @@ func (g *Graph) signature(bnode BlankNode) string {
 	// TODO function shoud take nodeID int
 
 	// We keep track of visited blank nodes, as not to trigger infinite
-	// recursion if there is a ciruclar relationship between nodes.
+	// recursion if there is a circular relationship between nodes.
 	//visited := make(map[BlankNode]bool)
 	// TODO
 
@@ -792,12 +792,6 @@ func (g *Graph) signature(bnode BlankNode) string {
 		}
 	}
 	sort.Strings(outgoing)
+
 	return strings.Join(incoming, "") + strings.Join(outgoing, "")
 }
-
-//func (g *Graph) Union(other *Graph) *Graph {}
-//func (g *Graph) Delete(tr ...Triple) {}
-//func (g *Graph) Merge(other *Graph)  {}
-
-//func (g *Graph) Describe(u URI, depth int) *Graph {}
-//func (g *Graph) Describe(u URI, depth int) *Graph {}

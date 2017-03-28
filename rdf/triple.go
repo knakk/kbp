@@ -42,7 +42,7 @@ func (t Triple) Eq(other Triple) bool {
 
 // Node represents a node in an RDF graph.
 type Node interface {
-	Eq(Node) bool // TODO is this that usefull?
+	Eq(Node) bool // TODO is this that useful?
 	String() string
 
 	validAsNode()

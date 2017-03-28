@@ -67,7 +67,7 @@ type scanner struct {
 	r    *bufio.Reader
 	line []byte // line being scanned
 
-	pos      int  // positon in line
+	pos      int  // position in line
 	start    int  // start of current token
 	unescape bool // true when token needs unescaping
 
