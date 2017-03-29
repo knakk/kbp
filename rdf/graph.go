@@ -428,23 +428,65 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 	res := NewGraph()
 
 	if len(patterns) == 1 {
-		res.Insert(g.solutionsFor(patterns[0], bound)...)
+		res.Insert(g.triplesMatching(patterns[0], bound)...)
 		return res
 	}
 
-	// Group patterns by shared variables, either direct or transitive.
-	// Disjoint groups can be processed separately and its solutions merged by union.
 	for _, group := range groupPatternsByVariable(patterns) {
 		var matches []Triple
 		for len(group) > 0 {
 			pattern := group[0]
-			solutions := g.solutionsFor(pattern, bound)
-			matches = append(matches, solutions...)
+			triples := g.triplesMatching(pattern, bound)
+			matches = append(matches, triples...)
 			group = group[1:]
 			reorderGroup(group, bound)
 		}
 
 		res.Insert(matches...)
+	}
+
+	return res
+}
+
+func (g *Graph) Select(vars []Variable, patterns ...TriplePattern) (res [][]Node) {
+
+	bound := make(map[Variable][]int)
+
+	for _, group := range groupPatternsByVariable(patterns) {
+		for len(group) > 0 {
+			pattern := group[0]
+			res = append(res, g.solutionsMatching(vars, pattern, bound)...)
+			group = group[1:]
+			reorderGroup(group, bound)
+		}
+	}
+	// merge rows
+	for i, row := range res {
+		for j, node := range row {
+			if node == nil {
+				for y := range res {
+					if res[y][j] != nil {
+						res[i][j] = res[y][j]
+						res[y][j] = nil
+						break
+					}
+				}
+			}
+		}
+	}
+	// prune rows with nils
+	for i := 0; i < len(res); i++ {
+	checkNil:
+		for j := 0; j < len(res[i]); j++ {
+			if res[i][j] == nil {
+				res[i] = res[len(res)-1]
+				res = res[:len(res)-1]
+				if i > 0 {
+					i--
+				}
+				continue checkNil
+			}
+		}
 	}
 
 	return res
@@ -467,7 +509,34 @@ func reorderGroup(patterns []TriplePattern, bound map[Variable][]int) {
 	}
 }
 
-func (g *Graph) solutionsFor(pattern TriplePattern, bound map[Variable][]int) []Triple {
+func (g *Graph) solutionsMatching(vars []Variable, pattern TriplePattern, bound map[Variable][]int) (solutions [][]Node) {
+	for _, triple := range g.triplesMatching(pattern, bound) {
+		row := make([]Node, len(vars))
+		match := false
+		for i, v := range vars {
+			if v2, ok := pattern.Subject.(Variable); ok && v2 == v {
+				row[i] = triple.Subject
+				match = true
+				continue
+			}
+			if v2, ok := pattern.Predicate.(Variable); ok && v2 == v {
+				row[i] = triple.Predicate
+				match = true
+				continue
+			}
+			if v2, ok := pattern.Object.(Variable); ok && v2 == v {
+				row[i] = triple.Object
+				match = true
+			}
+		}
+		if match {
+			solutions = append(solutions, row)
+		}
+	}
+	return solutions
+}
+
+func (g *Graph) triplesMatching(pattern TriplePattern, bound map[Variable][]int) []Triple {
 	var (
 		solutions  [][3]int
 		subjects   []int
@@ -621,6 +690,8 @@ func isVarObj(o object) bool {
 	}
 }
 
+// groupPatternsByVariable groups patterns by shared variables, either direct or transitive.
+// Disjoint groups can be processed separately (eg. in paralell) and its solutions merged by union.
 func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
 	variables := make(map[Variable]int) // variable to group number
 	groups := make([][]TriplePattern, 0)

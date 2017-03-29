@@ -1,7 +1,10 @@
 package rdf
 
 import (
+	"bytes"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -16,7 +19,75 @@ func mustTriples(s string) []Triple {
 	return mustDecode(s).Triples()
 }
 
-func TestGraphOperations(t *testing.T) {
+func mustParseVariables(s string) []Variable {
+	var res []Variable
+	for _, v := range strings.Split(s, "?") {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		res = append(res, NewVariable(strings.TrimSpace(v)))
+	}
+	return res
+}
+
+func mustParseSolutions(s string) (res [][]Node) {
+	rows := strings.Split(s, "\n")[1:] // discard first line (column header listing variables)
+	for _, row := range rows {
+		var solution []Node
+		for _, node := range strings.Split(row, "\t") {
+			solution = append(solution, mustParseNode(node))
+		}
+		res = append(res, solution)
+	}
+	return res
+}
+
+func nodesToString(nodes []Node) string {
+	var s string
+	for _, n := range nodes {
+		s += n.String()
+	}
+	return s
+}
+
+func solutionsEq(a, b [][]Node) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	sort.Slice(a, func(i, j int) bool {
+		return nodesToString(a[i]) < nodesToString(a[j])
+	})
+
+	sort.Slice(b, func(i, j int) bool {
+		return nodesToString(b[i]) < nodesToString(b[j])
+	})
+
+	for i, row := range a {
+		for j, node := range row {
+			if b[i][j] != node {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func mustParseNode(node string) Node {
+	s := newScanner(bytes.NewBufferString(node))
+	tok := s.Scan()
+	switch tok.Type {
+	case tokenLiteral:
+		return NewStrLiteral(tok.Text)
+	case tokenURI:
+		return NamedNode{val: tok.Text}
+	default:
+	}
+	panic("mustParseNode: TODO")
+}
+
+func TestGraphMutateOperations(t *testing.T) {
 	g := NewGraph()
 
 	g.Insert(mustTriples(`
@@ -292,8 +363,7 @@ func TestGroupPatternsByVariable(t *testing.T) {
 	}
 }
 
-func TestGraphWhere(t *testing.T) {
-	g := mustDecode(`
+var testGraph = mustDecode(`
 		<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 		<a1> <hasName> "Italo Calvino" .
 		<a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
@@ -370,6 +440,7 @@ func TestGraphWhere(t *testing.T) {
 		<c1> <hasName> "Gyldendal" .
 		`)
 
+func TestGraphWhere(t *testing.T) {
 	tests := []struct {
 		patterns []TriplePattern
 		want     string
@@ -380,7 +451,7 @@ func TestGraphWhere(t *testing.T) {
 		},
 		{
 			mustParsePatterns("?s ?p ?o ."),
-			mustEncode(g),
+			mustEncode(testGraph),
 		},
 		{
 			mustParsePatterns("?pub <hasMainTitle> ?title ."),
@@ -474,11 +545,91 @@ func TestGraphWhere(t *testing.T) {
 			<a4> <hasName> "William Weaver" .
 			`,
 		},
+		{
+			mustParsePatterns(`
+				?work <hasMainTitle> "Le Cosmicomiche" .
+				?book <isPublicationOf> ?work.
+				?book <hasContributor> ?contrib .
+				?contrib <hasRole> <translator> .
+				?contrib <hasAgent> ?person .
+				?person <hasName> ?translator .`,
+			),
+			`
+			<w1> <hasMainTitle> "Le Cosmicomiche" .
+			<p1> <isPublicationOf> <w1> .
+			<p1> <hasContributor> _:c2 .
+			<p1> <hasContributor> _:c3 .
+			<p1> <hasContributor> _:c4 .
+			_:c2 <hasRole> <translator> .
+			_:c2 <hasAgent> <a2> .
+			_:c3 <hasRole> <translator> .
+			_:c3 <hasAgent> <a3> .
+			_:c4 <hasRole> <translator> .
+			_:c4 <hasAgent> <a4> .
+			<a2> <hasName> "Martin L. McLaughlin" .
+			<a3> <hasName> "Tim Parks" .
+			<a4> <hasName> "William Weaver" .
+			`,
+		},
 	}
 
 	for _, test := range tests {
-		if got := g.Where(test.patterns...); !got.Eq(mustDecode(test.want)) {
+		if got := testGraph.Where(test.patterns...); !got.Eq(mustDecode(test.want)) {
 			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), test.want)
+		}
+	}
+}
+
+func TestGraphSelect(t *testing.T) {
+	tests := []struct {
+		vars     []Variable
+		patterns []TriplePattern
+		want     string
+	}{
+		{
+			mustParseVariables(""),
+			mustParsePatterns(""),
+			"",
+		},
+		{
+			mustParseVariables("?name"),
+			mustParsePatterns("?person <hasName> ?name ."),
+			`name
+             "Italo Calvino"
+             "Martin L. McLaughlin"
+             "Tim Parks"
+             "William Weaver"
+             "Penguin"
+             "Ingeborg Hagemann"
+             "Gyldendal"`,
+		},
+		{
+			mustParseVariables("?name"),
+			mustParsePatterns(`?c <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Corporation> .
+							   ?c <hasName> ?name .`),
+			`name
+             "Penguin"
+             "Gyldendal"`,
+		},
+		{
+			mustParseVariables("?book ?translator"),
+			mustParsePatterns(`?book <hasContributor> ?contrib .
+							   ?book <isPublicationOf> ?work.
+							   ?work <hasMainTitle> "Le Cosmicomiche" .
+							   ?contrib <hasRole> <translator> .
+							   ?contrib <hasAgent> ?person .
+							   ?person <hasName> ?translator .`),
+			`?book	?translator
+             <p1>	"Martin L. McLaughlin"
+             <p1>	"Tim Parks"
+             <p1>	"William Weaver"`,
+		},
+	}
+
+	for _, test := range tests {
+		want := mustParseSolutions(test.want)
+		if got := testGraph.Select(test.vars, test.patterns...); !solutionsEq(got, want) {
+			t.Errorf("got:\n%v\nwant:\n%v", got, want)
 		}
 	}
 }
