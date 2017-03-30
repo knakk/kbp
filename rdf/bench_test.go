@@ -133,14 +133,79 @@ func BenchmarkGraphWhereSmall(b *testing.B) {
 		patterns []TriplePattern
 	}{
 		{"match all", mustParsePatterns("?s ?p ?o .")},
-		{"match subject", mustParsePatterns("<http://www.gutenberg.org/ebooks/39110> ?p ?o .")},
-		{"match object", mustParsePatterns("?s ?p <http://purl.org/dc/terms/IMT> .")},
-		{"match predicate", mustParsePatterns("?s <http://purl.org/dc/terms/modified> ?o .")},
-		{"match stored triple", mustParsePatterns(`<http://www.gutenberg.org/ebooks/39110.kindle.noimages> <http://purl.org/dc/terms/extent> "492484"^^<http://www.w3.org/2001/XMLSchema#integer> .`)},
-		{"match missing triple", mustParsePatterns(`<http://www.gutenberg.org/ebooks/39110.kindle.noimages> <http://purl.org/dc/terms/extent> "-492484"^^<http://www.w3.org/2001/XMLSchema#integer> .`)},
+		{"match S", mustParsePatterns("<http://www.gutenberg.org/ebooks/39110> ?p ?o .")},
+		{"match O", mustParsePatterns("?s ?p <http://purl.org/dc/terms/IMT> .")},
+		{"match P", mustParsePatterns("?s <http://purl.org/dc/terms/modified> ?o .")},
+		{"match SPO (existing)", mustParsePatterns(`<http://www.gutenberg.org/ebooks/39110.kindle.noimages> <http://purl.org/dc/terms/extent> "492484"^^<http://www.w3.org/2001/XMLSchema#integer> .`)},
+		{"match SPO (missing)", mustParsePatterns(`<http://www.gutenberg.org/ebooks/39110.kindle.noimages> <http://purl.org/dc/terms/extent> "-492484"^^<http://www.w3.org/2001/XMLSchema#integer> .`)},
+		{"match SP", mustParsePatterns("<http://www.gutenberg.org/ebooks/39110> <http://purl.org/dc/terms/hasFormat> ?o .")},
+		{"match PO", mustParsePatterns(`?s <http://purl.org/dc/terms/publisher> "Project Gutenberg" .`)},
+		{"match SO", mustParsePatterns(`<http://www.gutenberg.org/ebooks/39110> ?p "Project Gutenberg" .`)},
+		{"complex", mustParsePatterns(`
+				?work <hasMainTitle> "Le Cosmicomiche" .
+				?book <isPublicationOf> ?work.
+				?book <hasContributor> ?contrib .
+				?contrib <hasRole> <translator> .
+				?contrib <hasAgent> ?person .
+				?person <hasName> ?translator .`,
+		)},
 	}
 	var results *Graph
 	g := dataset("small")
+	b.ResetTimer()
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				results = g.Where(bm.patterns...)
+			}
+		})
+	}
+}
+
+func BenchmarkGraphWhereMedium(b *testing.B) {
+	benchmarks := []struct {
+		name     string
+		patterns []TriplePattern
+	}{
+		{"match all", mustParsePatterns("?s ?p ?o .")},
+		{"match S", mustParsePatterns("<http://data.linkedopendata.it/musei/resource/Museo_della_Permanente-Milano> ?p ?o .")},
+		{"match O", mustParsePatterns("?s ?p <http://www.w3.org/2006/vcard/ns#Tel> .")},
+		{"match P", mustParsePatterns("?s <http://www.w3.org/2006/vcard/ns#geo> ?o .")},
+		{"match SPO (existing)", mustParsePatterns(`<http://data.linkedopendata.it/musei/resource/Museo_della_Regina-Cattolica> <http://www.w3.org/2006/vcard/ns#url> <http://www.cattolica.net> .`)},
+		{"match SPO (missing)", mustParsePatterns(`<http://data.linkedopendata.it/musei/resource/Museo_della_Regina-Cattolica> <http://www.w3.org/2006/vcard/ns#url> <http://xyz.cattolica.net>  .`)},
+		{"match SP", mustParsePatterns("<http://data.linkedopendata.it/musei/resource/Aboca_Museum-Sansepolcro> <http://www.w3.org/2000/01/rdf-schema#label> ?o .")},
+		{"match PO", mustParsePatterns(`?s <http://www.w3.org/2006/vcard/ns#latitude> "43.9659588" .`)},
+		{"match SO", mustParsePatterns(`<http://data.linkedopendata.it/musei/resource/Cuglieri> ?p <http://sws.geonames.org/3177719/about.rdf>  .`)},
+	}
+	var results *Graph
+	g := dataset("medium")
+	b.ResetTimer()
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				results = g.Where(bm.patterns...)
+			}
+		})
+	}
+}
+
+func BenchmarkGraphWhereLarge(b *testing.B) {
+	benchmarks := []struct {
+		name     string
+		patterns []TriplePattern
+	}{
+		//{"match all", mustParsePatterns("?s ?p ?o .")},
+		{"match S", mustParsePatterns("<http://lexvo.org/id/iso639-3/eng> ?p ?o .")},
+		{"match O", mustParsePatterns("?s ?p <http://lexvo.org/id/iso639-3/eng> .")},
+		{"match P", mustParsePatterns("?s <http://lexvo.org/ontology#nearlySameAs> ?o .")},
+		{"match SPO (existing)", mustParsePatterns(`<http://lexvo.org/id/iso639-3/eng> <http://www.w3.org/2000/01/rdf-schema#label> "Engliš"@wae .`)},
+		{"match SPO (missing)", mustParsePatterns(`<http://lexvo.org/id/iso639-3/eng> <http://www.w3.org/2000/01/rdf-schema#label> "Engliš"@en .`)},
+		{"match SP", mustParsePatterns("<http://lexvo.org/id/iso639-3/eng> <http://www.w3.org/2000/01/rdf-schema#label> ?o .")},
+		{"match PO", mustParsePatterns(`?s <http://www.w3.org/2002/07/owl#sameAs> <http://lexvo.org/id/iso639-3/nor> .`)},
+		{"match SO", mustParsePatterns(`<http://lexvo.org/id/iso639-3/nor> ?p "ኖርዌጂያን"@tig .`)},
+	}
+	var results *Graph
+	g := dataset("large")
 	b.ResetTimer()
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
