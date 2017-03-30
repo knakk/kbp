@@ -539,6 +539,132 @@ func (g *Graph) solutionsMatching(vars []Variable, pattern TriplePattern, bound 
 }
 
 func (g *Graph) triplesMatching(pattern TriplePattern, bound map[Variable][]int) []Triple {
+	const (
+		//b = 4 // variable but bound TODO?
+		v = 3 // variable
+		u = 2 // uri
+		l = 0 // literal
+	)
+	switch [3]int{
+		pattern.Subject.selectivity(),
+		pattern.Predicate.selectivity(),
+		pattern.Object.selectivity(),
+	} {
+	case [3]int{u, u, u}, [3]int{u, u, l}:
+		tr := Triple{
+			pattern.Subject.(SubjectNode),
+			pattern.Predicate.(NamedNode),
+			pattern.Object.(Node),
+		}
+		if sid, pid, oid, ok := g.ids(tr); ok {
+			if includeNode(g.spo[sid][pid], oid) {
+				return []Triple{tr}
+			}
+		}
+		return nil
+	case [3]int{v, v, l},
+		[3]int{v, u, l},
+		[3]int{u, v, l},
+		[3]int{v, v, u},
+		[3]int{u, v, u}:
+		return g.triplesMatchingO(pattern, bound)
+	case [3]int{v, u, v}, [3]int{v, u, u}:
+		return g.triplesMatchingP(pattern, bound)
+	default:
+		return g.triplesMatchingAny(pattern, bound)
+	}
+}
+
+func (g *Graph) triplesMatchingO(pattern TriplePattern, bound map[Variable][]int) []Triple {
+	// {any,any,literal/uri}
+
+	oid, ok := g.node2id[pattern.Object.(Node)]
+	if !ok {
+		return nil
+	}
+
+	var solutions [][3]int
+
+	for sid, preds := range g.osp[oid] {
+		if v, ok := pattern.Subject.(Variable); ok {
+			if !freeOrBound(v, sid, bound) {
+				continue
+			}
+		} else if g.node2id[pattern.Subject.(Node)] != sid {
+			continue
+		}
+		for _, pid := range preds {
+			if v, ok := pattern.Predicate.(Variable); ok {
+				if !freeOrBound(v, pid, bound) {
+					continue
+				}
+			} else if g.node2id[pattern.Predicate.(Node)] != pid {
+				continue
+			}
+			solutions = append(solutions, [3]int{sid, pid, oid})
+		}
+	}
+
+	for _, match := range solutions {
+		updateBound(pattern, match[0], match[1], match[2], bound)
+	}
+	var res []Triple
+	for _, sol := range solutions {
+		res = append(res, Triple{
+			g.id2node[sol[0]].(SubjectNode),
+			g.id2node[sol[1]].(NamedNode),
+			pattern.Object.(Node),
+		})
+	}
+	return res
+}
+
+func (g *Graph) triplesMatchingP(pattern TriplePattern, bound map[Variable][]int) []Triple {
+	// {var,uri,var}
+
+	pid, ok := g.node2id[pattern.Predicate.(Node)]
+	if !ok {
+		return nil
+	}
+
+	var solutions [][3]int
+
+	for oid, subjs := range g.pos[pid] {
+		if v, ok := pattern.Object.(Variable); ok {
+			if !freeOrBound(v, oid, bound) {
+				continue
+			}
+		} else if g.node2id[pattern.Object.(Node)] != oid {
+			continue
+		}
+		for _, sid := range subjs {
+			if v, ok := pattern.Subject.(Variable); ok {
+				if !freeOrBound(v, sid, bound) {
+					continue
+				}
+			} else if g.node2id[pattern.Subject.(Node)] != sid {
+				continue
+			}
+			solutions = append(solutions, [3]int{sid, pid, oid})
+		}
+	}
+
+	for _, match := range solutions {
+		updateBound(pattern, match[0], match[1], match[2], bound)
+	}
+	var res []Triple
+	for _, sol := range solutions {
+		res = append(res, Triple{
+			g.id2node[sol[0]].(SubjectNode),
+			pattern.Predicate.(NamedNode),
+			g.id2node[sol[2]],
+		})
+	}
+	return res
+}
+
+func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]int) []Triple {
+	// {any,any,any}
 	var (
 		solutions  [][3]int
 		subjects   []int
@@ -647,6 +773,22 @@ func boundSubject(s subject, bound map[Variable][]int) ([]int, bool) {
 		return nodes, ok
 	}
 	return nil, false
+}
+
+// freeOrBound returns true if there are no bound nodes for the given variable,
+// or if the given id is included in the already bound nodes.
+// TODO find a better name
+func freeOrBound(v Variable, id int, bound map[Variable][]int) bool {
+	nodes, ok := bound[v]
+	if !ok {
+		return true
+	}
+	for _, node := range nodes {
+		if node == id {
+			return true
+		}
+	}
+	return false
 }
 
 func boundPredicate(p predicate, bound map[Variable][]int) ([]int, bool) {
