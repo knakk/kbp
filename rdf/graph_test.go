@@ -354,6 +354,25 @@ func TestGroupPatternsByVariable(t *testing.T) {
 				),
 			},
 		},
+		// TODO function is buggy - failing test:
+		/*{
+			mustParsePatterns(`
+				<h1> <knows> ?a .
+				?b <knows> <h2> .
+				?a <knows> ?b .
+				?c <related> ?a .
+				`,
+			),
+			[][]TriplePattern{
+				mustParsePatterns(`
+				?b <knows> <h2> .
+				<h1> <knows> ?a .
+				?a <knows> ?b .
+				?c <related> ?a .
+				`,
+				),
+			},
+		},*/
 	}
 
 	for _, test := range tests {
