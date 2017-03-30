@@ -378,6 +378,8 @@ func (p TriplePattern) selectivity() int {
 	//
 	// In addition, patterns where the node in object position is a literal are scored
 	// lower than if it is a named node/blank node, since a literal cannot have outgoing edges.
+	//
+	// TODO rewrite using node.selectivity() score
 
 	vars := [3]bool{}
 	objIsLiteral := 0

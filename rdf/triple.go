@@ -76,9 +76,10 @@ func (b BlankNode) Eq(other Node) bool {
 	}
 }
 
-func (b BlankNode) validAsNode()    {}
-func (b BlankNode) validAsSubject() {}
-func (b BlankNode) validAsObject()  {}
+func (b BlankNode) validAsNode()     {}
+func (b BlankNode) validAsSubject()  {}
+func (b BlankNode) validAsObject()   {}
+func (b BlankNode) selectivity() int { return 1 }
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
@@ -121,6 +122,7 @@ func (u NamedNode) validAsNode()      {}
 func (u NamedNode) validAsPredicate() {}
 func (u NamedNode) validAsSubject()   {}
 func (u NamedNode) validAsObject()    {}
+func (u NamedNode) selectivity() int  { return 2 }
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -184,8 +186,9 @@ func (l Literal) DataType() NamedNode { return l.dt }
 // string if it is not a rdf:langString.
 func (l Literal) Lang() string { return l.lang }
 
-func (l Literal) validAsNode()   {}
-func (l Literal) validAsObject() {}
+func (l Literal) validAsNode()     {}
+func (l Literal) validAsObject()   {}
+func (l Literal) selectivity() int { return 0 }
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
@@ -200,15 +203,29 @@ func NewVariable(name string) Variable {
 func (v Variable) validAsSubject()   {}
 func (v Variable) validAsPredicate() {}
 func (v Variable) validAsObject()    {}
+func (v Variable) selectivity() int  { return 3 }
+
+type node interface {
+	// selectivity returns a selectivity score from lowest (most selective) to highest (least selective):
+	//
+	// 0 literal		Literal is most selective. It cannot have outgoing edges, like a uri/bnode
+	// 1 bnode			More selective than uri because it usually only have one incoming edge
+	// 2 uri
+	// 3 variable
+	selectivity() int
+}
 
 type subject interface {
+	node
 	validAsSubject()
 }
 
 type predicate interface {
+	node
 	validAsPredicate()
 }
 
 type object interface {
+	node
 	validAsObject()
 }
