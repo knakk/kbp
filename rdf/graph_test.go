@@ -2,6 +2,7 @@ package rdf
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -284,100 +285,68 @@ func TestGraphIsomorphism(t *testing.T) {
 
 func TestGroupPatternsByVariable(t *testing.T) {
 	tests := []struct {
-		patterns []TriplePattern
-		want     [][]TriplePattern
+		patterns []encPattern
+		want     [][]encPattern
 	}{
 		{
-			mustParsePatterns(""),
-			[][]TriplePattern{},
+			[]encPattern{},
+			[][]encPattern{},
 		},
 		{
-			mustParsePatterns("?s ?p ?o ."),
-			[][]TriplePattern{
-				mustParsePatterns("?s ?p ?o ."),
+			[]encPattern{{-1, -2, -3, 99}},
+			[][]encPattern{
+				{{-1, -2, -3, 99}},
 			},
 		},
 		{
-			mustParsePatterns(`
-				<h1> <knows> ?a .
-				?b <knows> <h2> .`,
-			),
-			[][]TriplePattern{
-				mustParsePatterns("<h1> <knows> ?a ."),
-				mustParsePatterns("?b <knows> <h2> ."),
+			[]encPattern{{1, 2, -1, 99}, {-2, 2, 3, 99}},
+			[][]encPattern{
+				{{1, 2, -1, 99}},
+				{{-2, 2, 3, 99}},
 			},
 		},
 		{
-			mustParsePatterns(`
-				<h1> <knows> ?a .
-				?a <knows> <h2> .`,
-			),
-			[][]TriplePattern{
-				mustParsePatterns(`
-				?a <knows> <h2> .
-				<h1> <knows> ?a .
-				`)},
-		},
-		{
-			mustParsePatterns(`
-				<h1> <knows> ?a .
-				?a <knows> ?b .
-				?b <knows> <h2> .
-				?c <related> <h1> .
-				`,
-			),
-			[][]TriplePattern{
-				mustParsePatterns(`
-					?b <knows> <h2> .
-					<h1> <knows> ?a .
-					?a <knows> ?b .
-					`,
-				),
-				mustParsePatterns("?c <related> <h1> ."),
+			[]encPattern{{1, 2, -1, 99}, {-1, 2, 3, 99}},
+			[][]encPattern{
+				{{1, 2, -1, 99}, {-1, 2, 3, 99}},
 			},
 		},
 		{
-			mustParsePatterns(`
-				<h1> <knows> ?a .
-				?a <knows> ?b .
-				?b <knows> <h2> .
-				?c <related> ?a .
-				`,
-			),
-			[][]TriplePattern{
-				mustParsePatterns(`
-				?b <knows> <h2> .
-				<h1> <knows> ?a .
-				?a <knows> ?b .
-				?c <related> ?a .
-				`,
-				),
+			[]encPattern{{1, 2, -1, 99}, {-1, 2, -2, 99}, {-2, 2, 3, 99}, {-3, 4, 1, 99}},
+			[][]encPattern{
+				{{1, 2, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
+				{{-3, 4, 1, 99}},
 			},
 		},
-		// TODO function is buggy - failing test:
-		/*{
-			mustParsePatterns(`
-				<h1> <knows> ?a .
-				?b <knows> <h2> .
-				?a <knows> ?b .
-				?c <related> ?a .
-				`,
-			),
-			[][]TriplePattern{
-				mustParsePatterns(`
-				?b <knows> <h2> .
-				<h1> <knows> ?a .
-				?a <knows> ?b .
-				?c <related> ?a .
-				`,
-				),
+		{
+			[]encPattern{{1, 2, -1, 99}, {-1, 2, -2, 99}, {-2, 2, 3, 99}, {-3, 4, -1, 99}},
+			[][]encPattern{
+				{{1, 2, -1, 99}, {-3, 4, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
 			},
-		},*/
+		},
+		{
+			[]encPattern{{1, 2, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}, {-3, 4, -1, 99}},
+			[][]encPattern{
+				{{1, 2, -1, 99}, {-3, 4, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
+			},
+		},
+		{
+			[]encPattern{{-1, 1, -2, 99}, {-1, 2, -3, 99}, {-3, 3, 4, 99}, {-2, 5, 6, 99}, {-2, 7, -4, 99}, {-4, 8, -5, 99}},
+			[][]encPattern{
+				{{-4, 8, -5, 99}, {-3, 3, 4, 99}, {-2, 7, -4, 99}, {-2, 5, 6, 99}, {-1, 2, -3, 99}, {-1, 1, -2, 99}},
+			},
+		},
 	}
 
 	for _, test := range tests {
-		if groups := groupPatternsByVariable(test.patterns); !reflect.DeepEqual(groups, test.want) {
-			t.Errorf("groupPatternsByVariable(%v) => %v; want %v", test.patterns, groups, test.want)
+		groups := groupPatternsByVariable(test.patterns)
+		for n := range groups {
+			sort.Slice(groups[n], func(i, j int) bool {
+				return fmt.Sprintf("%d%d%d", groups[n][i][0], groups[n][i][1], groups[n][i][2]) > fmt.Sprintf("%d%d%d", groups[n][j][0], groups[n][j][1], groups[n][j][2])
+			})
+		}
+		if !reflect.DeepEqual(groups, test.want) {
+			t.Fatalf("groupPatternsByVariable(%v) => %v; want %v", test.patterns, groups, test.want)
 		}
 	}
 }
@@ -506,7 +475,7 @@ func TestGraphWhere(t *testing.T) {
 			mustParsePatterns(`
 				?w <hasMainTitle> "Le Cosmicomiche" .
 				?p <isPublicationOf> ?w .
-				?p <hasMainTitle> ?pubTtile .`,
+				?p <hasMainTitle> ?pubTitle .`,
 			),
 			`
 			<w1> <hasMainTitle> "Le Cosmicomiche" .
@@ -592,9 +561,9 @@ func TestGraphWhere(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		if got := testGraph.Where(test.patterns...); !got.Eq(mustDecode(test.want)) {
-			t.Errorf("got:\n%v\nwant:\n%v", mustEncode(got), test.want)
+			t.Fatalf("%d:got:\n%v\nwant:\n%v", i, mustEncode(got), test.want)
 		}
 	}
 }
@@ -638,7 +607,7 @@ func TestGraphSelect(t *testing.T) {
 							   ?contrib <hasRole> <translator> .
 							   ?contrib <hasAgent> ?person .
 							   ?person <hasName> ?translator .`),
-			`?book	?translator
+			`book	translator
              <p1>	"Martin L. McLaughlin"
              <p1>	"Tim Parks"
              <p1>	"William Weaver"`,
@@ -648,7 +617,7 @@ func TestGraphSelect(t *testing.T) {
 	for _, test := range tests {
 		want := mustParseSolutions(test.want)
 		if got := testGraph.Select(test.vars, test.patterns...); !solutionsEq(got, want) {
-			t.Errorf("got:\n%v\nwant:\n%v", got, want)
+			t.Fatalf("got:\n%v\nwant:\n%v", got, want)
 		}
 	}
 }

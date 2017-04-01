@@ -1,6 +1,7 @@
 package rdf
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -336,6 +337,52 @@ func (g *Graph) Delete(trs ...Triple) int {
 	return n
 }
 
+func (g *Graph) estCardinality(ep encPattern) int {
+	if ep.s() == 0 || ep.p() == 0 || ep.o() == 0 {
+		// triple is not in graph
+		return 0 // exact
+	}
+	if ep.s() > 0 && ep.p() > 0 && ep.o() > 0 {
+		// {n,n,n}
+		return 1 // exact
+	}
+	if ep.s() < 0 && ep.p() < 0 && ep.o() < 0 {
+		// {v,v,v}
+		return len(g.spo) * len(g.osp) // estimate
+	}
+	if ep.s() < 0 && ep.p() > 0 && ep.o() > 0 {
+		// {v,n,n}
+		return len(g.pos[ep.p()][ep.o()]) // exact
+	}
+	if ep.s() < 0 && ep.p() < 0 && ep.o() > 0 {
+		// {v,v,n}
+		for _, preds := range g.osp[ep.o()] {
+			return len(g.osp[ep.o()]) * len(preds) // estimate
+		}
+	}
+	if ep.s() > 0 && ep.p() > 0 && ep.o() < 0 {
+		// {n,n,v}
+		return len(g.spo[ep.s()][ep.p()]) // exact
+	}
+	if ep.s() > 0 && ep.p() < 0 && ep.o() > 0 {
+		// {n,v,n}
+		return len(g.osp[ep.o()][ep.s()]) // exact
+	}
+	if ep.s() > 0 && ep.p() < 0 && ep.o() < 0 {
+		// {n,v,v}
+		for _, objs := range g.spo[ep.s()] {
+			return len(g.spo[ep.s()]) * len(objs) // estimate
+		}
+	}
+	if ep.s() < 0 && ep.p() > 0 && ep.o() < 0 {
+		// {v,n,v}
+		for _, subjs := range g.pos[ep.p()] {
+			return len(g.pos[ep.p()]) * len(subjs) // estimate
+		}
+	}
+	panic(fmt.Sprintf("BUG: Graph.estCardinality: unhandled pattern: %v", ep))
+}
+
 // func (g *Graph) DeleteWhere(trs...TriplePattern) int
 
 // TriplePattern represents a pattern which can be used to match against a graph.
@@ -418,6 +465,46 @@ func (p TriplePattern) selectivity() int {
 	}
 }
 
+func (g *Graph) encodePattern(p TriplePattern, vars map[Variable]int) (ep encPattern) {
+	// positive integer = nodeId (NamedNode, Literal)
+	// 0 = node missing
+	// negative integer = variable id
+
+	for i, node := range []node{p.Subject, p.Predicate, p.Object} {
+		if v, ok := node.(Variable); ok {
+			if vid, ok := vars[v]; ok {
+				ep[i] = vid
+			} else {
+				vars[v] = (len(vars) + 1) * -1
+				ep[i] = vars[v]
+			}
+		} else {
+			if id, ok := g.node2id[node.(Node)]; ok {
+				ep[i] = id
+			} else {
+				// node is missing
+				ep[i] = 0
+			}
+		}
+	}
+
+	ep[3] = g.estCardinality(ep)
+
+	return ep
+}
+
+// encPattern is a TriplePattern encoded for query processing, where index
+// 0-2 represents s,p,o nodes and the last represents the estimated cardinality.
+// If a node equals=0, it means it is not stored in graph, meaning that the
+// pattern (and all patterns sharing variables with it) will not match any.
+// If a nodes < 0, it's a variable ID.
+type encPattern [4]int
+
+func (e encPattern) s() int              { return e[0] }
+func (e encPattern) p() int              { return e[1] }
+func (e encPattern) o() int              { return e[2] }
+func (e encPattern) estCardinality() int { return e[3] }
+
 // Where returns a new graph with the triples matching the given patterns.
 // It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
 // and patterns are identical.
@@ -426,19 +513,27 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 		return NewGraph()
 	}
 
-	bound := make(map[Variable][]int)
-	res := NewGraph()
-
-	if len(patterns) == 1 {
-		res.Insert(g.triplesMatching(patterns[0], bound)...)
-		return res
+	encPatterns := make([]encPattern, len(patterns))
+	vars := make(map[Variable]int)
+	for i, pattern := range patterns {
+		encPatterns[i] = g.encodePattern(pattern, vars)
 	}
 
-	for _, group := range groupPatternsByVariable(patterns) {
+	res := NewGraph()
+	bound := make([][]int, 0, len(vars))
+	groups := groupPatternsByVariable(encPatterns)
+	for n := range groups {
+		// sort each group by estimated cardinality for the graph pattern
+		sort.Slice(groups[n], func(i, j int) bool {
+			return groups[n][i].estCardinality() < groups[n][j].estCardinality()
+		})
+	}
+
+	for _, group := range groups {
 		var matches []Triple
 		for len(group) > 0 {
-			pattern := group[0]
-			triples := g.triplesMatching(pattern, bound)
+			var triples []Triple
+			triples, bound = g.triplesMatching(group[0], bound)
 			matches = append(matches, triples...)
 			group = group[1:]
 			reorderGroup(group, bound)
@@ -452,12 +547,33 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 
 func (g *Graph) Select(vars []Variable, patterns ...TriplePattern) (res [][]Node) {
 
-	bound := make(map[Variable][]int)
+	encPatterns := make([]encPattern, len(patterns))
+	varstmp := make(map[Variable]int, len(vars))
+	for i, pattern := range patterns {
+		encPatterns[i] = g.encodePattern(pattern, varstmp)
+	}
+	encVars := make([]int, len(vars))
+	for i, v := range vars {
+		if ev, ok := varstmp[v]; ok {
+			encVars[i] = ev
+		} // else: if variable does not occur in patterns, we ignore it.
+	}
 
-	for _, group := range groupPatternsByVariable(patterns) {
+	bound := make([][]int, 0, len(vars))
+	groups := groupPatternsByVariable(encPatterns)
+	for n := range groups {
+		// sort each group by estimated cardinality for the graph pattern
+		sort.Slice(groups[n], func(i, j int) bool {
+			return groups[n][i].estCardinality() < groups[n][j].estCardinality()
+		})
+	}
+
+	var solutions [][]Node
+	for _, group := range groups {
 		for len(group) > 0 {
 			pattern := group[0]
-			res = append(res, g.solutionsMatching(vars, pattern, bound)...)
+			solutions, bound = g.solutionsMatching(encVars, pattern, bound)
+			res = append(res, solutions...)
 			group = group[1:]
 			reorderGroup(group, bound)
 		}
@@ -494,39 +610,148 @@ func (g *Graph) Select(vars []Variable, patterns ...TriplePattern) (res [][]Node
 	return res
 }
 
+func indexVariables(ep encPattern, n int, v2g map[int]int) {
+	for _, nid := range ep[:3] {
+		if nid < 0 {
+			v2g[nid] = n
+		}
+	}
+}
+
+// groupPatternsByVariable groups encoded patterns by shared variables, either direct or transitive.
+// Disjoint groups can be processed separately (eg. in paralell) and its solutions merged by union.
+// It also prunes any patterns with missing nodes, and any other patterns sharing variable with those,
+// as they will not match any triples and should be discarded as early as possible.
+func groupPatternsByVariable(patterns []encPattern) [][]encPattern {
+	groups := make([][]encPattern, 0, len(patterns))
+	if len(patterns) == 0 {
+		return groups
+	}
+
+	// variable to group mapping
+	v2g := make(map[int]int)
+	// checked all patterns for variable
+	explored := make(map[int]bool)
+	// variables shared with pattern with missing node, should be ignore
+	ignore := make(map[int]bool)
+
+	for i := 0; i < len(patterns); i++ {
+		if patterns[i].estCardinality() == 0 {
+			for _, node := range patterns[i][:3] {
+				if node < 0 {
+					ignore[node] = true
+				}
+			}
+			patterns = append(patterns[:i], patterns[i+1:]...)
+			i--
+		}
+	}
+	// TODO if len(ignore) > 0 loop over patterns and remove those which should be pruned
+
+	for len(patterns) > 0 {
+		// assign first pattern to first group
+		groups = append(groups, []encPattern{patterns[0]})
+		indexVariables(patterns[0], len(groups)-1, v2g)
+		patterns = patterns[1:]
+		if len(v2g) > 0 {
+			// we have a variable
+			break
+		}
+	}
+
+again:
+	for v, n := range v2g {
+		if explored[v] {
+			continue
+		}
+		for i := 0; i < len(patterns); i++ {
+			for _, node := range patterns[i][:3] {
+				if node > 0 {
+					continue // not a variable
+				}
+				if node == v {
+					groups[n] = append(groups[n], patterns[i])
+					indexVariables(patterns[i], n, v2g)
+					patterns = append(patterns[:i], patterns[i+1:]...)
+					i--
+					break
+				}
+			}
+		}
+		explored[v] = true
+		if len(patterns) > 0 {
+			goto again
+		}
+	}
+	for i := 0; i < len(patterns); i++ {
+		for _, node := range patterns[i][:3] {
+			if node > 0 {
+				continue // not a variable
+			}
+			if n, ok := v2g[node]; ok {
+				groups[n] = append(groups[n], patterns[i])
+				indexVariables(patterns[i], n, v2g)
+				patterns = append(patterns[:i], patterns[i+1:]...)
+				i--
+				break
+			}
+		}
+	}
+	for len(patterns) > 0 {
+		// assign first pattern to new group
+		groups = append(groups, []encPattern{patterns[0]})
+		indexVariables(patterns[0], len(groups)-1, v2g)
+		patterns = patterns[1:]
+		if len(v2g) > 0 {
+			// we have a variable
+			break
+		}
+	}
+	if len(patterns) > 0 {
+		goto again
+	}
+
+	return groups
+}
+
 // reorderGroup moves pattern with bound variables to the top
-func reorderGroup(patterns []TriplePattern, bound map[Variable][]int) {
+func reorderGroup(patterns []encPattern, bound [][]int) {
 	if len(patterns) <= 1 {
 		return
 	}
 	for i, pattern := range patterns {
-		for _, v := range pattern.variables() {
-			if _, ok := bound[v]; ok {
-				if i > 0 {
-					patterns[i], patterns[i-1] = patterns[i-1], patterns[i]
+		for _, v := range pattern[:3] {
+			if v < 0 {
+				if v*-1 <= len(bound) && len(bound[(v*-1)-1]) > 0 {
+					if i > 0 {
+						patterns[i], patterns[i-1] = patterns[i-1], patterns[i]
+					}
+					return
 				}
-				return
 			}
 		}
 	}
 }
 
-func (g *Graph) solutionsMatching(vars []Variable, pattern TriplePattern, bound map[Variable][]int) (solutions [][]Node) {
-	for _, triple := range g.triplesMatching(pattern, bound) {
+func (g *Graph) solutionsMatching(vars []int, pattern encPattern, bound [][]int) ([][]Node, [][]int) {
+	var solutions [][]Node
+	var triples []Triple
+	triples, bound = g.triplesMatching(pattern, bound)
+	for _, triple := range triples {
 		row := make([]Node, len(vars))
 		match := false
 		for i, v := range vars {
-			if v2, ok := pattern.Subject.(Variable); ok && v2 == v {
+			if pattern[0] == v {
 				row[i] = triple.Subject
 				match = true
 				continue
 			}
-			if v2, ok := pattern.Predicate.(Variable); ok && v2 == v {
+			if pattern[1] == v {
 				row[i] = triple.Predicate
 				match = true
 				continue
 			}
-			if v2, ok := pattern.Object.(Variable); ok && v2 == v {
+			if pattern[2] == v {
 				row[i] = triple.Object
 				match = true
 			}
@@ -535,135 +760,112 @@ func (g *Graph) solutionsMatching(vars []Variable, pattern TriplePattern, bound 
 			solutions = append(solutions, row)
 		}
 	}
-	return solutions
+	return solutions, bound
 }
 
-func (g *Graph) triplesMatching(pattern TriplePattern, bound map[Variable][]int) []Triple {
-	const (
-		//b = 4 // variable but bound TODO?
-		v = 3 // variable
-		u = 2 // uri
-		l = 0 // literal
-	)
-	switch [3]int{
-		pattern.Subject.selectivity(),
-		pattern.Predicate.selectivity(),
-		pattern.Object.selectivity(),
-	} {
-	case [3]int{u, u, u}, [3]int{u, u, l}:
-		tr := Triple{
-			pattern.Subject.(SubjectNode),
-			pattern.Predicate.(NamedNode),
-			pattern.Object.(Node),
-		}
-		if sid, pid, oid, ok := g.ids(tr); ok {
-			if includeNode(g.spo[sid][pid], oid) {
-				return []Triple{tr}
-			}
-		}
-		return nil
-	case [3]int{v, v, l},
-		[3]int{v, u, l},
-		[3]int{u, v, l},
-		[3]int{v, v, u},
-		[3]int{u, v, u}:
-		return g.triplesMatchingO(pattern, bound)
-	case [3]int{v, u, v}, [3]int{v, u, u}:
-		return g.triplesMatchingP(pattern, bound)
-	default:
-		return g.triplesMatchingAny(pattern, bound)
+func (g *Graph) triplesMatching(ep encPattern, bound [][]int) ([]Triple, [][]int) {
+	if ep[0] > 0 && ep[1] > 0 && ep[2] > 0 {
+		// It's a concrete triple, we now it exists because patterns with
+		// missing nodes has been pruned. Return it
+		return []Triple{
+			Triple{
+				g.id2node[ep[0]].(SubjectNode),
+				g.id2node[ep[1]].(NamedNode),
+				g.id2node[ep[2]].(Node),
+			},
+		}, bound
 	}
+	if ep[2] > 0 {
+		// Matching {any,any,n} using OSP index
+		return g.triplesMatchingO(ep, bound)
+	}
+	if ep[1] > 0 {
+		// Matching {?,n,n} using POS index
+		return g.triplesMatchingP(ep, bound)
+	}
+	// Matching {any,any,any} using SPO index
+	return g.triplesMatchingAny(ep, bound)
 }
 
-func (g *Graph) triplesMatchingO(pattern TriplePattern, bound map[Variable][]int) []Triple {
+func (g *Graph) triplesMatchingO(ep encPattern, bound [][]int) ([]Triple, [][]int) {
 	// {any,any,literal/uri}
-
-	oid, ok := g.node2id[pattern.Object.(Node)]
-	if !ok {
-		return nil
-	}
 
 	var solutions [][3]int
 
-	for sid, preds := range g.osp[oid] {
-		if v, ok := pattern.Subject.(Variable); ok {
-			if !freeOrBound(v, sid, bound) {
+	for sid, preds := range g.osp[ep[2]] {
+		if ep[0] < 0 {
+			if !freeOrBound(ep[0], sid, bound) {
 				continue
 			}
-		} else if g.node2id[pattern.Subject.(Node)] != sid {
+		} else if ep[0] != sid {
 			continue
 		}
 		for _, pid := range preds {
-			if v, ok := pattern.Predicate.(Variable); ok {
-				if !freeOrBound(v, pid, bound) {
+			if ep[1] < 0 {
+				if !freeOrBound(ep[1], pid, bound) {
 					continue
 				}
-			} else if g.node2id[pattern.Predicate.(Node)] != pid {
+			} else if ep[1] != pid {
 				continue
 			}
-			solutions = append(solutions, [3]int{sid, pid, oid})
+			solutions = append(solutions, [3]int{sid, pid, ep[2]})
 		}
 	}
 
 	for _, match := range solutions {
-		updateBound(pattern, match[0], match[1], match[2], bound)
+		bound = updateBound(ep, match, bound)
 	}
 	var res []Triple
 	for _, sol := range solutions {
 		res = append(res, Triple{
 			g.id2node[sol[0]].(SubjectNode),
 			g.id2node[sol[1]].(NamedNode),
-			pattern.Object.(Node),
+			g.id2node[ep[2]],
 		})
 	}
-	return res
+	return res, bound
 }
 
-func (g *Graph) triplesMatchingP(pattern TriplePattern, bound map[Variable][]int) []Triple {
+func (g *Graph) triplesMatchingP(ep encPattern, bound [][]int) ([]Triple, [][]int) {
 	// {var,uri,var}
-
-	pid, ok := g.node2id[pattern.Predicate.(Node)]
-	if !ok {
-		return nil
-	}
 
 	var solutions [][3]int
 
-	for oid, subjs := range g.pos[pid] {
-		if v, ok := pattern.Object.(Variable); ok {
-			if !freeOrBound(v, oid, bound) {
+	for oid, subjs := range g.pos[ep[1]] {
+		if ep[2] < 0 {
+			if !freeOrBound(ep[2], oid, bound) {
 				continue
 			}
-		} else if g.node2id[pattern.Object.(Node)] != oid {
+		} else if ep[2] != oid {
 			continue
 		}
 		for _, sid := range subjs {
-			if v, ok := pattern.Subject.(Variable); ok {
-				if !freeOrBound(v, sid, bound) {
+			if ep[0] < 0 {
+				if !freeOrBound(ep[0], sid, bound) {
 					continue
 				}
-			} else if g.node2id[pattern.Subject.(Node)] != sid {
+			} else if ep[0] != sid {
 				continue
 			}
-			solutions = append(solutions, [3]int{sid, pid, oid})
+			solutions = append(solutions, [3]int{sid, ep[1], oid})
 		}
 	}
 
 	for _, match := range solutions {
-		updateBound(pattern, match[0], match[1], match[2], bound)
+		bound = updateBound(ep, match, bound)
 	}
 	var res []Triple
 	for _, sol := range solutions {
 		res = append(res, Triple{
 			g.id2node[sol[0]].(SubjectNode),
-			pattern.Predicate.(NamedNode),
+			g.id2node[ep[1]].(NamedNode),
 			g.id2node[sol[2]],
 		})
 	}
-	return res
+	return res, bound
 }
 
-func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]int) []Triple {
+func (g *Graph) triplesMatchingAny(ep encPattern, bound [][]int) ([]Triple, [][]int) {
 	// {any,any,any}
 	var (
 		solutions  [][3]int
@@ -672,30 +874,53 @@ func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]i
 		objects    []int
 	)
 
-	if nodes, ok := boundSubject(pattern.Subject, bound); ok {
-		subjects = nodes
+	/*
+		if ep[0] < 0 {
+			// subject is variable
+			if len(bound) > ep[0]*-1 {
+				// subject is already bound
+				for _, sid := range bound[(ep[0]*-1)-1] {
+					// iterate over bound subjects
+					if ep[1] < 0 {
+						// predicate is variable
+					} else {
+						// predicate is a node
+					}
+				}
+			} else {
+				// iterate over all subjects
+			}
+		} else {
+			// subject is a node
+			for pid, objs := range g.spo[ep[0]] {
+				// iterate over subjects predicate->objects
+			}
+		}*/
+
+	if ep[0] < 0 && ep[0]*-1 <= len(bound) && len(bound[(ep[0]*-1)-1]) > 0 {
+		subjects = bound[(ep[0]*-1)-1]
 	} else {
 		subjects = g.subjects()
 	}
 
 	for _, sid := range subjects {
-		if !isVarSubj(pattern.Subject) && g.node2id[pattern.Subject.(Node)] != sid {
+		if ep[0] > 0 && ep[0] != sid {
 			continue
 		}
 
-		if nodes, ok := boundPredicate(pattern.Predicate, bound); ok {
-			predicates = nodes
+		if ep[1] < 0 && ep[1]*-1 <= len(bound) && len(bound[(ep[1]*-1)-1]) > 0 {
+			predicates = bound[(ep[1]*-1)-1]
 		} else {
 			predicates = g.predicatesForSubj(sid)
 		}
 
 		for _, pid := range predicates {
-			if !isVarPred(pattern.Predicate) && g.node2id[pattern.Predicate.(Node)] != pid {
+			if ep[1] > 0 && ep[1] != pid {
 				continue
 			}
 
-			if nodes, ok := boundObject(pattern.Object, bound); ok {
-				objects = nodes
+			if ep[2] < 0 && ep[2]*-1 <= len(bound) && len(bound[(ep[2]*-1)-1]) > 0 {
+				objects = bound[(ep[2]*-1)-1]
 			} else {
 				objects = g.spo[sid][pid]
 			}
@@ -703,7 +928,7 @@ func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]i
 				if !includeNode(g.spo[sid][pid], oid) {
 					continue
 				}
-				if !isVarObj(pattern.Object) && g.node2id[pattern.Object.(Node)] != oid {
+				if ep[2] > 0 && ep[2] != oid {
 					continue
 				}
 
@@ -713,7 +938,7 @@ func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]i
 	}
 
 	for _, match := range solutions {
-		updateBound(pattern, match[0], match[1], match[2], bound)
+		bound = updateBound(ep, match, bound)
 	}
 	var res []Triple
 	for _, sol := range solutions {
@@ -723,7 +948,7 @@ func (g *Graph) triplesMatchingAny(pattern TriplePattern, bound map[Variable][]i
 			g.id2node[sol[2]],
 		})
 	}
-	return res
+	return res, bound
 }
 
 func (g *Graph) subjects() (res []int) {
@@ -740,22 +965,20 @@ func (g *Graph) predicatesForSubj(sid int) (res []int) {
 	return res
 }
 
-func updateBound(p TriplePattern, sid, pid, oid int, bound map[Variable][]int) {
-	if v, ok := p.Subject.(Variable); ok {
-		if !includeNode(bound[v], sid) {
-			bound[v] = append(bound[v], sid)
+func updateBound(ep encPattern, tr [3]int, bound [][]int) [][]int {
+	for i, epid := range ep[:3] {
+		if epid < 0 {
+			if diff := epid*-1 - len(bound); diff != 0 {
+				for j := 0; j < diff; j++ {
+					bound = append(bound, []int{})
+				}
+				bound[(epid*-1)-1] = append(bound[(epid*-1)-1], tr[i])
+			} else if !includeNode(bound[(epid*-1)-1], tr[i]) {
+				bound[(epid*-1)-1] = append(bound[(epid*-1)-1], tr[i])
+			}
 		}
 	}
-	if v, ok := p.Predicate.(Variable); ok {
-		if !includeNode(bound[v], pid) {
-			bound[v] = append(bound[v], pid)
-		}
-	}
-	if v, ok := p.Object.(Variable); ok {
-		if !includeNode(bound[v], oid) {
-			bound[v] = append(bound[v], oid)
-		}
-	}
+	return bound
 }
 
 func includeNode(nodes []int, find int) bool {
@@ -767,23 +990,15 @@ func includeNode(nodes []int, find int) bool {
 	return false
 }
 
-func boundSubject(s subject, bound map[Variable][]int) ([]int, bool) {
-	if v, ok := s.(Variable); ok {
-		nodes, ok := bound[v]
-		return nodes, ok
-	}
-	return nil, false
-}
-
 // freeOrBound returns true if there are no bound nodes for the given variable,
 // or if the given id is included in the already bound nodes.
 // TODO find a better name
-func freeOrBound(v Variable, id int, bound map[Variable][]int) bool {
-	nodes, ok := bound[v]
-	if !ok {
+func freeOrBound(v int, id int, bound [][]int) bool {
+	if len(bound) < v*-1 || len(bound[(v*-1)-1]) == 0 {
 		return true
 	}
-	for _, node := range nodes {
+
+	for _, node := range bound[(v*-1)-1] {
 		if node == id {
 			return true
 		}
@@ -791,96 +1006,7 @@ func freeOrBound(v Variable, id int, bound map[Variable][]int) bool {
 	return false
 }
 
-func boundPredicate(p predicate, bound map[Variable][]int) ([]int, bool) {
-	if v, ok := p.(Variable); ok {
-		nodes, ok := bound[v]
-		return nodes, ok
-	}
-	return nil, false
-}
-
-func boundObject(o object, bound map[Variable][]int) ([]int, bool) {
-	if v, ok := o.(Variable); ok {
-		nodes, ok := bound[v]
-		return nodes, ok
-	}
-	return nil, false
-}
-
-func isVarSubj(s subject) bool {
-	switch s.(type) {
-	case Variable:
-		return true
-	default:
-		return false
-	}
-}
-
-func isVarPred(s predicate) bool {
-	switch s.(type) {
-	case Variable:
-		return true
-	default:
-		return false
-	}
-}
-
-func isVarObj(o object) bool {
-	switch o.(type) {
-	case Variable:
-		return true
-	default:
-		return false
-	}
-}
-
-// groupPatternsByVariable groups patterns by shared variables, either direct or transitive.
-// Disjoint groups can be processed separately (eg. in paralell) and its solutions merged by union.
-func groupPatternsByVariable(patterns []TriplePattern) [][]TriplePattern {
-	variables := make(map[Variable]int) // variable to group number
-	groups := make([][]TriplePattern, 0)
-	n := 0
-
-	for _, pattern := range patterns {
-		assignedTo := 0
-		for _, v := range pattern.variables() {
-			if g, ok := variables[v]; ok {
-				assignedTo = g
-			}
-		}
-		if assignedTo == 0 {
-			n++
-			assignedTo = n
-		}
-		for _, v := range pattern.variables() {
-			variables[v] = assignedTo
-		}
-		if len(groups) < n {
-			groups = append(groups, []TriplePattern{pattern})
-		} else {
-			groups[n-1] = append(groups[n-1], pattern)
-		}
-	}
-
-	// Sort the patterns in each group by selectivity
-	for i := range groups {
-		sortBySelectivity(groups[i])
-	}
-
-	return groups
-}
-
-func sortBySelectivity(patterns []TriplePattern) {
-	sort.Slice(patterns, func(i, j int) bool {
-		return patterns[i].selectivity() < patterns[j].selectivity()
-	})
-}
-
 // Eq checks if two graphs are equal (isomorphic).
-//
-// The algorithm for checking for isomporphism is rather naive and
-// inefficient, and will be slow for large graphs with lots of
-// blank nodes. For graphs with few blank nodes it will be fast enough.
 func (g *Graph) Eq(other *Graph) bool {
 	if g.Size() != other.Size() {
 		return false
