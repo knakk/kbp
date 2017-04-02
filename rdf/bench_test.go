@@ -176,6 +176,12 @@ func BenchmarkGraphWhereMedium(b *testing.B) {
 		{"match SP", mustParsePatterns("<http://data.linkedopendata.it/musei/resource/Aboca_Museum-Sansepolcro> <http://www.w3.org/2000/01/rdf-schema#label> ?o .")},
 		{"match PO", mustParsePatterns(`?s <http://www.w3.org/2006/vcard/ns#latitude> "43.9659588" .`)},
 		{"match SO", mustParsePatterns(`<http://data.linkedopendata.it/musei/resource/Cuglieri> ?p <http://sws.geonames.org/3177719/about.rdf>  .`)},
+		{"complex", mustParsePatterns(`
+			?loc <http://www.w3.org/2006/vcard/ns#latitude> "45.6030908" .
+			?mus <http://www.w3.org/2006/vcard/ns#geo> ?loc .
+			?mus <http://www.w3.org/2000/01/rdf-schema#label> ?label .
+			?mus <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Art_museums_and_galleries> .`,
+		)},
 	}
 	var results *Graph
 	g := dataset("medium")
