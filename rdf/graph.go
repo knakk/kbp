@@ -536,7 +536,7 @@ func (g *Graph) Where(patterns ...TriplePattern) *Graph {
 			triples, bound = g.triplesMatching(group[0], bound)
 			matches = append(matches, triples...)
 			group = group[1:]
-			reorderGroup(group, bound)
+			reorderPatterns(group, bound)
 		}
 
 		res.Insert(matches...)
@@ -575,7 +575,7 @@ func (g *Graph) Select(vars []Variable, patterns ...TriplePattern) (res [][]Node
 			solutions, bound = g.solutionsMatching(encVars, pattern, bound)
 			res = append(res, solutions...)
 			group = group[1:]
-			reorderGroup(group, bound)
+			reorderPatterns(group, bound)
 		}
 	}
 	// merge rows
@@ -714,8 +714,10 @@ again:
 	return groups
 }
 
-// reorderGroup moves pattern with bound variables to the top
-func reorderGroup(patterns []encPattern, bound [][]int) {
+// reorderPatterns moves a pattern with bound variables to the top, if not allready there.
+// The patterns are allready sorted by selectivity/estimated cardinality, so if there are
+// more patterns with bound variables the first one will be the right one to move up.
+func reorderPatterns(patterns []encPattern, bound [][]int) {
 	if len(patterns) <= 1 {
 		return
 	}
@@ -724,7 +726,7 @@ func reorderGroup(patterns []encPattern, bound [][]int) {
 			if v < 0 {
 				if v*-1 <= len(bound) && len(bound[(v*-1)-1]) > 0 {
 					if i > 0 {
-						patterns[i], patterns[i-1] = patterns[i-1], patterns[i]
+						patterns[0], patterns[i] = patterns[i], patterns[0]
 					}
 					return
 				}
