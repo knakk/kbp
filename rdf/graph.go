@@ -568,43 +568,29 @@ func (g *Graph) Select(vars []Variable, patterns ...TriplePattern) (res [][]Node
 		})
 	}
 
-	var solutions [][]Node
 	for _, group := range groups {
 		for len(group) > 0 {
-			pattern := group[0]
-			solutions, bound = g.solutionsMatching(encVars, pattern, bound)
-			res = append(res, solutions...)
+			_, bound = g.triplesMatching(group[0], bound)
 			group = group[1:]
 			reorderPatterns(group, bound)
 		}
+
 	}
-	// merge rows
-	for i, row := range res {
-		for j, node := range row {
-			if node == nil {
-				for y := range res {
-					if res[y][j] != nil {
-						res[i][j] = res[y][j]
-						res[y][j] = nil
-						break
-					}
-				}
-			}
-		}
+	if len(bound) == 0 {
+		return res
 	}
-	// prune rows with nils
-	for i := 0; i < len(res); i++ {
-	checkNil:
-		for j := 0; j < len(res[i]); j++ {
-			if res[i][j] == nil {
-				res[i] = res[len(res)-1]
-				res = res[:len(res)-1]
-				if i > 0 {
-					i--
-				}
-				continue checkNil
+
+	for len(encVars) > 0 {
+		row := make([]Node, len(encVars))
+		for i, v := range encVars {
+			if len(bound) < (v*-1) || len(bound[(v*-1)-1]) == 0 {
+				return res
 			}
+			row[i] = g.id2node[bound[(v*-1)-1][0]]
+			bound[(v*-1)-1] = bound[(v*-1)-1][1:]
+
 		}
+		res = append(res, row)
 	}
 
 	return res
