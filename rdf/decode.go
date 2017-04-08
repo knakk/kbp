@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// Decoder is a decodes RDF triples i N-Triples format.
+// Decoder decodes RDF triples i N-Triples format.
 type Decoder struct {
 	s              *scanner
 	ParseVariables bool

@@ -76,11 +76,6 @@ func (g *Graph) Stats() (rdf.Stats, error) {
 	}, nil
 }
 
-// Size returns the number of triples in the Graph.
-func (g *Graph) Size() int {
-	return len(g.node2id)
-}
-
 // Triples returns all the triples in the Graph.
 func (g *Graph) Triples() []rdf.Triple {
 	var res []rdf.Triple
@@ -103,7 +98,7 @@ func (g *Graph) Triples() []rdf.Triple {
 //
 // Blank nodes are assumed to be disjoint from the blank nodes already
 // present in the graph, and will be inserted with "fresh" node IDs.
-// However, any blank nodes in with identical IDs will be inserted as identical.
+// However, blank nodes in with identical IDs will be given the same, new ID.
 func (g *Graph) Insert(trs ...rdf.Triple) (int, error) {
 	n := 0
 	bnodes := make(map[rdf.BlankNode]int)
@@ -377,7 +372,7 @@ func (g *Graph) encodePattern(p rdf.TriplePattern, vars map[rdf.Variable]int) (e
 	// 0 = node missing
 	// negative integer = variable id
 
-	for i, node := range []interface{}{p.Subject, p.Predicate, p.Object} {
+	for i, node := range []interface{}{p.Subject, p.Predicate, p.Object} { // TODO get rid of interface{}
 		if v, ok := node.(rdf.Variable); ok {
 			if vid, ok := vars[v]; ok {
 				ep[i] = vid
@@ -909,7 +904,7 @@ func (g *Graph) Eq(b rdf.Graph) (bool, error) {
 		panic("Eq can only compare memory.Graph ATM")
 	}
 
-	if g.Size() != other.Size() {
+	if len(g.node2id) != len(other.node2id) {
 		return false, nil
 	}
 
