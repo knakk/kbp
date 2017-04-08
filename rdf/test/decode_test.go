@@ -4,21 +4,57 @@ import (
 	"bytes"
 	"io"
 	"testing"
+
+	"github.com/knakk/kbp/rdf"
+	"github.com/knakk/kbp/rdf/memory"
 )
 
-func mustDecode(s string) *Graph {
-	dec := NewDecoder(bytes.NewBufferString(s))
-	g, err := dec.DecodeGraph()
+func decodeGraph(d *rdf.Decoder) (*memory.Graph, error) {
+	g := memory.NewGraph()
+	bnodeTriples := make(map[rdf.BlankNode][]rdf.Triple)
+
+	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
+		if err != nil {
+			return g, err
+		}
+		switch t := tr.Subject.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		switch t := tr.Object.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		if _, err := g.Insert(tr); err != nil {
+			return nil, err
+		}
+	}
+
+	// Insert triples with bnodes in batches by ID, so that they get assigned
+	// the same (new) blank node ID in the Graph
+	for _, trs := range bnodeTriples {
+		if _, err := g.Insert(trs...); err != nil {
+			return nil, err
+		}
+	}
+	return g, nil
+}
+
+func mustDecode(s string) *memory.Graph {
+	dec := rdf.NewDecoder(bytes.NewBufferString(s))
+	g, err := decodeGraph(dec)
 	if err != nil {
 		panic("mustDecode: " + err.Error())
 	}
 	return g
 }
 
-func mustParsePatterns(s string) (res []TriplePattern) {
-	dec := NewDecoder(bytes.NewBufferString(s))
-	dec.parseVariables = true
-	for p, err := dec.decodePattern(); err != io.EOF; p, err = dec.decodePattern() {
+func mustParsePatterns(s string) (res []rdf.TriplePattern) {
+	dec := rdf.NewDecoder(bytes.NewBufferString(s))
+	dec.ParseVariables = true
+	for p, err := dec.DecodePattern(); err != io.EOF; p, err = dec.DecodePattern() {
 		if err != nil {
 			panic("mustParsePatterns: " + err.Error())
 		}
@@ -27,10 +63,9 @@ func mustParsePatterns(s string) (res []TriplePattern) {
 	return res
 }
 
-func mustEncode(g *Graph) string {
+func mustEncode(g *memory.Graph) string {
 	var out bytes.Buffer
-	enc := NewEncoder(&out)
-	if err := enc.EncodeGraph(g); err != nil {
+	if err := g.EncodeNTriples(&out); err != nil {
 		panic("mustEncode: " + err.Error())
 	}
 	return out.String()
@@ -94,7 +129,7 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 	nt := mustEncode(g)
 	g2 := mustDecode(nt)
 
-	if !g.Eq(g2) {
+	if equal, _ := g.Eq(g2); !equal {
 		t.Fatal("decode-encode-decode roundtrip failed")
 	}
 }

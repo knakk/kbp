@@ -1,49 +1,49 @@
 package rdf
 
 import (
-	"bytes"
-	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/knakk/kbp/rdf"
+	"github.com/knakk/kbp/rdf/memory"
 )
 
-func wantGraph(t *testing.T, got *Graph, wantGraph string) {
+func wantGraph(t *testing.T, got *memory.Graph, wantGraph string) {
 	want := mustDecode(wantGraph)
-	if !want.Eq(got) {
+	if eq, _ := want.Eq(got); !eq {
 		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(got), mustEncode(want))
 	}
 }
 
-func mustTriples(s string) []Triple {
+func mustTriples(s string) []rdf.Triple {
 	return mustDecode(s).Triples()
 }
 
-func mustParseVariables(s string) []Variable {
-	var res []Variable
+func mustParseVariables(s string) []rdf.Variable {
+	var res []rdf.Variable
 	for _, v := range strings.Split(s, "?") {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
-		res = append(res, NewVariable(strings.TrimSpace(v)))
+		res = append(res, rdf.NewVariable(strings.TrimSpace(v)))
 	}
 	return res
 }
 
-func mustParseSolutions(s string) (res [][]Node) {
+func mustParseSolutions(s string) (res [][]rdf.Node) {
 	rows := strings.Split(s, "\n")[1:] // discard first line (column header listing variables)
 	for _, row := range rows {
-		var solution []Node
+		var solution []rdf.Node
 		for _, node := range strings.Split(row, "\t") {
-			solution = append(solution, mustParseNode(node))
+			solution = append(solution, rdf.MustParseNode(node))
 		}
 		res = append(res, solution)
 	}
 	return res
 }
 
-func nodesToString(nodes []Node) string {
+func nodesToString(nodes []rdf.Node) string {
 	var s string
 	for _, n := range nodes {
 		s += n.String()
@@ -51,7 +51,7 @@ func nodesToString(nodes []Node) string {
 	return s
 }
 
-func solutionsEq(a, b [][]Node) bool {
+func solutionsEq(a, b [][]rdf.Node) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -75,21 +75,8 @@ func solutionsEq(a, b [][]Node) bool {
 	return true
 }
 
-func mustParseNode(node string) Node {
-	s := newScanner(bytes.NewBufferString(node))
-	tok := s.Scan()
-	switch tok.Type {
-	case tokenLiteral:
-		return NewStrLiteral(tok.Text)
-	case tokenURI:
-		return NamedNode{val: tok.Text}
-	default:
-	}
-	panic("mustParseNode: TODO")
-}
-
 func TestGraphMutateOperations(t *testing.T) {
-	g := NewGraph()
+	g := memory.NewGraph()
 
 	g.Insert(mustTriples(`
 		<h1> <name> "A" .
@@ -277,76 +264,8 @@ func TestGraphIsomorphism(t *testing.T) {
 	for _, test := range tests {
 		a := mustDecode(test.a)
 		b := mustDecode(test.b)
-		if got := a.Eq(b); got != test.eq {
+		if got, _ := a.Eq(b); got != test.eq {
 			t.Fatalf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
-		}
-	}
-}
-
-func TestGroupPatternsByVariable(t *testing.T) {
-	tests := []struct {
-		patterns []encPattern
-		want     [][]encPattern
-	}{
-		{
-			[]encPattern{},
-			[][]encPattern{},
-		},
-		{
-			[]encPattern{{-1, -2, -3, 99}},
-			[][]encPattern{
-				{{-1, -2, -3, 99}},
-			},
-		},
-		{
-			[]encPattern{{1, 2, -1, 99}, {-2, 2, 3, 99}},
-			[][]encPattern{
-				{{1, 2, -1, 99}},
-				{{-2, 2, 3, 99}},
-			},
-		},
-		{
-			[]encPattern{{1, 2, -1, 99}, {-1, 2, 3, 99}},
-			[][]encPattern{
-				{{1, 2, -1, 99}, {-1, 2, 3, 99}},
-			},
-		},
-		{
-			[]encPattern{{1, 2, -1, 99}, {-1, 2, -2, 99}, {-2, 2, 3, 99}, {-3, 4, 1, 99}},
-			[][]encPattern{
-				{{1, 2, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
-				{{-3, 4, 1, 99}},
-			},
-		},
-		{
-			[]encPattern{{1, 2, -1, 99}, {-1, 2, -2, 99}, {-2, 2, 3, 99}, {-3, 4, -1, 99}},
-			[][]encPattern{
-				{{1, 2, -1, 99}, {-3, 4, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
-			},
-		},
-		{
-			[]encPattern{{1, 2, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}, {-3, 4, -1, 99}},
-			[][]encPattern{
-				{{1, 2, -1, 99}, {-3, 4, -1, 99}, {-2, 2, 3, 99}, {-1, 2, -2, 99}},
-			},
-		},
-		{
-			[]encPattern{{-1, 1, -2, 99}, {-1, 2, -3, 99}, {-3, 3, 4, 99}, {-2, 5, 6, 99}, {-2, 7, -4, 99}, {-4, 8, -5, 99}},
-			[][]encPattern{
-				{{-4, 8, -5, 99}, {-3, 3, 4, 99}, {-2, 7, -4, 99}, {-2, 5, 6, 99}, {-1, 2, -3, 99}, {-1, 1, -2, 99}},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		groups := groupPatternsByVariable(test.patterns)
-		for n := range groups {
-			sort.Slice(groups[n], func(i, j int) bool {
-				return fmt.Sprintf("%d%d%d", groups[n][i][0], groups[n][i][1], groups[n][i][2]) > fmt.Sprintf("%d%d%d", groups[n][j][0], groups[n][j][1], groups[n][j][2])
-			})
-		}
-		if !reflect.DeepEqual(groups, test.want) {
-			t.Fatalf("groupPatternsByVariable(%v) => %v; want %v", test.patterns, groups, test.want)
 		}
 	}
 }
@@ -430,7 +349,7 @@ var testGraph = mustDecode(`
 
 func TestGraphWhere(t *testing.T) {
 	tests := []struct {
-		patterns []TriplePattern
+		patterns []rdf.TriplePattern
 		want     string
 	}{
 		{
@@ -562,16 +481,17 @@ func TestGraphWhere(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		if got := testGraph.Where(test.patterns...); !got.Eq(mustDecode(test.want)) {
-			t.Fatalf("%d:got:\n%v\nwant:\n%v", i, mustEncode(got), test.want)
+		got, _ := testGraph.Where(test.patterns...)
+		if eq, _ := got.Eq(mustDecode(test.want)); !eq {
+			t.Fatalf("%d:got:\n%v\nwant:\n%v", i, mustEncode(got.(*memory.Graph)), test.want)
 		}
 	}
 }
 
 func TestGraphSelect(t *testing.T) {
 	tests := []struct {
-		vars     []Variable
-		patterns []TriplePattern
+		vars     []rdf.Variable
+		patterns []rdf.TriplePattern
 		want     string
 	}{
 		{
@@ -616,7 +536,8 @@ func TestGraphSelect(t *testing.T) {
 
 	for _, test := range tests {
 		want := mustParseSolutions(test.want)
-		if got := testGraph.Select(test.vars, test.patterns...); !solutionsEq(got, want) {
+		got, _ := testGraph.Select(test.vars, test.patterns...)
+		if !solutionsEq(got, want) {
 			t.Fatalf("got:\n%v\nwant:\n%v", got, want)
 		}
 	}

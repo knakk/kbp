@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/knakk/kbp/rdf"
+	"github.com/knakk/kbp/rdf/memory"
 )
 
 // dataset returns a Graph from an n-triples dataset.
@@ -27,7 +30,7 @@ import (
 // - lubm (99567 triples)
 //   Lehigh University Benchmark, generated with -index 0 -seed 0
 //   http://swat.cse.lehigh.edu/projects/lubm/
-func dataset(set string) *Graph {
+func dataset(set string) *memory.Graph {
 	if g, ok := datasets[set]; ok {
 		return g
 	}
@@ -51,9 +54,9 @@ func dataset(set string) *Graph {
 		panic("dataset: " + err.Error())
 	}
 	defer r.Close()
-	var triples []Triple
-	g := NewGraph()
-	dec := NewDecoder(r)
+	var triples []rdf.Triple
+	g := memory.NewGraph()
+	dec := rdf.NewDecoder(r)
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
 		if err != nil {
 			panic("dataset: " + err.Error())
@@ -71,7 +74,7 @@ func dataset(set string) *Graph {
 	return datasets[set]
 }
 
-var datasets = make(map[string]*Graph)
+var datasets = make(map[string]*memory.Graph)
 
 func datasetAsByte(b *testing.B, dataset string) []byte {
 	f, err := os.Open("testdata/" + dataset + ".nt.gz")
@@ -91,25 +94,11 @@ func datasetAsByte(b *testing.B, dataset string) []byte {
 	return bset
 }
 
-func BenchmarkScanner(b *testing.B) {
-	var tok token
-	small := datasetAsByte(b, "small")
-	for n := 0; n < b.N; n++ {
-		s := newScanner(bytes.NewBuffer(small))
-		for {
-			tok = s.Scan()
-			if tok.Type == tokenEOF {
-				break
-			}
-		}
-	}
-}
-
 func BenchmarkDecode(b *testing.B) {
 	small := datasetAsByte(b, "small")
-	var triples []Triple
+	var triples []rdf.Triple
 	for n := 0; n < b.N; n++ {
-		dec := NewDecoder(bytes.NewBuffer(small))
+		dec := rdf.NewDecoder(bytes.NewBuffer(small))
 		for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
 			if err != nil {
 				b.Fatal(err)
@@ -122,7 +111,7 @@ func BenchmarkDecode(b *testing.B) {
 func BenchmarkGraphInsert(b *testing.B) {
 	dataset("small") // ensure it is parsed and cached in datasets
 	for n := 0; n < b.N; n++ {
-		g := NewGraph()
+		g := memory.NewGraph()
 		g.Insert(dataset("small").Triples()...)
 	}
 }
@@ -130,7 +119,7 @@ func BenchmarkGraphInsert(b *testing.B) {
 func BenchmarkGraphWhereSmall(b *testing.B) {
 	benchmarks := []struct {
 		name     string
-		patterns []TriplePattern
+		patterns []rdf.TriplePattern
 	}{
 		{"match all", mustParsePatterns("?s ?p ?o .")},
 		{"match S", mustParsePatterns("<http://www.gutenberg.org/ebooks/39110> ?p ?o .")},
@@ -150,13 +139,13 @@ func BenchmarkGraphWhereSmall(b *testing.B) {
 				?person <hasName> ?translator .`,
 		)},
 	}
-	var results *Graph
+	var results rdf.Graph
 	g := dataset("small")
 	b.ResetTimer()
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				results = g.Where(bm.patterns...)
+				results, _ = g.Where(bm.patterns...)
 			}
 		})
 	}
@@ -165,7 +154,7 @@ func BenchmarkGraphWhereSmall(b *testing.B) {
 func BenchmarkGraphWhereMedium(b *testing.B) {
 	benchmarks := []struct {
 		name     string
-		patterns []TriplePattern
+		patterns []rdf.TriplePattern
 	}{
 		{"match all", mustParsePatterns("?s ?p ?o .")},
 		{"match S", mustParsePatterns("<http://data.linkedopendata.it/musei/resource/Museo_della_Permanente-Milano> ?p ?o .")},
@@ -183,13 +172,13 @@ func BenchmarkGraphWhereMedium(b *testing.B) {
 			?mus <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Art_museums_and_galleries> .`,
 		)},
 	}
-	var results *Graph
+	var results rdf.Graph
 	g := dataset("medium")
 	b.ResetTimer()
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				results = g.Where(bm.patterns...)
+				results, _ = g.Where(bm.patterns...)
 			}
 		})
 	}
@@ -198,7 +187,7 @@ func BenchmarkGraphWhereMedium(b *testing.B) {
 func BenchmarkGraphWhereLarge(b *testing.B) {
 	benchmarks := []struct {
 		name     string
-		patterns []TriplePattern
+		patterns []rdf.TriplePattern
 	}{
 		//{"match all", mustParsePatterns("?s ?p ?o .")},
 		{"match S", mustParsePatterns("<http://lexvo.org/id/iso639-3/eng> ?p ?o .")},
@@ -210,13 +199,13 @@ func BenchmarkGraphWhereLarge(b *testing.B) {
 		{"match PO", mustParsePatterns(`?s <http://www.w3.org/2002/07/owl#sameAs> <http://lexvo.org/id/iso639-3/nor> .`)},
 		{"match SO", mustParsePatterns(`<http://lexvo.org/id/iso639-3/nor> ?p "ኖርዌጂያን"@tig .`)},
 	}
-	var results *Graph
+	var results rdf.Graph
 	g := dataset("large")
 	b.ResetTimer()
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				results = g.Where(bm.patterns...)
+				results, _ = g.Where(bm.patterns...)
 			}
 		})
 	}

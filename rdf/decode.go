@@ -1,7 +1,7 @@
 package rdf
 
 import (
-	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +10,7 @@ import (
 // Decoder is a decodes RDF triples i N-Triples format.
 type Decoder struct {
 	s              *scanner
-	parseVariables bool
+	ParseVariables bool
 }
 
 // NewDecoder returns a new Decoder on the given stream.
@@ -36,7 +36,7 @@ func (d *Decoder) parseSubject() (token, error) {
 	case tokenBNode, tokenURI:
 		break
 	case tokenVariable:
-		if d.parseVariables {
+		if d.ParseVariables {
 			break
 		}
 		fallthrough
@@ -57,7 +57,7 @@ func (d *Decoder) parsePredicate() (token, error) {
 	case tokenURI:
 		break
 	case tokenVariable:
-		if d.parseVariables {
+		if d.ParseVariables {
 			break
 		}
 		fallthrough
@@ -77,7 +77,7 @@ func (d *Decoder) parseObject() (token, error) {
 	case tokenURI, tokenLiteral, tokenBNode:
 		break
 	case tokenVariable:
-		if d.parseVariables {
+		if d.ParseVariables {
 			break
 		}
 		fallthrough
@@ -183,9 +183,8 @@ func (d *Decoder) Decode() (Triple, error) {
 	return tr, nil
 }
 
-// decodePattern decodes a TriplePattern. This is not exposed in the public API, but
-// used for generating test cases.
-func (d *Decoder) decodePattern() (TriplePattern, error) {
+// DecodePattern decodes a TriplePattern.
+func (d *Decoder) DecodePattern() (TriplePattern, error) {
 	var tr TriplePattern
 	// subject
 	tok, err := d.parseSubject()
@@ -267,62 +266,16 @@ func (d *Decoder) decodePattern() (TriplePattern, error) {
 	return tr, nil
 }
 
-// DecodeGraph consumes stream until the end and decodes all triples into a graph.
-// If an error occurs, it will return it along with the graph parsed so far.
-func (d *Decoder) DecodeGraph() (*Graph, error) {
-	g := NewGraph()
-	bnodeTriples := make(map[BlankNode][]Triple)
-
-	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
-		if err != nil {
-			return g, err
-		}
-		switch t := tr.Subject.(type) {
-		case BlankNode:
-			bnodeTriples[t] = append(bnodeTriples[t], tr)
-			continue
-		}
-		switch t := tr.Object.(type) {
-		case BlankNode:
-			bnodeTriples[t] = append(bnodeTriples[t], tr)
-			continue
-		}
-		g.Insert(tr)
+// TODO implement this properly
+func MustParseNode(node string) Node {
+	s := newScanner(bytes.NewBufferString(node))
+	tok := s.Scan()
+	switch tok.Type {
+	case tokenLiteral:
+		return NewStrLiteral(tok.Text)
+	case tokenURI:
+		return NamedNode{val: tok.Text}
+	default:
 	}
-
-	// Insert triples with bnodes in batches by ID, so that they get assigned
-	// the same (new) blank node ID in the Graph
-	for _, trs := range bnodeTriples {
-		g.Insert(trs...)
-	}
-	return g, nil
-}
-
-// Encoder is a streaming N-Triples encoder.
-type Encoder struct {
-	w *bufio.Writer
-}
-
-// NewEncoder returns a new Encoder.
-func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w: bufio.NewWriter(w)}
-}
-
-// EncodeGraph serializes the given Graph in N-Triples format.
-func (e *Encoder) EncodeGraph(g *Graph) error {
-	for s, po := range g.spo {
-		for p, objs := range po {
-			for _, o := range objs {
-				if _, err := e.w.WriteString(Triple{
-					Subject:   g.id2node[s].(SubjectNode),
-					Predicate: g.id2node[p].(NamedNode),
-					Object:    g.id2node[o],
-				}.String()); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return e.w.Flush()
+	panic("mustParseNode: TODO")
 }

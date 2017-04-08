@@ -227,3 +227,18 @@ func TestScanErrors(t *testing.T) {
 		}
 	}
 }
+
+/*
+func BenchmarkScanner(b *testing.B) {
+	var tok token
+	small := datasetAsByte(b, "small")
+	for n := 0; n < b.N; n++ {
+		s := newScanner(bytes.NewBuffer(small))
+		for {
+			tok = s.Scan()
+			if tok.Type == tokenEOF {
+				break
+			}
+		}
+	}
+}*/
