@@ -76,10 +76,11 @@ func (b BlankNode) Eq(other Node) bool {
 	}
 }
 
-func (b BlankNode) validAsNode()     {}
-func (b BlankNode) validAsSubject()  {}
-func (b BlankNode) validAsObject()   {}
-func (b BlankNode) selectivity() int { return 1 }
+func (b BlankNode) validAsNode()       {}
+func (b BlankNode) validAsSubject()    {}
+func (b BlankNode) validAsObject()     {}
+func (b BlankNode) selectivity() int   { return 1 }
+func (b BlankNode) nodeType() nodeType { return typeBlankNode }
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
@@ -118,11 +119,12 @@ func (u NamedNode) Eq(other Node) bool {
 	}
 }
 
-func (u NamedNode) validAsNode()      {}
-func (u NamedNode) validAsPredicate() {}
-func (u NamedNode) validAsSubject()   {}
-func (u NamedNode) validAsObject()    {}
-func (u NamedNode) selectivity() int  { return 2 }
+func (u NamedNode) validAsNode()       {}
+func (u NamedNode) validAsPredicate()  {}
+func (u NamedNode) validAsSubject()    {}
+func (u NamedNode) validAsObject()     {}
+func (u NamedNode) selectivity() int   { return 2 }
+func (u NamedNode) nodeType() nodeType { return typeNamedNode }
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -186,9 +188,10 @@ func (l Literal) DataType() NamedNode { return l.dt }
 // string if it is not a rdf:langString.
 func (l Literal) Lang() string { return l.lang }
 
-func (l Literal) validAsNode()     {}
-func (l Literal) validAsObject()   {}
-func (l Literal) selectivity() int { return 0 }
+func (l Literal) validAsNode()       {}
+func (l Literal) validAsObject()     {}
+func (l Literal) selectivity() int   { return 0 }
+func (l Literal) nodeType() nodeType { return typeLiteral }
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
@@ -200,10 +203,11 @@ func NewVariable(name string) Variable {
 	return Variable{name: name}
 }
 
-func (v Variable) validAsSubject()   {}
-func (v Variable) validAsPredicate() {}
-func (v Variable) validAsObject()    {}
-func (v Variable) selectivity() int  { return 3 }
+func (v Variable) validAsSubject()    {}
+func (v Variable) validAsPredicate()  {}
+func (v Variable) validAsObject()     {}
+func (v Variable) selectivity() int   { return 3 }
+func (v Variable) nodeType() nodeType { return typeVariable }
 
 type node interface {
 	// selectivity returns a selectivity score from lowest (most selective) to highest (least selective):
@@ -213,6 +217,31 @@ type node interface {
 	// 2 uri
 	// 3 variable
 	selectivity() int
+	nodeType() nodeType
+}
+
+type nodeType int
+
+const (
+	typeNamedNode = iota
+	typeBlankNode
+	typeLiteral
+	typeVariable
+)
+
+func (t nodeType) String() string {
+	switch t {
+	case typeNamedNode:
+		return "named node"
+	case typeBlankNode:
+		return "blank node"
+	case typeLiteral:
+		return "literal"
+	case typeVariable:
+		return "variable"
+	default:
+		panic("BUG: nodeType incomplete String()")
+	}
 }
 
 type subject interface {
