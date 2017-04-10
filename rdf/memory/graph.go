@@ -93,13 +93,46 @@ func (g *Graph) Triples() []rdf.Triple {
 	return res
 }
 
-// Insert adds one or more triples to the Graph. It returns the number
+func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (int, int, error) {
+	if where != nil {
+		panic("TODO: memory.Graph.Update( where=non nil)")
+	}
+
+	if ins != nil && del != nil {
+		panic("TODO: memory.Graph.Update( both ins and del=non nil )")
+	}
+
+	if ins != nil {
+		trs := make([]rdf.Triple, len(ins))
+		for i, p := range ins {
+			trs[i] = rdf.Triple{
+				Subject:   p.Subject.(rdf.SubjectNode),
+				Predicate: p.Predicate.(rdf.NamedNode),
+				Object:    p.Object.(rdf.Node),
+			}
+		}
+		n, err := g.insert(trs...)
+		return 0, n, err
+	}
+	trs := make([]rdf.Triple, len(del))
+	for i, p := range del {
+		trs[i] = rdf.Triple{
+			Subject:   p.Subject.(rdf.SubjectNode),
+			Predicate: p.Predicate.(rdf.NamedNode),
+			Object:    p.Object.(rdf.Node),
+		}
+	}
+	n, err := g.delete(trs...)
+	return n, 0, err
+}
+
+// insert adds one or more triples to the Graph. It returns the number
 // of triples inserted which where not already present.
 //
 // Blank nodes are assumed to be disjoint from the blank nodes already
 // present in the graph, and will be inserted with "fresh" node IDs.
 // However, blank nodes in with identical IDs will be given the same, new ID.
-func (g *Graph) Insert(trs ...rdf.Triple) (int, error) {
+func (g *Graph) insert(trs ...rdf.Triple) (int, error) {
 	n := 0
 	bnodes := make(map[rdf.BlankNode]int)
 	for _, tr := range trs {
@@ -291,10 +324,10 @@ func (g *Graph) ids(tr rdf.Triple) (sid, pid, oid int, found bool) {
 	return
 }
 
-// Delete removes one or more triples to the Graph. It returns the number
+// delete removes one or more triples to the Graph. It returns the number
 // of triples deleted. The delete operation only supports deleting triples with
 // concrete data, that means, without blank nodes; use the DeleteWhere method for that.
-func (g *Graph) Delete(trs ...rdf.Triple) (int, error) {
+func (g *Graph) delete(trs ...rdf.Triple) (int, error) {
 	n := 0
 
 	for _, tr := range trs {
@@ -364,8 +397,6 @@ func (g *Graph) estCardinality(ep encPattern) int {
 	}
 	panic(fmt.Sprintf("BUG: Graph.estCardinality: unhandled pattern: %v", ep))
 }
-
-// func (g *Graph) DeleteWhere(trs...rdf.TriplePattern) int
 
 func (g *Graph) encodePattern(p rdf.TriplePattern, vars map[rdf.Variable]int) (ep encPattern) {
 	// positive integer = nodeId (rdf.NamedNode, Literal)
@@ -441,7 +472,7 @@ func (g *Graph) Where(patterns ...rdf.TriplePattern) (rdf.Graph, error) {
 			reorderPatterns(group, bound)
 		}
 
-		res.Insert(matches...)
+		res.insert(matches...)
 	}
 
 	return res, nil

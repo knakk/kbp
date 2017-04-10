@@ -40,6 +40,15 @@ func (t Triple) Eq(other Triple) bool {
 	return t.Subject.Eq(other.Subject) && t.Predicate.Eq(other.Predicate) && t.Object.Eq(other.Object)
 }
 
+// ToTriplePattern returns the Triple as a TriplePattern.
+func (t Triple) ToTriplePattern() TriplePattern {
+	return TriplePattern{
+		Subject:   t.Subject,
+		Predicate: t.Predicate,
+		Object:    t.Object.(object),
+	}
+}
+
 // Node represents a node in an RDF graph.
 type Node interface {
 	Eq(Node) bool // TODO is this that useful?
@@ -259,7 +268,8 @@ type object interface {
 	validAsObject()
 }
 
-// TriplePattern represents a pattern which can be used to match against a graph.
+// TriplePattern represents a pattern which can be used to match against a graph. It differs
+// from a Triple by that each of the subject, predicate and object may be variable.
 type TriplePattern struct {
 	Subject   subject
 	Predicate predicate

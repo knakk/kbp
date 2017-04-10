@@ -64,11 +64,11 @@ func dataset(set string) *memory.Graph {
 		if containsBnodes {
 			triples = append(triples, tr)
 		} else {
-			g.Insert(tr)
+			rdf.Insert(g, tr)
 		}
 	}
 	if containsBnodes {
-		g.Insert(triples...)
+		rdf.Insert(g, triples...)
 	}
 	datasets[set] = g
 	return datasets[set]
@@ -112,7 +112,7 @@ func BenchmarkGraphInsert(b *testing.B) {
 	dataset("small") // ensure it is parsed and cached in datasets
 	for n := 0; n < b.N; n++ {
 		g := memory.NewGraph()
-		g.Insert(dataset("small").Triples()...)
+		rdf.Insert(g, dataset("small").Triples()...)
 	}
 }
 

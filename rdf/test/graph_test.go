@@ -78,7 +78,7 @@ func solutionsEq(a, b [][]rdf.Node) bool {
 func TestGraphMutateOperations(t *testing.T) {
 	g := memory.NewGraph()
 
-	g.Insert(mustTriples(`
+	rdf.Insert(g, mustTriples(`
 		<h1> <name> "A" .
 		<h1> <knows> <h2> .
 		<h2> <name> "B" .
@@ -92,7 +92,7 @@ func TestGraphMutateOperations(t *testing.T) {
 		`,
 	)
 
-	g.Insert(mustTriples(`
+	rdf.Insert(g, mustTriples(`
 		<b1> <title> "book" .
 		<b1> <contributor> _:c1 .
 		_:c1 <role> <author> .
@@ -116,7 +116,7 @@ func TestGraphMutateOperations(t *testing.T) {
 		_:456 <agent> <h2> .`,
 	)
 
-	g.Delete(mustTriples(`
+	rdf.Delete(g, mustTriples(`
 		<b1> <contributor> _:a .
 		_:a <role> <illustrator> .
 		_:a <agent> <h2> `)...,
@@ -136,7 +136,7 @@ func TestGraphMutateOperations(t *testing.T) {
 		_:2 <agent> <h2> .`,
 	)
 
-	g.Delete(mustTriples(`
+	rdf.Delete(g, mustTriples(`
 		<h1> <knows> <h2> .
 		<h2> <knows> <h1> .
 		`)...,
