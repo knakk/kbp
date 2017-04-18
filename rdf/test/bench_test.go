@@ -26,10 +26,7 @@ import (
 // - large (726674 triples)
 //   Lexvo.org data dump.
 //   http://www.lexvo.org/resources/lexvo_latest.rdf.gz
-//
-// - lubm (99567 triples)
-//   Lehigh University Benchmark, generated with -index 0 -seed 0
-//   http://swat.cse.lehigh.edu/projects/lubm/
+
 func dataset(set string) *memory.Graph {
 	if g, ok := datasets[set]; ok {
 		return g
@@ -38,10 +35,10 @@ func dataset(set string) *memory.Graph {
 	containsBnodes := true
 	switch set {
 	case "small", "medium":
-	case "large", "lubm":
+	case "large":
 		containsBnodes = false
 	default:
-		panic("dataset: set must be one of small, medium, large, lubm")
+		panic("dataset: set must be one of small, medium, large")
 	}
 
 	f, err := os.Open("testdata/" + set + ".nt.gz")

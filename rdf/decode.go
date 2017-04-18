@@ -194,6 +194,7 @@ func MustParseNode(node string) Node {
 	case tokenURI:
 		return NamedNode{val: tok.Text}
 	default:
+		fmt.Printf("parsing %q: %v %q %v\n", node, tok.Type, tok.Text, s.Error)
 	}
 	panic("mustParseNode: TODO")
 }

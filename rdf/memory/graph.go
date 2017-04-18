@@ -438,54 +438,362 @@ func (e encPattern) p() int              { return e[1] }
 func (e encPattern) o() int              { return e[2] }
 func (e encPattern) estCardinality() int { return e[3] }
 
+type encSolutions struct {
+	//SortedBy [2]int
+	Vars []int
+	Rows [][]int
+}
+
+func compatible(pairs [][2]int, rowa, rowb []int) bool {
+	for _, p := range pairs {
+		if rowa[p[0]] != rowb[p[1]] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s encSolutions) join(other encSolutions, bound [][]int) (encSolutions, [][]int) {
+	if len(s.Vars) == 0 {
+		// We're joining with the empty solution set
+		return other, bound
+	}
+
+	var out [][]int
+	var pairs [][2]int // the indices of shared variables in a & b
+	for i, va := range s.Vars {
+		for j, vb := range other.Vars {
+			if va == vb {
+				pairs = append(pairs, [2]int{i, j})
+			}
+		}
+	}
+	var addVars []int
+	for i, v := range other.Vars {
+		if !includeNode(s.Vars, v) {
+			s.Vars = append(s.Vars, v)
+			addVars = append(addVars, i)
+		}
+	}
+
+	for _, a := range s.Rows {
+		for _, b := range other.Rows {
+			if compatible(pairs, a, b) {
+				row := make([]int, 0, len(a)+len(addVars))
+				row = append(row, a...)
+				for _, v := range addVars {
+					row = append(row, b[v])
+				}
+				out = append(out, row)
+			} else {
+				// TODO remove from bound
+			}
+		}
+	}
+
+	s.Rows = out
+	return s, bound
+}
+
+func (s encSolutions) project(vars []int) encSolutions {
+	rows := make([][]int, 0, len(s.Rows))
+	var svars []int
+	for _, v := range vars {
+		for i, vs := range s.Vars {
+			if v == vs {
+				svars = append(svars, i)
+			}
+		}
+	}
+	for _, row := range s.Rows {
+		newrow := make([]int, 0, len(svars))
+		for _, i := range svars {
+			newrow = append(newrow, row[i])
+		}
+		rows = append(rows, newrow)
+	}
+	return encSolutions{
+		Vars: vars,
+		Rows: rows,
+	}
+}
+
+func (g *Graph) evalBGP(p encPattern, bound [][]int) (encSolutions, [][]int) {
+	if p[0] > 0 && p[1] > 0 && p[2] > 0 {
+		// It's a concrete triple
+		return encSolutions{}, bound
+	}
+	if p[2] > 0 {
+		// Matching {any,any,n} using OSP index
+		return g.scanOSP(p, bound)
+	}
+	if p[1] > 0 {
+		// Matching {?,n,n} using POS index
+		return g.scanPOS(p, bound)
+	}
+	// Matching {any,any,any} using SPO index
+	return g.scanSPO(p, bound)
+}
+
+func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
+	// {any,any,any}
+	var (
+		solutions  encSolutions
+		subjects   []int
+		predicates []int
+		objects    []int
+	)
+
+	if p[0] < 0 {
+		solutions.Vars = []int{p[0]}
+	}
+	if p[1] < 0 {
+		solutions.Vars = append(solutions.Vars, p[1])
+	}
+	if p[2] < 0 {
+		solutions.Vars = append(solutions.Vars, p[2])
+	}
+
+	if p[0] < 0 && p[0]*-1 <= len(bound) && len(bound[(p[0]*-1)-1]) > 0 {
+		subjects = bound[(p[0]*-1)-1]
+	} else {
+		subjects = g.subjects()
+	}
+
+	for _, sid := range subjects {
+		if p[0] > 0 && p[0] != sid {
+			continue
+		}
+
+		if p[1] < 0 && p[1]*-1 <= len(bound) && len(bound[(p[1]*-1)-1]) > 0 {
+			predicates = bound[(p[1]*-1)-1]
+		} else {
+			predicates = g.predicatesForSubj(sid)
+		}
+
+		for _, pid := range predicates {
+			if p[1] > 0 && p[1] != pid {
+				continue
+			}
+
+			if p[2] < 0 && p[2]*-1 <= len(bound) && len(bound[(p[2]*-1)-1]) > 0 {
+				objects = bound[(p[2]*-1)-1]
+			} else {
+				objects = g.spo[sid][pid]
+			}
+			for _, oid := range objects {
+				if !includeNode(g.spo[sid][pid], oid) {
+					continue
+				}
+				if p[2] > 0 && p[2] != oid {
+					continue
+				}
+
+				row := make([]int, 0, len(solutions.Vars))
+				if p[0] < 0 {
+					row = append(row, sid)
+				}
+				if p[1] < 0 {
+					row = append(row, pid)
+				}
+				if p[2] < 0 {
+					row = append(row, oid)
+				}
+				solutions.Rows = append(solutions.Rows, row)
+			}
+		}
+	}
+
+	bound = updateBound(solutions, bound)
+	return solutions, bound
+}
+
+func (g *Graph) scanOSP(p encPattern, bound [][]int) (encSolutions, [][]int) {
+	// {any,any,literal/uri}
+
+	var solutions encSolutions
+	if p[0] < 0 {
+		solutions.Vars = []int{p[0]}
+	}
+	if p[1] < 0 {
+		solutions.Vars = append(solutions.Vars, p[1])
+	}
+	// p[2] is concrete
+
+	for sid, preds := range g.osp[p[2]] {
+		if p[0] < 0 {
+			if !freeOrBound(p[0], sid, bound) {
+				continue
+			}
+		} else if p[0] != sid {
+			continue
+		}
+		for _, pid := range preds {
+			if p[1] < 0 {
+				if !freeOrBound(p[1], pid, bound) {
+					continue
+				}
+			} else if p[1] != pid {
+				continue
+			}
+			row := make([]int, 0, len(solutions.Vars))
+			if p[0] < 0 {
+				row = append(row, sid)
+			}
+			if p[1] < 0 {
+				row = append(row, pid)
+			}
+			solutions.Rows = append(solutions.Rows, row)
+		}
+	}
+
+	bound = updateBound(solutions, bound)
+	return solutions, bound
+}
+
+func (g *Graph) scanPOS(p encPattern, bound [][]int) (encSolutions, [][]int) {
+	// {var,uri,var}
+
+	var solutions encSolutions
+	if p[0] < 0 {
+		solutions.Vars = []int{p[0]}
+	}
+	// p[1] is concrete
+	if p[2] < 0 {
+		solutions.Vars = append(solutions.Vars, p[2])
+	}
+
+	for oid, subjs := range g.pos[p[1]] {
+		if p[2] < 0 {
+			if !freeOrBound(p[2], oid, bound) {
+				continue
+			}
+		} else if p[2] != oid {
+			continue
+		}
+		for _, sid := range subjs {
+			if p[0] < 0 {
+				if !freeOrBound(p[0], sid, bound) {
+					continue
+				}
+			} else if p[0] != sid {
+				continue
+			}
+
+			row := make([]int, 0, len(solutions.Vars))
+			if p[0] < 0 {
+				row = append(row, sid)
+			}
+			if p[2] < 0 {
+				row = append(row, oid)
+			}
+			solutions.Rows = append(solutions.Rows, row)
+		}
+	}
+
+	bound = updateBound(solutions, bound)
+	return solutions, bound
+}
+
+func (g *Graph) substitute(p encPattern, s encSolutions) (res []rdf.Triple) {
+	for _, row := range s.Rows {
+		var tr rdf.Triple
+		for i, v := range s.Vars {
+			if v == p.s() {
+				tr.Subject = g.id2node[row[i]].(rdf.SubjectNode)
+			} else if p.s() > 0 {
+				tr.Subject = g.id2node[p.s()].(rdf.SubjectNode)
+			}
+
+			if v == p.p() {
+				tr.Predicate = g.id2node[row[i]].(rdf.NamedNode)
+			} else if p.p() > 0 {
+				tr.Predicate = g.id2node[p.p()].(rdf.NamedNode)
+			}
+
+			if v == p.o() {
+				tr.Object = g.id2node[row[i]]
+			} else if p.o() > 0 {
+				tr.Object = g.id2node[p.o()]
+			}
+		}
+
+		res = append(res, tr)
+	}
+	return res
+}
+
 // Where returns a new graph with the triples matching the given patterns.
 // It corresponds to a SPARQL CONSTRUCT WHERE query, i.e where both template
 // and patterns are identical.
 func (g *Graph) Where(patterns ...rdf.TriplePattern) (rdf.Graph, error) {
+
+	// Fast path for no patterns
 	if len(patterns) == 0 {
 		return NewGraph(), nil
 	}
 
+	// Encode patterns
 	encPatterns := make([]encPattern, len(patterns))
 	vars := make(map[rdf.Variable]int)
 	for i, pattern := range patterns {
 		encPatterns[i] = g.encodePattern(pattern, vars)
 	}
 
+	groups, solutions := g.where(encPatterns)
+
 	res := NewGraph()
-	bound := make([][]int, 0, len(vars))
-	groups := groupPatternsByVariable(encPatterns)
-	for n := range groups {
-		// sort each group by estimated cardinality for the graph pattern
-		sort.Slice(groups[n], func(i, j int) bool {
-			return groups[n][i].estCardinality() < groups[n][j].estCardinality()
-		})
-	}
-
-	for _, group := range groups {
-		var matches []rdf.Triple
-		for len(group) > 0 {
-			var triples []rdf.Triple
-			triples, bound = g.triplesMatching(group[0], bound)
-			matches = append(matches, triples...)
-			group = group[1:]
-			reorderPatterns(group, bound)
+	if len(solutions.Rows) > 0 {
+		for _, group := range groups {
+			for _, pattern := range group {
+				triples := g.substitute(pattern, solutions)
+				res.insert(triples...)
+			}
 		}
-
-		res.insert(matches...)
 	}
 
 	return res, nil
 }
 
+func (g *Graph) where(patterns []encPattern) ([][]encPattern, encSolutions) {
+
+	// Group disjoint pattern groups and sort them by estimated cardinality
+	groups := groupPatternsByVariable(patterns)
+	for n := range groups {
+		sort.Slice(groups[n], func(i, j int) bool {
+			return groups[n][i].estCardinality() < groups[n][j].estCardinality()
+		})
+	}
+
+	var bound [][]int // TODO make([][]int, 0 len(vars)) we know from encoding
+	var left, right encSolutions
+	// Evaluate each BGP sequentially, each BGP using any bound values from previous BGPs
+	for _, group := range groups {
+		for _, pattern := range group {
+			right, bound = g.evalBGP(pattern, bound)
+			left, bound = left.join(right, bound)
+		}
+	}
+
+	return groups, left
+}
+
 func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]rdf.Node, error) {
+
 	var res [][]rdf.Node
 
+	// Fast path for no patterns
+	if len(patterns) == 0 {
+		return res, nil
+	}
+
+	// Encode patterns
 	encPatterns := make([]encPattern, len(patterns))
-	varstmp := make(map[rdf.Variable]int, len(vars))
+	varstmp := make(map[rdf.Variable]int)
 	for i, pattern := range patterns {
 		encPatterns[i] = g.encodePattern(pattern, varstmp)
 	}
+	// Encode variables using the mappings from above
 	encVars := make([]int, len(vars))
 	for i, v := range vars {
 		if ev, ok := varstmp[v]; ok {
@@ -493,45 +801,28 @@ func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]
 		} // else: if variable does not occur in patterns, we ignore it.
 	}
 
-	bound := make([][]int, 0, len(vars))
-	groups := groupPatternsByVariable(encPatterns)
-	for n := range groups {
-		// sort each group by estimated cardinality for the graph pattern
-		sort.Slice(groups[n], func(i, j int) bool {
-			return groups[n][i].estCardinality() < groups[n][j].estCardinality()
-		})
-	}
+	_, solutions := g.where(encPatterns)
 
-	for _, group := range groups {
-		for len(group) > 0 {
-			_, bound = g.triplesMatching(group[0], bound)
-			group = group[1:]
-			reorderPatterns(group, bound)
-		}
-
-	}
-	if len(bound) == 0 {
+	if len(solutions.Rows) == 0 {
 		return res, nil
 	}
 
-	for len(encVars) > 0 {
-		row := make([]rdf.Node, len(encVars))
-		for i, v := range encVars {
-			if len(bound) < (v*-1) || len(bound[(v*-1)-1]) == 0 {
-				return res, nil
-			}
-			row[i] = g.id2node[bound[(v*-1)-1][0]]
-			bound[(v*-1)-1] = bound[(v*-1)-1][1:]
+	solutions = solutions.project(encVars)
 
+	for _, row := range solutions.Rows {
+		nodes := make([]rdf.Node, 0, len(encVars))
+		for _, id := range row {
+			nodes = append(nodes, g.id2node[id])
 		}
-		res = append(res, row)
+
+		res = append(res, nodes)
 	}
 
 	return res, nil
 }
 
-func indexVariables(ep encPattern, n int, v2g map[int]int) {
-	for _, nid := range ep[:3] {
+func indexVariables(p encPattern, n int, v2g map[int]int) {
+	for _, nid := range p[:3] {
 		if nid < 0 {
 			v2g[nid] = n
 		}
@@ -564,6 +855,15 @@ func groupPatternsByVariable(patterns []encPattern) [][]encPattern {
 			}
 			patterns = append(patterns[:i], patterns[i+1:]...)
 			i--
+		}
+	}
+
+	for k := range ignore {
+		for i := 0; i < len(patterns); i++ {
+			if patterns[i].s() == k || patterns[i].p() == k || patterns[i].o() == k {
+				patterns = append(patterns[:i], patterns[i+1:]...)
+				i--
+			}
 		}
 	}
 	// TODO if len(ignore) > 0 loop over patterns and remove those which should be pruned
@@ -634,245 +934,6 @@ again:
 	return groups
 }
 
-// reorderPatterns moves a pattern with bound variables to the top, if not allready there.
-// The patterns are allready sorted by selectivity/estimated cardinality, so if there are
-// more patterns with bound variables the first one will be the right one to move up.
-func reorderPatterns(patterns []encPattern, bound [][]int) {
-	if len(patterns) <= 1 {
-		return
-	}
-	for i, pattern := range patterns {
-		for _, v := range pattern[:3] {
-			if v < 0 {
-				if v*-1 <= len(bound) && len(bound[(v*-1)-1]) > 0 {
-					if i > 0 {
-						patterns[0], patterns[i] = patterns[i], patterns[0]
-					}
-					return
-				}
-			}
-		}
-	}
-}
-
-func (g *Graph) solutionsMatching(vars []int, pattern encPattern, bound [][]int) ([][]rdf.Node, [][]int) {
-	var solutions [][]rdf.Node
-	var triples []rdf.Triple
-	triples, bound = g.triplesMatching(pattern, bound)
-	for _, triple := range triples {
-		row := make([]rdf.Node, len(vars))
-		match := false
-		for i, v := range vars {
-			if pattern[0] == v {
-				row[i] = triple.Subject
-				match = true
-				continue
-			}
-			if pattern[1] == v {
-				row[i] = triple.Predicate
-				match = true
-				continue
-			}
-			if pattern[2] == v {
-				row[i] = triple.Object
-				match = true
-			}
-		}
-		if match {
-			solutions = append(solutions, row)
-		}
-	}
-	return solutions, bound
-}
-
-func (g *Graph) triplesMatching(ep encPattern, bound [][]int) ([]rdf.Triple, [][]int) {
-	if ep[0] > 0 && ep[1] > 0 && ep[2] > 0 {
-		// It's a concrete triple, we now it exists because patterns with
-		// missing nodes has been pruned. Return it
-		return []rdf.Triple{
-			rdf.Triple{
-				g.id2node[ep[0]].(rdf.SubjectNode),
-				g.id2node[ep[1]].(rdf.NamedNode),
-				g.id2node[ep[2]].(rdf.Node),
-			},
-		}, bound
-	}
-	if ep[2] > 0 {
-		// Matching {any,any,n} using OSP index
-		return g.triplesMatchingO(ep, bound)
-	}
-	if ep[1] > 0 {
-		// Matching {?,n,n} using POS index
-		return g.triplesMatchingP(ep, bound)
-	}
-	// Matching {any,any,any} using SPO index
-	return g.triplesMatchingAny(ep, bound)
-}
-
-func (g *Graph) triplesMatchingO(ep encPattern, bound [][]int) ([]rdf.Triple, [][]int) {
-	// {any,any,literal/uri}
-
-	var solutions [][3]int
-
-	for sid, preds := range g.osp[ep[2]] {
-		if ep[0] < 0 {
-			if !freeOrBound(ep[0], sid, bound) {
-				continue
-			}
-		} else if ep[0] != sid {
-			continue
-		}
-		for _, pid := range preds {
-			if ep[1] < 0 {
-				if !freeOrBound(ep[1], pid, bound) {
-					continue
-				}
-			} else if ep[1] != pid {
-				continue
-			}
-			solutions = append(solutions, [3]int{sid, pid, ep[2]})
-		}
-	}
-
-	for _, match := range solutions {
-		bound = updateBound(ep, match, bound)
-	}
-	var res []rdf.Triple
-	for _, sol := range solutions {
-		res = append(res, rdf.Triple{
-			g.id2node[sol[0]].(rdf.SubjectNode),
-			g.id2node[sol[1]].(rdf.NamedNode),
-			g.id2node[ep[2]],
-		})
-	}
-	return res, bound
-}
-
-func (g *Graph) triplesMatchingP(ep encPattern, bound [][]int) ([]rdf.Triple, [][]int) {
-	// {var,uri,var}
-
-	var solutions [][3]int
-
-	for oid, subjs := range g.pos[ep[1]] {
-		if ep[2] < 0 {
-			if !freeOrBound(ep[2], oid, bound) {
-				continue
-			}
-		} else if ep[2] != oid {
-			continue
-		}
-		for _, sid := range subjs {
-			if ep[0] < 0 {
-				if !freeOrBound(ep[0], sid, bound) {
-					continue
-				}
-			} else if ep[0] != sid {
-				continue
-			}
-			solutions = append(solutions, [3]int{sid, ep[1], oid})
-		}
-	}
-
-	for _, match := range solutions {
-		bound = updateBound(ep, match, bound)
-	}
-	var res []rdf.Triple
-	for _, sol := range solutions {
-		res = append(res, rdf.Triple{
-			g.id2node[sol[0]].(rdf.SubjectNode),
-			g.id2node[ep[1]].(rdf.NamedNode),
-			g.id2node[sol[2]],
-		})
-	}
-	return res, bound
-}
-
-func (g *Graph) triplesMatchingAny(ep encPattern, bound [][]int) ([]rdf.Triple, [][]int) {
-	// {any,any,any}
-	var (
-		solutions  [][3]int
-		subjects   []int
-		predicates []int
-		objects    []int
-	)
-
-	/*
-		if ep[0] < 0 {
-			// subject is variable
-			if len(bound) > ep[0]*-1 {
-				// subject is already bound
-				for _, sid := range bound[(ep[0]*-1)-1] {
-					// iterate over bound subjects
-					if ep[1] < 0 {
-						// predicate is variable
-					} else {
-						// predicate is a node
-					}
-				}
-			} else {
-				// iterate over all subjects
-			}
-		} else {
-			// subject is a node
-			for pid, objs := range g.spo[ep[0]] {
-				// iterate over subjects predicate->objects
-			}
-		}*/
-
-	if ep[0] < 0 && ep[0]*-1 <= len(bound) && len(bound[(ep[0]*-1)-1]) > 0 {
-		subjects = bound[(ep[0]*-1)-1]
-	} else {
-		subjects = g.subjects()
-	}
-
-	for _, sid := range subjects {
-		if ep[0] > 0 && ep[0] != sid {
-			continue
-		}
-
-		if ep[1] < 0 && ep[1]*-1 <= len(bound) && len(bound[(ep[1]*-1)-1]) > 0 {
-			predicates = bound[(ep[1]*-1)-1]
-		} else {
-			predicates = g.predicatesForSubj(sid)
-		}
-
-		for _, pid := range predicates {
-			if ep[1] > 0 && ep[1] != pid {
-				continue
-			}
-
-			if ep[2] < 0 && ep[2]*-1 <= len(bound) && len(bound[(ep[2]*-1)-1]) > 0 {
-				objects = bound[(ep[2]*-1)-1]
-			} else {
-				objects = g.spo[sid][pid]
-			}
-			for _, oid := range objects {
-				if !includeNode(g.spo[sid][pid], oid) {
-					continue
-				}
-				if ep[2] > 0 && ep[2] != oid {
-					continue
-				}
-
-				solutions = append(solutions, [3]int{sid, pid, oid})
-			}
-		}
-	}
-
-	for _, match := range solutions {
-		bound = updateBound(ep, match, bound)
-	}
-	var res []rdf.Triple
-	for _, sol := range solutions {
-		res = append(res, rdf.Triple{
-			g.id2node[sol[0]].(rdf.SubjectNode),
-			g.id2node[sol[1]].(rdf.NamedNode),
-			g.id2node[sol[2]],
-		})
-	}
-	return res, bound
-}
-
 func (g *Graph) subjects() (res []int) {
 	for sid := range g.spo {
 		res = append(res, sid)
@@ -887,19 +948,22 @@ func (g *Graph) predicatesForSubj(sid int) (res []int) {
 	return res
 }
 
-func updateBound(ep encPattern, tr [3]int, bound [][]int) [][]int {
-	for i, epid := range ep[:3] {
-		if epid < 0 {
-			if diff := epid*-1 - len(bound); diff != 0 {
+func updateBound(s encSolutions, bound [][]int) [][]int {
+	for _, row := range s.Rows {
+		for i, v := range s.Vars {
+			if diff := v*-1 - len(bound); diff != 0 {
+				// First bound value of this variable
 				for j := 0; j < diff; j++ {
 					bound = append(bound, []int{})
 				}
-				bound[(epid*-1)-1] = append(bound[(epid*-1)-1], tr[i])
-			} else if !includeNode(bound[(epid*-1)-1], tr[i]) {
-				bound[(epid*-1)-1] = append(bound[(epid*-1)-1], tr[i])
+				bound[(v*-1)-1] = append(bound[(v*-1)-1], row[i])
+			} else if !includeNode(bound[(v*-1)-1], row[i]) {
+				// New bund value for variable
+				bound[(v*-1)-1] = append(bound[(v*-1)-1], row[i])
 			}
 		}
 	}
+
 	return bound
 }
 
@@ -1066,18 +1130,11 @@ func (g *Graph) signature(bnode rdf.BlankNode) string {
 
 func (g *Graph) EncodeNTriples(w io.Writer) error {
 	bw := bufio.NewWriter(w)
-	for s, po := range g.spo {
-		for p, objs := range po {
-			for _, o := range objs {
-				if _, err := bw.WriteString(rdf.Triple{
-					Subject:   g.id2node[s].(rdf.SubjectNode),
-					Predicate: g.id2node[p].(rdf.NamedNode),
-					Object:    g.id2node[o],
-				}.String()); err != nil {
-					return err
-				}
-			}
+	for _, tr := range g.Triples() {
+		if _, err := bw.WriteString(tr.String()); err != nil {
+			return err
 		}
+
 	}
 	return bw.Flush()
 }
