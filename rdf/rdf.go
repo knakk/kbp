@@ -88,7 +88,6 @@ func (b BlankNode) Eq(other Node) bool {
 func (b BlankNode) validAsNode()       {}
 func (b BlankNode) validAsSubject()    {}
 func (b BlankNode) validAsObject()     {}
-func (b BlankNode) selectivity() int   { return 1 }
 func (b BlankNode) nodeType() nodeType { return typeBlankNode }
 
 // NamedNode represent an named node; an RDF node identified by an URI.
@@ -132,7 +131,6 @@ func (u NamedNode) validAsNode()       {}
 func (u NamedNode) validAsPredicate()  {}
 func (u NamedNode) validAsSubject()    {}
 func (u NamedNode) validAsObject()     {}
-func (u NamedNode) selectivity() int   { return 2 }
 func (u NamedNode) nodeType() nodeType { return typeNamedNode }
 
 // Literal represents an RDF Literal.
@@ -199,7 +197,6 @@ func (l Literal) Lang() string { return l.lang }
 
 func (l Literal) validAsNode()       {}
 func (l Literal) validAsObject()     {}
-func (l Literal) selectivity() int   { return 0 }
 func (l Literal) nodeType() nodeType { return typeLiteral }
 
 // Variable represents a variable which can be bound to RDF nodes in a query.
@@ -215,17 +212,9 @@ func NewVariable(name string) Variable {
 func (v Variable) validAsSubject()    {}
 func (v Variable) validAsPredicate()  {}
 func (v Variable) validAsObject()     {}
-func (v Variable) selectivity() int   { return 3 }
 func (v Variable) nodeType() nodeType { return typeVariable }
 
 type node interface {
-	// selectivity returns a selectivity score from lowest (most selective) to highest (least selective):
-	//
-	// 0 literal		Literal is most selective. It cannot have outgoing edges, like a uri/bnode
-	// 1 bnode			More selective than uri because it usually only have one incoming edge
-	// 2 uri
-	// 3 variable
-	selectivity() int
 	nodeType() nodeType
 }
 
@@ -294,57 +283,4 @@ func (p TriplePattern) variables() (res []Variable) {
 		res = append(res, v)
 	}
 	return res
-}
-
-// selectivity returns a selectivity score, determined by the number
-// of and position of variables. This score can be used to select the
-// execution order of graph patterns. This idea is proposed in the paper:
-// Tsialiamanis, Petros, et al. "Heuristics-based query optimisation for SPARQL."
-// Proceedings of the 15th International Conference on Extending Database Technology. ACM, 2012.
-func (p TriplePattern) selectivity() int {
-	// The pattern score from lowest (most selective) to highest (least selective) is
-	// using the following order:
-	//
-	//   {s,p,o} < {s,?,o} < {?,p,o} < {s,p,?} < {?,?,o} < {s,?,?} < {?,p,?} < {?,?,?}
-	//
-	// In addition, patterns where the node in object position is a literal are scored
-	// lower than if it is a named node/blank node, since a literal cannot have outgoing edges.
-	//
-	// TODO rewrite using node.selectivity() score
-
-	vars := [3]bool{}
-	objIsLiteral := 0
-	if _, ok := p.Subject.(Variable); ok {
-		vars[0] = true
-	}
-	if _, ok := p.Predicate.(Variable); ok {
-		vars[1] = true
-	}
-	switch p.Object.(type) {
-	case Variable:
-		vars[2] = true
-	case Literal:
-		objIsLiteral = 1
-	}
-
-	switch vars {
-	case [3]bool{false, false, false}:
-		return 1 - objIsLiteral
-	case [3]bool{false, true, false}:
-		return 2 - objIsLiteral
-	case [3]bool{true, false, false}:
-		return 3 - objIsLiteral
-	case [3]bool{false, false, true}:
-		return 4
-	case [3]bool{true, true, false}:
-		return 5 - objIsLiteral
-	case [3]bool{false, true, true}:
-		return 6
-	case [3]bool{true, false, true}:
-		return 7
-	case [3]bool{true, true, true}:
-		return 8
-	default:
-		panic("BUG: TriplePattern.selectivity: unhandeled pattern")
-	}
 }
