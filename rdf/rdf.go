@@ -53,7 +53,7 @@ func (t Triple) ToTriplePattern() TriplePattern {
 type Node interface {
 	String() string
 
-	validAsNode()
+	node()
 }
 
 // SubjectNode represents the subject of a triple, which can be either
@@ -63,6 +63,37 @@ type SubjectNode interface {
 	subject
 }
 
+func (b BlankNode) node() {}
+func (u NamedNode) node() {}
+func (l Literal) node()   {}
+
+// subject represents a Node which can be in Subject position in a TriplePattern.
+type subject interface {
+	subject()
+}
+
+func (b BlankNode) subject() {}
+func (u NamedNode) subject() {}
+func (v Variable) subject()  {}
+
+// predicate represents a Node which can be in Predicate position in a TriplePattern.
+type predicate interface {
+	predicate()
+}
+
+func (u NamedNode) predicate() {}
+func (v Variable) predicate()  {}
+
+// object represents a Node which can be in Object position in a TriplePattern.
+type object interface {
+	object()
+}
+
+func (b BlankNode) object() {}
+func (u NamedNode) object() {}
+func (l Literal) object()   {}
+func (v Variable) object()  {}
+
 // BlankNode represents a blank node; that is, an unnamed RDF node.
 type BlankNode struct {
 	id string
@@ -70,11 +101,6 @@ type BlankNode struct {
 
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
-
-func (b BlankNode) validAsNode()       {}
-func (b BlankNode) validAsSubject()    {}
-func (b BlankNode) validAsObject()     {}
-func (b BlankNode) nodeType() nodeType { return typeBlankNode }
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
@@ -102,12 +128,6 @@ func NewNamedNode(uri string) (NamedNode, error) {
 
 // String returns a string representation of an URI in N-Triples format.
 func (u NamedNode) String() string { return "<" + u.val + ">" }
-
-func (u NamedNode) validAsNode()       {}
-func (u NamedNode) validAsPredicate()  {}
-func (u NamedNode) validAsSubject()    {}
-func (u NamedNode) validAsObject()     {}
-func (u NamedNode) nodeType() nodeType { return typeNamedNode }
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -159,10 +179,6 @@ func (l Literal) DataType() NamedNode { return l.dt }
 // string if it is not a rdf:langString.
 func (l Literal) Lang() string { return l.lang }
 
-func (l Literal) validAsNode()       {}
-func (l Literal) validAsObject()     {}
-func (l Literal) nodeType() nodeType { return typeLiteral }
-
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
 	name string
@@ -173,15 +189,6 @@ func NewVariable(name string) Variable {
 	return Variable{name: name}
 }
 
-func (v Variable) validAsSubject()    {}
-func (v Variable) validAsPredicate()  {}
-func (v Variable) validAsObject()     {}
-func (v Variable) nodeType() nodeType { return typeVariable }
-
-type node interface {
-	nodeType() nodeType
-}
-
 type nodeType int
 
 const (
@@ -190,6 +197,16 @@ const (
 	typeLiteral
 	typeVariable
 )
+
+// node represent a Node that can be part of a TriplePattern.
+type node interface {
+	nodeType() nodeType
+}
+
+func (l Literal) nodeType() nodeType   { return typeLiteral }
+func (u NamedNode) nodeType() nodeType { return typeNamedNode }
+func (b BlankNode) nodeType() nodeType { return typeBlankNode }
+func (v Variable) nodeType() nodeType  { return typeVariable }
 
 func (t nodeType) String() string {
 	switch t {
@@ -204,21 +221,6 @@ func (t nodeType) String() string {
 	default:
 		panic("BUG: nodeType incomplete String()")
 	}
-}
-
-type subject interface {
-	node
-	validAsSubject()
-}
-
-type predicate interface {
-	node
-	validAsPredicate()
-}
-
-type object interface {
-	node
-	validAsObject()
 }
 
 // TriplePattern represents a pattern which can be used to match against a graph. It differs
