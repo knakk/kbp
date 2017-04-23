@@ -1,9 +1,6 @@
 package rdf
 
-import (
-	"bytes"
-	"testing"
-)
+import "testing"
 
 func collectTokens(s *scanner) []token {
 	tokens := []token{}
@@ -188,7 +185,7 @@ func TestScanTokens(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		scanner := newScanner(bytes.NewBufferString(test.input))
+		scanner := newScanner(test.input)
 		if tokens := collectTokens(scanner); !equalTokens(tokens, test.want) {
 			t.Errorf("scanning %q got %v; want %v", test.input, tokens, test.want)
 		}
@@ -216,7 +213,7 @@ func TestScanErrors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		scanner := newScanner(bytes.NewBufferString(test.input))
+		scanner := newScanner(test.input)
 		tok := scanner.Scan()
 		if tok.Type != tokenIllegal {
 			t.Errorf("scanning %q got %v; want %v", test.input, tok.Type, tokenIllegal)

@@ -1,7 +1,6 @@
 package rdf
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -15,7 +14,7 @@ type Decoder struct {
 
 // NewDecoder returns a new Decoder on the given stream.
 func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{s: newScanner(r)}
+	return &Decoder{s: newStreamingScanner(r)}
 }
 
 func (d *Decoder) ignoreLine() {
@@ -186,7 +185,7 @@ func (d *Decoder) DecodePattern() (TriplePattern, error) {
 
 // TODO implement this properly
 func MustParseNode(node string) Node {
-	s := newScanner(bytes.NewBufferString(node))
+	s := newScanner(node)
 	tok := s.Scan()
 	switch tok.Type {
 	case tokenLiteral:

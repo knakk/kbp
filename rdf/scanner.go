@@ -64,10 +64,10 @@ func (t tokenType) String() string {
 // scanner is an N-Triples scanner.
 // Comment tokens are not emitted.
 type scanner struct {
-	r    *bufio.Reader
-	line []byte // line being scanned
+	r     *bufio.Reader
+	input string // line(s) being scanned
 
-	pos      int  // position in line
+	pos      int  // position in line(s)
 	start    int  // start of current token
 	unescape bool // true when token needs unescaping
 
@@ -80,8 +80,12 @@ type scanner struct {
 	Error string
 }
 
-func newScanner(r io.Reader) *scanner {
+func newStreamingScanner(r io.Reader) *scanner {
 	return &scanner{r: bufio.NewReader(r), Row: 1}
+}
+
+func newScanner(input string) *scanner {
+	return &scanner{input: input, Row: 1}
 }
 
 // token returns the next token in the stream.
@@ -138,7 +142,7 @@ runeSwitch:
 				s.Error = "unterminated Literal"
 				break runeSwitch
 			}
-			if s.pos > 1 && (s.line[s.pos-2] != '\\' || s.line[s.pos-3] == '\\') {
+			if s.pos > 1 && (s.input[s.pos-2] != '\\' || s.input[s.pos-3] == '\\') {
 				break
 			}
 		}
@@ -193,7 +197,7 @@ runeSwitch:
 		s.unescape = false
 		return s.unescaped(tok, s.start+addStart, s.pos+addEnd)
 	}
-	return token{tok, string(s.line[s.start+addStart : s.pos+addEnd])}
+	return token{tok, s.input[s.start+addStart : s.pos+addEnd]}
 }
 
 func (s *scanner) ignore() {
@@ -201,18 +205,22 @@ func (s *scanner) ignore() {
 }
 
 func (s *scanner) next() rune {
-	if s.pos == len(s.line) {
-		line, err := s.r.ReadBytes('\n')
+	if s.pos == len(s.input) {
+		if s.r == nil {
+			// This is not a streaming scanner, and we reached end of input string.
+			return eof
+		}
+		line, err := s.r.ReadString('\n')
 		if err != nil && len(line) == 0 {
 			return eof
 		}
-		s.line = line
+		s.input = line
 		s.start = 0
 		s.pos = 0
 		s.Col++
 	}
 
-	r, w := utf8.DecodeRune(s.line[s.pos:])
+	r, w := utf8.DecodeRuneInString(s.input[s.pos:])
 	s.pos += w
 	s.Col++
 
@@ -220,7 +228,7 @@ func (s *scanner) next() rune {
 }
 
 func (s *scanner) peek() rune {
-	r, _ := utf8.DecodeRune(s.line[s.pos:])
+	r, _ := utf8.DecodeRuneInString(s.input[s.pos:])
 	return r
 }
 
@@ -257,7 +265,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 	i := from
 	buf := bytes.NewBuffer(make([]byte, 0, to-i))
 	for i < to {
-		r, w := utf8.DecodeRune(s.line[i:])
+		r, w := utf8.DecodeRuneInString(s.input[i:])
 		if w == 0 {
 			break
 		}
@@ -267,7 +275,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 			continue
 		}
 		var c byte
-		switch s.line[i] {
+		switch s.input[i] {
 		case 't':
 			c = '\t'
 		case 'b':
@@ -288,16 +296,16 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 			d := uint64(0)
 			start := i
 			digits := 4
-			if s.line[i] == 'U' {
+			if s.input[i] == 'U' {
 				digits = 8
 			}
 			for i < start+digits {
 				i++
-				if i == len(s.line) {
+				if i == len(s.input) {
 					s.Error = "illegal escape sequence"
-					return token{tokenIllegal, string(s.line[start-1 : i])}
+					return token{tokenIllegal, s.input[start-1 : i]}
 				}
-				x := uint64(s.line[i])
+				x := uint64(s.input[i])
 				if x >= 'a' {
 					x -= 'a' - 'A'
 				}
@@ -307,11 +315,11 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 				}
 				if 0 > d1 || d1 > 15 {
 					j := i
-					for !utf8.FullRune(s.line[j:i]) {
+					for !utf8.FullRuneInString(s.input[j:i]) {
 						i++
 					}
 					s.Error = "illegal escape sequence"
-					return token{tokenIllegal, string(s.line[start-1 : i-1])}
+					return token{tokenIllegal, s.input[start-1 : i-1]}
 				}
 				d = (16 * d) + d1
 			}
@@ -320,7 +328,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 			continue
 		default:
 			s.Error = "illegal escape sequence"
-			return token{tokenIllegal, string(s.line[i-1 : i+1])}
+			return token{tokenIllegal, s.input[i-1 : i+1]}
 		}
 		buf.WriteByte(c)
 		i++
