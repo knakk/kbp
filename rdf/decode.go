@@ -4,22 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/knakk/kbp/rdf/internal/scanner"
 )
 
 // Decoder decodes RDF triples i N-Triples format.
 type Decoder struct {
-	s              *scanner
+	s              *scanner.Scanner
 	ParseVariables bool
 }
 
 // NewDecoder returns a new Decoder on the given stream.
 func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{s: newStreamingScanner(r)}
+	return &Decoder{s: scanner.NewStreamingScanner(r)}
 }
 
 func (d *Decoder) ignoreLine() {
-	for tok := d.s.Scan(); tok.Type != tokenEOL &&
-		tok.Type != tokenEOF; tok = d.s.Scan() {
+	for tok := d.s.Scan(); tok.Type != scanner.TokenEOL &&
+		tok.Type != scanner.TokenEOF; tok = d.s.Scan() {
 	}
 }
 
@@ -27,11 +29,11 @@ func (d *Decoder) parseEnd() error {
 	// Each statement must end in a dot (.)
 	tok := d.s.Scan()
 	switch tok.Type {
-	case tokenIllegal:
+	case scanner.TokenIllegal:
 		return errors.New(d.s.Error + ": " + tok.Text)
-	case tokenEOF:
+	case scanner.TokenEOF:
 		return io.EOF
-	case tokenDot:
+	case scanner.TokenDot:
 	default:
 		return fmt.Errorf("expected dot, got %s", tok.Type.String())
 	}
@@ -57,19 +59,19 @@ var errEOL = errors.New("EOL")
 func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 	tok := d.s.Scan()
 	switch tok.Type {
-	case tokenLiteral:
+	case scanner.TokenLiteral:
 		n = Literal{val: tok.Text, dt: NamedNode{val: xsdString}}
-	case tokenIllegal:
+	case scanner.TokenIllegal:
 		return n, false, errors.New(d.s.Error + ": " + tok.Text)
-	case tokenEOF:
+	case scanner.TokenEOF:
 		return n, false, io.EOF
-	case tokenEOL:
+	case scanner.TokenEOL:
 		return n, false, errEOL
-	case tokenURI:
+	case scanner.TokenURI:
 		return NamedNode{val: tok.Text}, false, nil
-	case tokenBNode:
+	case scanner.TokenBNode:
 		return BlankNode{id: tok.Text}, false, nil
-	case tokenVariable:
+	case scanner.TokenVariable:
 		return Variable{name: tok.Text}, false, nil
 	default:
 		return n, false, fmt.Errorf("unexpected %v", tok.Type)
@@ -78,23 +80,23 @@ func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 	// Check if we have datatype or language-tag for literal
 	tok = d.s.Scan()
 	switch tok.Type {
-	case tokenIllegal:
+	case scanner.TokenIllegal:
 		err = errors.New(d.s.Error + ": " + tok.Text)
-	case tokenEOF:
+	case scanner.TokenEOF:
 		err = io.EOF
-	case tokenEOL:
+	case scanner.TokenEOL:
 		err = errEOL
-	case tokenDot:
+	case scanner.TokenDot:
 		parsedDot = true
-	case tokenLangTag:
+	case scanner.TokenLangTag:
 		n = Literal{
 			val:  n.(Literal).val,
 			dt:   NamedNode{val: rdfLangString},
 			lang: tok.Text,
 		}
-	case tokenTypeMarker:
+	case scanner.TokenTypeMarker:
 		tok = d.s.Scan()
-		if tok.Type == tokenURI {
+		if tok.Type == scanner.TokenURI {
 			n = Literal{
 				val: n.(Literal).val,
 				dt:  NamedNode{val: tok.Text},
@@ -185,15 +187,12 @@ func (d *Decoder) DecodePattern() (TriplePattern, error) {
 
 // TODO implement this properly
 func MustParseNode(node string) Node {
-	s := newScanner(node)
-	tok := s.Scan()
-	switch tok.Type {
-	case tokenLiteral:
-		return NewStrLiteral(tok.Text)
-	case tokenURI:
-		return NamedNode{val: tok.Text}
-	default:
-		fmt.Printf("parsing %q: %v %q %v\n", node, tok.Type, tok.Text, s.Error)
+	d := Decoder{
+		s: scanner.NewScanner(node),
 	}
-	panic("mustParseNode: TODO")
+	n, _, err := d.parseNode()
+	if err != nil && err != io.EOF {
+		panic(err)
+	}
+	return n.(Node)
 }

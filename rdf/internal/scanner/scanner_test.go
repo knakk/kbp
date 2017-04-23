@@ -1,12 +1,12 @@
-package rdf
+package scanner
 
 import "testing"
 
-func collectTokens(s *scanner) []token {
+func collectTokens(s *Scanner) []token {
 	tokens := []token{}
 	for {
 		tk := s.Scan()
-		if tk.Type == tokenEOF {
+		if tk.Type == TokenEOF {
 			break
 		}
 		tokens = append(tokens, token{tk.Type, tk.Text})
@@ -46,146 +46,146 @@ func TestScanTokens(t *testing.T) {
 		{
 			"\n",
 			[]token{
-				{tokenEOL, ""},
+				{TokenEOL, ""},
 			},
 		},
 		{
 			"<a>",
 			[]token{
-				{tokenURI, "a"},
+				{TokenURI, "a"},
 			},
 		},
 		{
 			" <http://xyz/æøå.123> ",
 			[]token{
-				{tokenURI, "http://xyz/æøå.123"},
+				{TokenURI, "http://xyz/æøå.123"},
 			},
 		},
 		{
 			`""`,
 			[]token{
-				{tokenLiteral, ""},
+				{TokenLiteral, ""},
 			},
 		},
 		{
 			`"a"`, []token{
-				{tokenLiteral, "a"},
+				{TokenLiteral, "a"},
 			},
 		},
 		{
 			`"a"`,
-			[]token{{tokenLiteral, "a"}},
+			[]token{{TokenLiteral, "a"}},
 		},
 		{
 			`"100"^^<int>`,
 			[]token{
-				{tokenLiteral, "100"},
-				{tokenTypeMarker, ""},
-				{tokenURI, "int"},
+				{TokenLiteral, "100"},
+				{TokenTypeMarker, ""},
+				{TokenURI, "int"},
 			},
 		},
 		{
 			`"hei"@nb-No `,
 			[]token{
-				{tokenLiteral, "hei"},
-				{tokenLangTag, "nb-No"},
+				{TokenLiteral, "hei"},
+				{TokenLangTag, "nb-No"},
 			},
 		},
 		{
 			`"\\" "\""`,
 			[]token{
-				{tokenLiteral, "\\"},
-				{tokenLiteral, "\""},
+				{TokenLiteral, "\\"},
+				{TokenLiteral, "\""},
 			},
 		},
 		{
 			`"\t\r\n\f\b\\\u00b7\u00B7\U000000b7\U000000B7"`,
 			[]token{
-				{tokenLiteral, "\t\r\n\f\b\\····"},
+				{TokenLiteral, "\t\r\n\f\b\\····"},
 			},
 		},
 		{
 			`"abc\tæøå"`,
 			[]token{
-				{tokenLiteral, "abc\tæøå"},
+				{TokenLiteral, "abc\tæøå"},
 			},
 		},
 		{
 			`"line #1\nline #2"`,
 			[]token{
-				{tokenLiteral, "line #1\nline #2"},
+				{TokenLiteral, "line #1\nline #2"},
 			},
 		},
 		{
 			"<a>^^<f>", []token{
-				{tokenURI, "a"},
-				{tokenTypeMarker, ""},
-				{tokenURI, "f"},
+				{TokenURI, "a"},
+				{TokenTypeMarker, ""},
+				{TokenURI, "f"},
 			},
 		},
 		{
 			`"a" 	"b"`,
 			[]token{
-				{tokenLiteral, "a"},
-				{tokenLiteral, "b"},
+				{TokenLiteral, "a"},
+				{TokenLiteral, "b"},
 			},
 		},
 		{
 			"<a><b> <c> .\n",
 			[]token{
-				{tokenURI, "a"},
-				{tokenURI, "b"},
-				{tokenURI, "c"},
-				{tokenDot, ""},
-				{tokenEOL, ""},
+				{TokenURI, "a"},
+				{TokenURI, "b"},
+				{TokenURI, "c"},
+				{TokenDot, ""},
+				{TokenEOL, ""},
 			},
 		},
 		{
 			"<a> # a comment <b>\n<c>",
 			[]token{
-				{tokenURI, "a"},
-				{tokenEOL, ""},
-				{tokenURI, "c"},
+				{TokenURI, "a"},
+				{TokenEOL, ""},
+				{TokenURI, "c"},
 			},
 		},
 		{
 			`<http://example/æøå> <http://example/禅> "\"\\\r\n Здра́вствуйте	☺" .`,
 			[]token{
-				{tokenURI, "http://example/æøå"},
-				{tokenURI, "http://example/禅"},
-				{tokenLiteral, "\"\\\r\n Здра́вствуйте\t☺"},
-				{tokenDot, ""},
+				{TokenURI, "http://example/æøå"},
+				{TokenURI, "http://example/禅"},
+				{TokenLiteral, "\"\\\r\n Здра́вствуйте\t☺"},
+				{TokenDot, ""},
 			},
 		},
 		{
 			"<s> a ",
 			[]token{
-				{tokenURI, "s"},
-				{tokenURI, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"},
+				{TokenURI, "s"},
+				{TokenURI, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"},
 			},
 		},
 		{
 			"_:a <b> _:c .",
 			[]token{
-				{tokenBNode, "a"},
-				{tokenURI, "b"},
-				{tokenBNode, "c"},
-				{tokenDot, ""},
+				{TokenBNode, "a"},
+				{TokenURI, "b"},
+				{TokenBNode, "c"},
+				{TokenDot, ""},
 			},
 		},
 		{
 			"?s ?pred <o> .",
 			[]token{
-				{tokenVariable, "s"},
-				{tokenVariable, "pred"},
-				{tokenURI, "o"},
-				{tokenDot, ""},
+				{TokenVariable, "s"},
+				{TokenVariable, "pred"},
+				{TokenURI, "o"},
+				{TokenDot, ""},
 			},
 		},
 	}
 
 	for _, test := range tests {
-		scanner := newScanner(test.input)
+		scanner := NewScanner(test.input)
 		if tokens := collectTokens(scanner); !equalTokens(tokens, test.want) {
 			t.Errorf("scanning %q got %v; want %v", test.input, tokens, test.want)
 		}
@@ -213,10 +213,10 @@ func TestScanErrors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		scanner := newScanner(test.input)
+		scanner := NewScanner(test.input)
 		tok := scanner.Scan()
-		if tok.Type != tokenIllegal {
-			t.Errorf("scanning %q got %v; want %v", test.input, tok.Type, tokenIllegal)
+		if tok.Type != TokenIllegal {
+			t.Errorf("scanning %q got %v; want %v", test.input, tok.Type, TokenIllegal)
 		}
 		if scanner.Error != test.errWant || tok.Text != test.textWant {
 			t.Errorf("scanning %q got %q, %q; want %q, %q",
@@ -233,7 +233,7 @@ func BenchmarkScanner(b *testing.B) {
 		s := newScanner(bytes.NewBuffer(small))
 		for {
 			tok = s.Scan()
-			if tok.Type == tokenEOF {
+			if tok.Type == TokenEOF {
 				break
 			}
 		}

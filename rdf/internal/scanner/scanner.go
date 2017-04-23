@@ -1,4 +1,4 @@
-package rdf
+package scanner
 
 import (
 	"bufio"
@@ -11,20 +11,20 @@ type tokenType int
 
 const (
 	// Special tokens
-	tokenIllegal tokenType = iota
-	tokenEOF
-	tokenEOL
+	TokenIllegal tokenType = iota
+	TokenEOF
+	TokenEOL
 
 	// N-Triples tokens
-	tokenURI
-	tokenBNode
-	tokenLiteral
-	tokenLangTag
-	tokenTypeMarker
-	tokenDot
+	TokenURI
+	TokenBNode
+	TokenLiteral
+	TokenLangTag
+	TokenTypeMarker
+	TokenDot
 
 	// Triple pattern
-	tokenVariable
+	TokenVariable
 )
 
 const eof = rune(-1)
@@ -36,38 +36,38 @@ type token struct {
 
 func (t tokenType) String() string {
 	switch t {
-	case tokenIllegal:
+	case TokenIllegal:
 		return "Illegal"
-	case tokenEOF:
+	case TokenEOF:
 		return "EOF"
-	case tokenEOL:
+	case TokenEOL:
 		return "EOL"
-	case tokenBNode:
+	case TokenBNode:
 		return "Blank Node"
-	case tokenURI:
+	case TokenURI:
 		return "URI"
-	case tokenLiteral:
+	case TokenLiteral:
 		return "Literal"
-	case tokenLangTag:
+	case TokenLangTag:
 		return "Language tag"
-	case tokenTypeMarker:
+	case TokenTypeMarker:
 		return "DataType marker"
-	case tokenDot:
+	case TokenDot:
 		return "Dot"
-	case tokenVariable:
+	case TokenVariable:
 		return "Variable"
 	default:
 		panic("token String() TODO")
 	}
 }
 
-// scanner is an N-Triples scanner.
+// Scanner is an N-Triples Scanner.
 // Comment tokens are not emitted.
-type scanner struct {
+type Scanner struct {
 	r     *bufio.Reader
-	input string // line(s) being scanned
+	input string // input being scanned
 
-	pos      int  // position in line(s)
+	pos      int  // position in input
 	start    int  // start of current token
 	unescape bool // true when token needs unescaping
 
@@ -80,16 +80,18 @@ type scanner struct {
 	Error string
 }
 
-func newStreamingScanner(r io.Reader) *scanner {
-	return &scanner{r: bufio.NewReader(r), Row: 1}
+// NewStreamingScanner returns a new streaming Scanner over the given reader.
+func NewStreamingScanner(r io.Reader) *Scanner {
+	return &Scanner{r: bufio.NewReader(r), Row: 1}
 }
 
-func newScanner(input string) *scanner {
-	return &scanner{input: input, Row: 1}
+// NewScanner returns a new Scanner over the given input string.
+func NewScanner(input string) *Scanner {
+	return &Scanner{input: input, Row: 1}
 }
 
 // token returns the next token in the stream.
-func (s *scanner) Scan() token {
+func (s *Scanner) Scan() token {
 	s.start = s.pos
 	s.Error = ""
 	addStart, addEnd := 0, 0
@@ -107,7 +109,7 @@ runeSwitch:
 		s.Row++
 		s.ignore()
 		s.Col = 0
-		tok = tokenEOL
+		tok = TokenEOL
 	case '<':
 		if !s.scanTo('>') {
 			s.Error = "unterminated URI"
@@ -115,24 +117,24 @@ runeSwitch:
 		}
 		addStart = 1
 		addEnd = -1
-		tok = tokenURI
+		tok = TokenURI
 	case 'a':
 		if !isWhitespace(s.peek()) {
 			s.Error = "unexpected token"
 			s.scanUntilNextToken()
 			break runeSwitch
 		}
-		return token{tokenURI, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}
+		return token{TokenURI, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}
 	case '.':
 		s.ignore()
-		tok = tokenDot
+		tok = TokenDot
 	case '#':
 		if !s.scanTo('\n') {
-			tok = tokenEOF
+			tok = TokenEOF
 			break runeSwitch
 		}
 		s.ignore()
-		tok = tokenEOL
+		tok = TokenEOL
 	case '"':
 		s.ignore()
 		for {
@@ -149,7 +151,7 @@ runeSwitch:
 		if s.pos > s.start {
 			addEnd = -1
 		}
-		tok = tokenLiteral
+		tok = TokenLiteral
 	case '@':
 		s.ignore()
 		p := s.pos
@@ -158,7 +160,7 @@ runeSwitch:
 			s.Error = "invalid language tag"
 			break runeSwitch
 		}
-		tok = tokenLangTag
+		tok = TokenLangTag
 	case '^':
 		if s.peek() != '^' {
 			s.Error = "unexpected token"
@@ -167,7 +169,7 @@ runeSwitch:
 		}
 		s.pos++ // consume ^^
 		s.ignore()
-		tok = tokenTypeMarker
+		tok = TokenTypeMarker
 	case '_':
 		if s.peek() != ':' {
 			s.Error = "unexpected token"
@@ -176,13 +178,13 @@ runeSwitch:
 		}
 		s.scanUntilNextToken()
 		addStart = 2
-		tok = tokenBNode
+		tok = TokenBNode
 	case '?':
 		s.scanUntilNextToken()
 		addStart = 1
-		tok = tokenVariable
+		tok = TokenVariable
 	case eof:
-		tok = tokenEOF
+		tok = TokenEOF
 	case utf8.RuneError:
 		s.Error = "illegal UTF-8 encoding"
 	default:
@@ -191,7 +193,7 @@ runeSwitch:
 	}
 
 	if s.Error != "" {
-		tok = tokenIllegal
+		tok = TokenIllegal
 	}
 	if s.unescape {
 		s.unescape = false
@@ -200,11 +202,11 @@ runeSwitch:
 	return token{tok, s.input[s.start+addStart : s.pos+addEnd]}
 }
 
-func (s *scanner) ignore() {
+func (s *Scanner) ignore() {
 	s.start = s.pos
 }
 
-func (s *scanner) next() rune {
+func (s *Scanner) next() rune {
 	if s.pos == len(s.input) {
 		if s.r == nil {
 			// This is not a streaming scanner, and we reached end of input string.
@@ -227,12 +229,12 @@ func (s *scanner) next() rune {
 	return r
 }
 
-func (s *scanner) peek() rune {
+func (s *Scanner) peek() rune {
 	r, _ := utf8.DecodeRuneInString(s.input[s.pos:])
 	return r
 }
 
-func (s *scanner) scanTo(stop rune) bool {
+func (s *Scanner) scanTo(stop rune) bool {
 	for r := s.next(); r != stop; r = s.next() {
 		switch r {
 		case eof:
@@ -249,7 +251,7 @@ func (s *scanner) scanTo(stop rune) bool {
 	return true
 }
 
-func (s *scanner) scanUntilNextToken() {
+func (s *Scanner) scanUntilNextToken() {
 	for {
 		r := s.peek()
 		switch r {
@@ -261,7 +263,7 @@ func (s *scanner) scanUntilNextToken() {
 	}
 }
 
-func (s *scanner) unescaped(typ tokenType, from, to int) token {
+func (s *Scanner) unescaped(typ tokenType, from, to int) token {
 	i := from
 	buf := bytes.NewBuffer(make([]byte, 0, to-i))
 	for i < to {
@@ -303,7 +305,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 				i++
 				if i == len(s.input) {
 					s.Error = "illegal escape sequence"
-					return token{tokenIllegal, s.input[start-1 : i]}
+					return token{TokenIllegal, s.input[start-1 : i]}
 				}
 				x := uint64(s.input[i])
 				if x >= 'a' {
@@ -319,7 +321,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 						i++
 					}
 					s.Error = "illegal escape sequence"
-					return token{tokenIllegal, s.input[start-1 : i-1]}
+					return token{TokenIllegal, s.input[start-1 : i-1]}
 				}
 				d = (16 * d) + d1
 			}
@@ -328,7 +330,7 @@ func (s *scanner) unescaped(typ tokenType, from, to int) token {
 			continue
 		default:
 			s.Error = "illegal escape sequence"
-			return token{tokenIllegal, s.input[i-1 : i+1]}
+			return token{TokenIllegal, s.input[i-1 : i+1]}
 		}
 		buf.WriteByte(c)
 		i++
