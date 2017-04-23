@@ -37,7 +37,7 @@ func (t Triple) String() string {
 
 // Eq tests if two triples are equal.
 func (t Triple) Eq(other Triple) bool {
-	return t.Subject.Eq(other.Subject) && t.Predicate.Eq(other.Predicate) && t.Object.Eq(other.Object)
+	return t.Subject == other.Subject && t.Predicate == other.Predicate && t.Object == other.Object
 }
 
 // ToTriplePattern returns the Triple as a TriplePattern.
@@ -51,7 +51,6 @@ func (t Triple) ToTriplePattern() TriplePattern {
 
 // Node represents a node in an RDF graph.
 type Node interface {
-	Eq(Node) bool // TODO is this that useful?
 	String() string
 
 	validAsNode()
@@ -71,19 +70,6 @@ type BlankNode struct {
 
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
-
-// Eq tests for equality against another RDF node.
-//
-// Comparing a blank node with another will always return true. A blank
-// really node only carries information in relation to it's position in a graph.
-func (b BlankNode) Eq(other Node) bool {
-	switch other.(type) {
-	case BlankNode:
-		return true
-	default:
-		return false
-	}
-}
 
 func (b BlankNode) validAsNode()       {}
 func (b BlankNode) validAsSubject()    {}
@@ -116,16 +102,6 @@ func NewNamedNode(uri string) (NamedNode, error) {
 
 // String returns a string representation of an URI in N-Triples format.
 func (u NamedNode) String() string { return "<" + u.val + ">" }
-
-// Eq tests for equality against another RDF node.
-func (u NamedNode) Eq(other Node) bool {
-	switch t := other.(type) {
-	case NamedNode:
-		return u.val == t.val
-	default:
-		return false
-	}
-}
 
 func (u NamedNode) validAsNode()       {}
 func (u NamedNode) validAsPredicate()  {}
@@ -174,18 +150,6 @@ func (l Literal) String() string {
 		return strconv.Quote(l.val)
 	}
 	return fmt.Sprintf("%q^^%s", l.val, l.dt)
-}
-
-// Eq tests for equality against another RDF node.
-func (l Literal) Eq(other Node) bool {
-	switch t := other.(type) {
-	case Literal:
-		return l.val == t.val &&
-			l.lang == t.lang &&
-			l.dt.val == t.dt.val
-	default:
-		return false
-	}
 }
 
 // DataType returns the Datatype of a Literal.
