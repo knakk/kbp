@@ -110,9 +110,15 @@ type NamedNode struct {
 	name string
 }
 
-// NewNamedNode creates and returns an URI from the given string, along with an error if it's not valid.
-func NewNamedNode(uri string) (NamedNode, error) {
-	// A valid URI cannot be empty or contain any of disallowed characters.
+// NewNamedNode creates a new NamedNode.
+func NewNamedNode(name string) NamedNode {
+	return NamedNode{name: name}
+}
+
+// NewURI creates an URI as NamedNode from the given string,
+// or an error if it's not valid.
+func NewURI(uri string) (NamedNode, error) {
+	// A valid URI cannot be empty or contain any disallowed characters.
 	// http://www.ietf.org/rfc/rfc3987.txt
 	if len(uri) == 0 {
 		return NamedNode{}, errors.New("URI cannot be empty")
