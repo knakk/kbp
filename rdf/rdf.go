@@ -63,36 +63,36 @@ type SubjectNode interface {
 	subject
 }
 
-func (b BlankNode) node() {}
-func (u NamedNode) node() {}
-func (l Literal) node()   {}
+func (BlankNode) node() {}
+func (NamedNode) node() {}
+func (Literal) node()   {}
 
 // subject represents a Node which can be in Subject position in a TriplePattern.
 type subject interface {
 	subject()
 }
 
-func (b BlankNode) subject() {}
-func (u NamedNode) subject() {}
-func (v Variable) subject()  {}
+func (BlankNode) subject() {}
+func (NamedNode) subject() {}
+func (Variable) subject()  {}
 
 // predicate represents a Node which can be in Predicate position in a TriplePattern.
 type predicate interface {
 	predicate()
 }
 
-func (u NamedNode) predicate() {}
-func (v Variable) predicate()  {}
+func (NamedNode) predicate() {}
+func (Variable) predicate()  {}
 
 // object represents a Node which can be in Object position in a TriplePattern.
 type object interface {
 	object()
 }
 
-func (b BlankNode) object() {}
-func (u NamedNode) object() {}
-func (l Literal) object()   {}
-func (v Variable) object()  {}
+func (BlankNode) object() {}
+func (NamedNode) object() {}
+func (Literal) object()   {}
+func (Variable) object()  {}
 
 // BlankNode represents a blank node; that is, an unnamed RDF node.
 type BlankNode struct {
@@ -203,10 +203,10 @@ type node interface {
 	nodeType() nodeType
 }
 
-func (l Literal) nodeType() nodeType   { return typeLiteral }
-func (u NamedNode) nodeType() nodeType { return typeNamedNode }
-func (b BlankNode) nodeType() nodeType { return typeBlankNode }
-func (v Variable) nodeType() nodeType  { return typeVariable }
+func (Literal) nodeType() nodeType   { return typeLiteral }
+func (NamedNode) nodeType() nodeType { return typeNamedNode }
+func (BlankNode) nodeType() nodeType { return typeBlankNode }
+func (Variable) nodeType() nodeType  { return typeVariable }
 
 func (t nodeType) String() string {
 	switch t {
