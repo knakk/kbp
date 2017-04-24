@@ -57,7 +57,7 @@ func (g *Graph) Stats() (rdf.Stats, error) {
 	predicates := make(map[string]int)
 	for _, po := range g.spo {
 		for p, objs := range po {
-			pred := g.id2node[p].(rdf.NamedNode).String()
+			pred := g.id2node[p].(rdf.NamedNode).Name()
 			triples += len(objs)
 			predicates[pred] = predicates[pred] + len(objs)
 		}

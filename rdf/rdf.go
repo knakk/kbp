@@ -102,6 +102,9 @@ type BlankNode struct {
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
 
+// ID returns the ID of a BlankNode.
+func (b BlankNode) ID() string { return b.id }
+
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
 	name string
@@ -126,8 +129,11 @@ func NewNamedNode(uri string) (NamedNode, error) {
 	return NamedNode{name: uri}, nil
 }
 
-// String returns a string representation of an URI in N-Triples format.
-func (u NamedNode) String() string { return "<" + u.name + ">" }
+// String returns a string representation of NamedNode in N-Triples format.
+func (n NamedNode) String() string { return "<" + n.name + ">" }
+
+// Name returns the Name of the NamedNode.
+func (n NamedNode) Name() string { return n.name }
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -179,6 +185,12 @@ func (l Literal) DataType() NamedNode { return l.dt }
 // string if it is not a rdf:langString.
 func (l Literal) Lang() string { return l.lang }
 
+// Value returns the typed value of a Literal.
+func (l Literal) Value() interface{} { panic("TODO") }
+
+// ValueAsString returns the value of a Literal as a string.
+func (l Literal) ValueAsString() string { return l.val }
+
 // Variable represents a variable which can be bound to RDF nodes in a query.
 type Variable struct {
 	name string
@@ -188,6 +200,12 @@ type Variable struct {
 func NewVariable(name string) Variable {
 	return Variable{name: name}
 }
+
+// Name returns the name of a variable.
+func (v Variable) Name() string { return v.name }
+
+// String returns a string-representation of a Variable.
+func (v Variable) String() string { return "?" + v.name }
 
 type nodeType int
 
