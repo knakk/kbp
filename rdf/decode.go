@@ -60,7 +60,7 @@ func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 	tok := d.s.Scan()
 	switch tok.Type {
 	case scanner.TokenLiteral:
-		n = Literal{val: tok.Text, dt: NamedNode{val: xsdString}}
+		n = Literal{val: tok.Text, dt: NamedNode{name: xsdString}}
 	case scanner.TokenIllegal:
 		return n, false, errors.New(d.s.Error + ": " + tok.Text)
 	case scanner.TokenEOF:
@@ -68,7 +68,7 @@ func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 	case scanner.TokenEOL:
 		return n, false, errEOL
 	case scanner.TokenURI:
-		return NamedNode{val: tok.Text}, false, nil
+		return NamedNode{name: tok.Text}, false, nil
 	case scanner.TokenBNode:
 		return BlankNode{id: tok.Text}, false, nil
 	case scanner.TokenVariable:
@@ -91,7 +91,7 @@ func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 	case scanner.TokenLangTag:
 		n = Literal{
 			val:  n.(Literal).val,
-			dt:   NamedNode{val: rdfLangString},
+			dt:   NamedNode{name: rdfLangString},
 			lang: tok.Text,
 		}
 	case scanner.TokenTypeMarker:
@@ -99,7 +99,7 @@ func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
 		if tok.Type == scanner.TokenURI {
 			n = Literal{
 				val: n.(Literal).val,
-				dt:  NamedNode{val: tok.Text},
+				dt:  NamedNode{name: tok.Text},
 			}
 			break
 		}

@@ -104,7 +104,7 @@ func (b BlankNode) String() string { return "_:" + b.id }
 
 // NamedNode represent an named node; an RDF node identified by an URI.
 type NamedNode struct {
-	val string
+	name string
 }
 
 // NewNamedNode creates and returns an URI from the given string, along with an error if it's not valid.
@@ -123,11 +123,11 @@ func NewNamedNode(uri string) (NamedNode, error) {
 			return NamedNode{}, fmt.Errorf("disallowed character in URI: %q", r)
 		}
 	}
-	return NamedNode{val: uri}, nil
+	return NamedNode{name: uri}, nil
 }
 
 // String returns a string representation of an URI in N-Triples format.
-func (u NamedNode) String() string { return "<" + u.val + ">" }
+func (u NamedNode) String() string { return "<" + u.name + ">" }
 
 // Literal represents an RDF Literal.
 type Literal struct {
@@ -140,7 +140,7 @@ type Literal struct {
 func NewStrLiteral(s string) Literal {
 	return Literal{
 		val: s,
-		dt:  NamedNode{val: xsdString},
+		dt:  NamedNode{name: xsdString},
 	}
 }
 
@@ -149,7 +149,7 @@ func NewLangLiteral(s string, lang string) Literal {
 	return Literal{
 		val:  s,
 		lang: lang,
-		dt:   NamedNode{val: rdfLangString},
+		dt:   NamedNode{name: rdfLangString},
 	}
 }
 
@@ -166,7 +166,7 @@ func (l Literal) String() string {
 	if (l.lang) != "" {
 		return fmt.Sprintf("%q@%s", l.val, l.lang)
 	}
-	if (l.dt.val) == xsdString {
+	if (l.dt.name) == xsdString {
 		return strconv.Quote(l.val)
 	}
 	return fmt.Sprintf("%q^^%s", l.val, l.dt)
