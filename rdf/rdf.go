@@ -99,6 +99,11 @@ type BlankNode struct {
 	id string
 }
 
+// NewBlankNode returns a BlankNode with the given ID.
+func NewBlankNode(id string) BlankNode {
+	return BlankNode{id: id}
+}
+
 // String returns a string representation of a Blank Node in N-Triples format.
 func (b BlankNode) String() string { return "_:" + b.id }
 
