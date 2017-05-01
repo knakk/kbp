@@ -6,11 +6,6 @@ import (
 	"strconv"
 )
 
-const (
-	xsdString     = "http://www.w3.org/2001/XMLSchema#string"
-	rdfLangString = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
-)
-
 // A Triple is the basic unit of information in an RDF graph.
 // By itself, a triple is a statement describing a fact about a resource (subject),
 // stating that it has a property (predicate) with a specific value (object).
@@ -157,7 +152,7 @@ type Literal struct {
 func NewStrLiteral(s string) Literal {
 	return Literal{
 		val: s,
-		dt:  NamedNode{name: xsdString},
+		dt:  XSDstring,
 	}
 }
 
@@ -166,7 +161,7 @@ func NewLangLiteral(s string, lang string) Literal {
 	return Literal{
 		val:  s,
 		lang: lang,
-		dt:   NamedNode{name: rdfLangString},
+		dt:   RDFlangString,
 	}
 }
 
@@ -180,10 +175,10 @@ func NewTypedLiteral(s string, dt NamedNode) Literal {
 
 // String returns a string representation of a Literal in N-Triples format.
 func (l Literal) String() string {
-	if (l.lang) != "" {
+	if l.lang != "" {
 		return fmt.Sprintf("%q@%s", l.val, l.lang)
 	}
-	if (l.dt.name) == xsdString {
+	if l.dt == XSDstring {
 		return strconv.Quote(l.val)
 	}
 	return fmt.Sprintf("%q^^%s", l.val, l.dt)
