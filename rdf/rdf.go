@@ -64,6 +64,7 @@ func (Literal) node()   {}
 
 // subject represents a Node which can be in Subject position in a TriplePattern.
 type subject interface {
+	TriplePatternNode
 	subject()
 }
 
@@ -73,6 +74,7 @@ func (Variable) subject()  {}
 
 // predicate represents a Node which can be in Predicate position in a TriplePattern.
 type predicate interface {
+	TriplePatternNode
 	predicate()
 }
 
@@ -81,6 +83,7 @@ func (Variable) predicate()  {}
 
 // object represents a Node which can be in Object position in a TriplePattern.
 type object interface {
+	TriplePatternNode
 	object()
 }
 
@@ -222,8 +225,10 @@ const (
 	typeVariable
 )
 
-// node represent a Node that can be part of a TriplePattern.
-type node interface {
+// TriplePatternNode represent a Node that can be part of a TriplePattern.
+// TODO rename BGP?
+type TriplePatternNode interface {
+	// TODO reconsider this method - it's only used by the decoder.oneOf function
 	nodeType() nodeType
 }
 

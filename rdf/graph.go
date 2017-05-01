@@ -24,8 +24,16 @@ type Graph interface {
 	// If all inserte and delete patterns are concrete (ie. contains no variables), the
 	// where patterns will be ignored.
 	//
-	// Update returns the number of triples deleted, inserted, or an error should it occur.
+	// Update returns the number of triples deleted, inserted, and an error should it occur.
 	Update(del []TriplePattern, ins []TriplePattern, where []TriplePattern) (int, int, error)
+
+	// Insert inserts the given triples into the Graph, reutrning the number of triples
+	// inserted, and an error should it occur.
+	Insert(ins ...Triple) (int, error)
+
+	// Delete deletes the given triples into the Graph, reutrning the number of triples
+	// deleted, and an error should it occur.
+	Delete(ins ...Triple) (int, error)
 
 	Where(...TriplePattern) (Graph, error)
 	//Construct([]TriplePattern, ...TriplePattern) (Graph, error)
@@ -33,34 +41,12 @@ type Graph interface {
 	Select([]Variable, ...TriplePattern) ([][]Node, error)
 
 	// Eq tests if two graphs are equal (isomorphic).
+	// TODO consider remove from interface - its mostly usefull for
+	// verifying test results on memory.Graph implementation.
 	Eq(Graph) (bool, error)
 
 	// Stats returns statistics about the Graph.
 	Stats() (Stats, error)
-}
-
-// Insert is a convenience function which performs an update query which only inserts
-// triples.
-// TODO consider add to Graph interface
-func Insert(g Graph, trs ...Triple) (int, error) {
-	patterns := make([]TriplePattern, len(trs))
-	for i, t := range trs {
-		patterns[i] = t.ToTriplePattern()
-	}
-	_, n, err := g.Update(nil, patterns, nil)
-	return n, err
-}
-
-// Delete is a convenience function which performs an update query which only deletes
-// triples.
-// TODO consider add to Graph interface
-func Delete(g Graph, trs ...Triple) (int, error) {
-	patterns := make([]TriplePattern, len(trs))
-	for i, t := range trs {
-		patterns[i] = t.ToTriplePattern()
-	}
-	n, _, err := g.Update(patterns, nil, nil)
-	return n, err
 }
 
 // Stats represents statistics about a graph.

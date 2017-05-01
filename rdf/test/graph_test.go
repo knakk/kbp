@@ -1,18 +1,27 @@
 package rdf
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/knakk/kbp/rdf"
+	"github.com/knakk/kbp/rdf/disk"
 	"github.com/knakk/kbp/rdf/memory"
 )
 
-func wantGraph(t *testing.T, got *memory.Graph, wantGraph string) {
+func wantGraph(t *testing.T, got rdf.Graph, wantGraph string) {
 	want := mustDecode(wantGraph)
-	if eq, _ := want.Eq(got); !eq {
-		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(got), mustEncode(want))
+	gotMem, _ := got.Where(rdf.TriplePattern{
+		rdf.NewVariable("s"),
+		rdf.NewVariable("p"),
+		rdf.NewVariable("o"),
+	})
+	if eq, _ := want.Eq(gotMem.(*memory.Graph)); !eq {
+		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(gotMem.(*memory.Graph)), mustEncode(want))
 	}
 }
 
@@ -75,85 +84,136 @@ func solutionsEq(a, b [][]rdf.Node) bool {
 	return true
 }
 
+// tempfile returns a temporary file path.
+func tempfile() string {
+	f, _ := ioutil.TempFile("", "kbprdfgraphdisktemp")
+	f.Close()
+	os.Remove(f.Name())
+	return f.Name()
+}
+
+func newDiskGraph(f string) *disk.Graph {
+	db, err := disk.Open(f, "http://test.org/")
+	if err != nil {
+		panic("cannot open db: " + err.Error())
+	}
+	return db
+}
+
+type graphImpl struct {
+	name    string
+	graph   rdf.Graph
+	closeFn func()
+}
+
+func newGraphImplementations() []graphImpl {
+	f := tempfile()
+	dg := newDiskGraph(f)
+	impls := []graphImpl{
+		{
+			"memory",
+			memory.NewGraph(),
+			func() {},
+		},
+		{
+			"disk",
+			dg,
+			func() {
+				defer os.Remove(f)
+				dg.Close()
+			},
+		},
+	}
+
+	return impls
+}
+
 func TestGraphMutateOperations(t *testing.T) {
-	g := memory.NewGraph()
+	impls := newGraphImplementations()
 
-	rdf.Insert(g, mustTriples(`
-		<h1> <name> "A" .
-		<h1> <knows> <h2> .
-		<h2> <name> "B" .
-		<h2> <knows> <h1> .`)...,
-	)
-	wantGraph(t, g, `
-		<h1> <name> "A" .
-		<h1> <knows> <h2> .
-		<h2> <name> "B" .
-		<h2> <knows> <h1> .
-		`,
-	)
+	for _, impl := range impls {
+		t.Run(fmt.Sprintf("%s implementation", impl.name), func(t *testing.T) {
+			defer impl.closeFn()
+			impl.graph.Insert(mustTriples(`
+				<h1> <name> "A" .
+				<h1> <knows> <h2> .
+				<h2> <name> "B" .
+				<h2> <knows> <h1> .`)...,
+			)
 
-	rdf.Insert(g, mustTriples(`
-		<b1> <title> "book" .
-		<b1> <contributor> _:c1 .
-		_:c1 <role> <author> .
-		_:c1 <agent> <h1> .
-		<b1> <contributor> _:c2 .
-		_:c2 <role> <illustrator> .
-		_:c2 <agent> <h2> .
-		`)...,
-	)
-	wantGraph(t, g, `
-		<h1> <name> "A" .
-		<h1> <knows> <h2> .
-		<h2> <name> "B" .
-		<h2> <knows> <h1> .
-		<b1> <title> "book" .
-		<b1> <contributor> _:123 .
-		_:123 <role> <author> .
-		_:123 <agent> <h1> .
-		<b1> <contributor> _:456 .
-		_:456 <role> <illustrator> .
-		_:456 <agent> <h2> .`,
-	)
+			wantGraph(t, impl.graph, `
+				<h1> <name> "A" .
+				<h1> <knows> <h2> .
+				<h2> <name> "B" .
+				<h2> <knows> <h1> .
+				`,
+			)
 
-	rdf.Delete(g, mustTriples(`
-		<b1> <contributor> _:a .
-		_:a <role> <illustrator> .
-		_:a <agent> <h2> `)...,
-	)
+			impl.graph.Insert(mustTriples(`
+				<b1> <title> "book" .
+				<b1> <contributor> _:c1 .
+				_:c1 <role> <author> .
+				_:c1 <agent> <h1> .
+				<b1> <contributor> _:c2 .
+				_:c2 <role> <illustrator> .
+				_:c2 <agent> <h2> .
+				`)...,
+			)
 
-	wantGraph(t, g, `
-		<h1> <name> "A" .
-		<h1> <knows> <h2> .
-		<h2> <name> "B" .
-		<h2> <knows> <h1> .
-		<b1> <title> "book" .
-		<b1> <contributor> _:1 .
-		_:1 <role> <author> .
-		_:1 <agent> <h1> .
-		<b1> <contributor> _:2 .
-		_:2 <role> <illustrator> .
-		_:2 <agent> <h2> .`,
-	)
+			wantGraph(t, impl.graph, `
+				<h1> <name> "A" .
+				<h1> <knows> <h2> .
+				<h2> <name> "B" .
+				<h2> <knows> <h1> .
+				<b1> <title> "book" .
+				<b1> <contributor> _:123 .
+				_:123 <role> <author> .
+				_:123 <agent> <h1> .
+				<b1> <contributor> _:456 .
+				_:456 <role> <illustrator> .
+				_:456 <agent> <h2> .`,
+			)
 
-	rdf.Delete(g, mustTriples(`
-		<h1> <knows> <h2> .
-		<h2> <knows> <h1> .
-		`)...,
-	)
+			impl.graph.Delete(mustTriples(`
+				<b1> <contributor> _:a .
+				_:a <role> <illustrator> .
+				_:a <agent> <h2> `)...,
+			)
 
-	wantGraph(t, g, `
-		<h1> <name> "A" .
-		<h2> <name> "B" .
-		<b1> <title> "book" .
-		<b1> <contributor> _:1 .
-		_:1 <role> <author> .
-		_:1 <agent> <h1> .
-		<b1> <contributor> _:2 .
-		_:2 <role> <illustrator> .
-		_:2 <agent> <h2> .
-		`,
-	)
+			wantGraph(t, impl.graph, `
+				<h1> <name> "A" .
+				<h1> <knows> <h2> .
+				<h2> <name> "B" .
+				<h2> <knows> <h1> .
+				<b1> <title> "book" .
+				<b1> <contributor> _:1 .
+				_:1 <role> <author> .
+				_:1 <agent> <h1> .
+				<b1> <contributor> _:2 .
+				_:2 <role> <illustrator> .
+				_:2 <agent> <h2> .`,
+			)
+
+			impl.graph.Delete(mustTriples(`
+				<h1> <knows> <h2> .
+				<h2> <knows> <h1> .
+				`)...,
+			)
+
+			wantGraph(t, impl.graph, `
+				<h1> <name> "A" .
+				<h2> <name> "B" .
+				<b1> <title> "book" .
+				<b1> <contributor> _:1 .
+				_:1 <role> <author> .
+				_:1 <agent> <h1> .
+				<b1> <contributor> _:2 .
+				_:2 <role> <illustrator> .
+				_:2 <agent> <h2> .
+				`,
+			)
+		})
+	}
 }
 
 func TestGraphIsomorphism(t *testing.T) {
@@ -270,7 +330,7 @@ func TestGraphIsomorphism(t *testing.T) {
 	}
 }
 
-var testGraph = mustDecode(`
+var testTriples = `
 		<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 		<a1> <hasName> "Italo Calvino" .
 		<a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
@@ -345,22 +405,23 @@ var testGraph = mustDecode(`
 
 		<c1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Corporation> .
 		<c1> <hasName> "Gyldendal" .
-		`)
+		`
+var testGraph = mustDecode(testTriples)
 
 func TestGraphWhere(t *testing.T) {
 	tests := []struct {
 		patterns []rdf.TriplePattern
 		want     string
 	}{
-		{
+		{ // 1
 			mustParsePatterns(""),
 			"",
 		},
-		{
+		{ // 2
 			mustParsePatterns("?s ?p ?o ."),
 			mustEncode(testGraph),
 		},
-		{
+		{ // 3
 			mustParsePatterns("?pub <hasMainTitle> ?title ."),
 			`
 			<w1> <hasMainTitle> "Le Cosmicomiche" .
@@ -368,11 +429,11 @@ func TestGraphWhere(t *testing.T) {
 			<w2> <hasMainTitle> "Il barone rampante" .
 			<p2> <hasMainTitle> "Klatrebaronen" .`,
 		},
-		{
+		{ // 4
 			mustParsePatterns(`?p2 <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .`),
 			`<p2> <hasPublishYear> "1961"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
 		},
-		{
+		{ // 5
 			mustParsePatterns("<p2> ?p ?o ."),
 			`
 			<p2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Publication> .
@@ -382,15 +443,15 @@ func TestGraphWhere(t *testing.T) {
 			<p2> <isPublishedBy> <c2> .
 			<p2> <hasContributor> _:1 .`,
 		},
-		{
+		{ // 6
 			mustParsePatterns(`?s ?p "Penguin" .`),
 			`<c1> <hasName> "Penguin" .`,
 		},
-		{
+		{ // 7
 			mustParsePatterns(`?s ?p "Penguin"@en .`),
 			"",
 		},
-		{
+		{ // 8
 			mustParsePatterns(`
 				?w <hasMainTitle> "Le Cosmicomiche" .
 				?p <isPublicationOf> ?w .
@@ -402,7 +463,7 @@ func TestGraphWhere(t *testing.T) {
 			<p1> <hasMainTitle> "The Complete Cosmicomics" .
 			`,
 		},
-		{
+		{ // 9
 			mustParsePatterns(`
 				?c <hasRole> <translator> .
 				?c <hasAgent> ?agent .
@@ -422,7 +483,7 @@ func TestGraphWhere(t *testing.T) {
 			<a3> <hasName> "Tim Parks" .
 			`,
 		},
-		{
+		{ // 10
 			mustParsePatterns(`
 				?agent <hasName> "William Weaver" .
 				?c <hasAgent> ?agent .
@@ -437,7 +498,7 @@ func TestGraphWhere(t *testing.T) {
 			<a4> <hasName> "William Weaver" .
 			`,
 		},
-		{
+		{ // 11
 			mustParsePatterns(`
 				?c <hasRole> <translator> .
 				?c <hasAgent> ?agent .
@@ -452,7 +513,7 @@ func TestGraphWhere(t *testing.T) {
 			<a4> <hasName> "William Weaver" .
 			`,
 		},
-		{
+		{ // 12
 			mustParsePatterns(`
 				?work <hasMainTitle> "Le Cosmicomiche" .
 				?book <isPublicationOf> ?work.
@@ -479,12 +540,21 @@ func TestGraphWhere(t *testing.T) {
 			`,
 		},
 	}
+	impls := newGraphImplementations()
 
-	for i, test := range tests {
-		got, _ := testGraph.Where(test.patterns...)
-		if eq, _ := got.Eq(mustDecode(test.want)); !eq {
-			t.Fatalf("%d:got:\n%v\nwant:\n%v", i, mustEncode(got.(*memory.Graph)), test.want)
-		}
+	for _, impl := range impls {
+		t.Run(fmt.Sprintf("%s implementation", impl.name), func(t *testing.T) {
+			defer impl.closeFn()
+			impl.graph.Insert(mustTriples(testTriples)...)
+			for i, test := range tests {
+				got, err := impl.graph.Where(test.patterns...)
+				if err != nil {
+					t.Fatalf("%d:got:\n%v\nwant:\n%v", i+1, err, test.want)
+				} else if eq, _ := got.Eq(mustDecode(test.want)); !eq {
+					t.Fatalf("%d:got:\n%v\nwant:\n%v", i+1, mustEncode(got.(*memory.Graph)), test.want)
+				}
+			}
+		})
 	}
 }
 
@@ -533,12 +603,19 @@ func TestGraphSelect(t *testing.T) {
              <p1>	"William Weaver"`,
 		},
 	}
+	impls := newGraphImplementations()
+	for _, impl := range impls {
+		t.Run(fmt.Sprintf("%s implementation", impl.name), func(t *testing.T) {
+			defer impl.closeFn()
+			impl.graph.Insert(mustTriples(testTriples)...)
 
-	for _, test := range tests {
-		want := mustParseSolutions(test.want)
-		got, _ := testGraph.Select(test.vars, test.patterns...)
-		if !solutionsEq(got, want) {
-			t.Fatalf("got:\n%v\nwant:\n%v", got, want)
-		}
+			for _, test := range tests {
+				want := mustParseSolutions(test.want)
+				got, _ := impl.graph.Select(test.vars, test.patterns...)
+				if !solutionsEq(got, want) {
+					t.Fatalf("got:\n%v\nwant:\n%v", got, want)
+				}
+			}
+		})
 	}
 }

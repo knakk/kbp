@@ -41,7 +41,7 @@ func (d *Decoder) parseEnd() error {
 	return nil
 }
 
-func (d *Decoder) oneOf(types ...nodeType) (node, bool, error) {
+func (d *Decoder) oneOf(types ...nodeType) (TriplePatternNode, bool, error) {
 	node, parsedDot, err := d.parseNode()
 	if err != nil {
 		return nil, false, err
@@ -56,7 +56,7 @@ func (d *Decoder) oneOf(types ...nodeType) (node, bool, error) {
 
 var errEOL = errors.New("EOL")
 
-func (d *Decoder) parseNode() (n node, parsedDot bool, err error) {
+func (d *Decoder) parseNode() (n TriplePatternNode, parsedDot bool, err error) {
 	tok := d.s.Scan()
 	switch tok.Type {
 	case scanner.TokenLiteral:

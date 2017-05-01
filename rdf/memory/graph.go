@@ -111,7 +111,7 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 				Object:    p.Object.(rdf.Node),
 			}
 		}
-		n, err := g.insert(trs...)
+		n, err := g.Insert(trs...)
 		return 0, n, err
 	}
 	trs := make([]rdf.Triple, len(del))
@@ -122,17 +122,17 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 			Object:    p.Object.(rdf.Node),
 		}
 	}
-	n, err := g.delete(trs...)
+	n, err := g.Delete(trs...)
 	return n, 0, err
 }
 
-// insert adds one or more triples to the Graph. It returns the number
+// Insert adds one or more triples to the Graph. It returns the number
 // of triples inserted which where not already present.
 //
 // Blank nodes are assumed to be disjoint from the blank nodes already
 // present in the graph, and will be inserted with "fresh" node IDs.
 // However, blank nodes in with identical IDs will be given the same, new ID.
-func (g *Graph) insert(trs ...rdf.Triple) (int, error) {
+func (g *Graph) Insert(trs ...rdf.Triple) (int, error) {
 	n := 0
 	bnodes := make(map[rdf.BlankNode]int)
 	for _, tr := range trs {
@@ -324,10 +324,10 @@ func (g *Graph) ids(tr rdf.Triple) (sid, pid, oid int, found bool) {
 	return
 }
 
-// delete removes one or more triples to the Graph. It returns the number
+// Delete removes one or more triples to the Graph. It returns the number
 // of triples deleted. The delete operation only supports deleting triples with
 // concrete data, that means, without blank nodes; use the DeleteWhere method for that.
-func (g *Graph) delete(trs ...rdf.Triple) (int, error) {
+func (g *Graph) Delete(trs ...rdf.Triple) (int, error) {
 	n := 0
 
 	for _, tr := range trs {
@@ -403,7 +403,7 @@ func (g *Graph) encodePattern(p rdf.TriplePattern, vars map[rdf.Variable]int) (e
 	// 0 = node missing
 	// negative integer = variable id
 
-	for i, node := range []interface{}{p.Subject, p.Predicate, p.Object} { // TODO get rid of interface{}
+	for i, node := range []rdf.TriplePatternNode{p.Subject, p.Predicate, p.Object} {
 		if v, ok := node.(rdf.Variable); ok {
 			if vid, ok := vars[v]; ok {
 				ep[i] = vid
@@ -439,7 +439,7 @@ func (e encPattern) o() int              { return e[2] }
 func (e encPattern) estCardinality() int { return e[3] }
 
 type encSolutions struct {
-	//SortedBy [2]int
+	//SortedBy []int // vars
 	Vars []int
 	Rows [][]int
 }
@@ -747,7 +747,7 @@ func (g *Graph) Where(patterns ...rdf.TriplePattern) (rdf.Graph, error) {
 		for _, group := range groups {
 			for _, pattern := range group {
 				triples := g.substitute(pattern, solutions)
-				res.insert(triples...)
+				res.Insert(triples...)
 			}
 		}
 	}

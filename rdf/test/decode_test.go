@@ -27,7 +27,7 @@ func decodeGraph(d *rdf.Decoder) (*memory.Graph, error) {
 			bnodeTriples[t] = append(bnodeTriples[t], tr)
 			continue
 		}
-		if _, err := rdf.Insert(g, tr); err != nil {
+		if _, err := g.Insert(tr); err != nil {
 			return nil, err
 		}
 	}
@@ -35,7 +35,7 @@ func decodeGraph(d *rdf.Decoder) (*memory.Graph, error) {
 	// Insert triples with bnodes in batches by ID, so that they get assigned
 	// the same (new) blank node ID in the Graph
 	for _, trs := range bnodeTriples {
-		if _, err := rdf.Insert(g, trs...); err != nil {
+		if _, err := g.Insert(trs...); err != nil {
 			return nil, err
 		}
 	}
