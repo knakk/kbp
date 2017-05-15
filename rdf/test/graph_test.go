@@ -193,6 +193,79 @@ func TestGraphUpdate(t *testing.T) {
 			`<s> <p> "b" .
 			 <s2> <p> "b" .`,
 		},
+		{ // 8
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .`,
+
+			`- ?c <hasRole> <author> .
+			 + ?c <hasRole> <editor> .
+			 <book1> <hasContribution> ?c .
+			 ?c <hasAgent> <h1> .`,
+
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <editor> .`,
+		},
+		{ // 9
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <author> .`,
+
+			`- ?c <hasRole> <author> .
+			 + ?c <hasRole> <editor> .
+			 ?book <hasContribution> ?c .
+			 ?c <hasRole> <author> .`,
+
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <editor> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <editor> .`,
+		},
+		{ // 10
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <author> .`,
+
+			`- ?c <hasRole> <author> .
+			 + ?c <hasRole> <editor> .
+			 ?book <hasContribution> ?c .
+			 ?c <hasRole> <author> .
+			 ?c <hasAgent> <h2> .`,
+
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <editor> .`,
+		},
+		{ // 11
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <author> .`,
+
+			`- ?book <hasContribution> ?c .
+			 - ?c ?p ?o .
+			 ?book <hasContribution> ?c .
+			 ?c <hasAgent> <h2> .
+			 ?c ?p ?o .`,
+
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .`,
+		},
 	}
 
 	impls := newGraphImplementations()

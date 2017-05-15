@@ -100,6 +100,7 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 		vars := make(map[rdf.Variable]int)
 		for i, pattern := range where {
 			encPatterns[i] = g.encodePattern(pattern, vars)
+			//fmt.Printf("\n%v => %v\n", pattern, encPatterns[i][:3])
 		}
 
 		// Evaluate query
@@ -582,10 +583,14 @@ func compatible(pairs [][2]int, rowa, rowb []int) bool {
 	return true
 }
 
-func (s encSolutions) join(other encSolutions, bound [][]int) (encSolutions, [][]int) {
+func (s encSolutions) join(other encSolutions, bound map[int][]int) encSolutions {
 	if len(s.Vars) == 0 {
 		// We're joining with the empty solution set
-		return other, bound
+		return other
+	}
+
+	if len(other.Vars) == 0 {
+		return s
 	}
 
 	var out [][]int
@@ -621,7 +626,7 @@ func (s encSolutions) join(other encSolutions, bound [][]int) (encSolutions, [][
 	}
 
 	s.Rows = out
-	return s, bound
+	return s
 }
 
 func (s encSolutions) project(vars []int) encSolutions {
@@ -647,10 +652,10 @@ func (s encSolutions) project(vars []int) encSolutions {
 	}
 }
 
-func (g *Graph) evalBGP(p encPattern, bound [][]int) (encSolutions, [][]int) {
+func (g *Graph) evalBGP(p encPattern, bound map[int][]int) encSolutions {
 	if p[0] > 0 && p[1] > 0 && p[2] > 0 {
 		// It's a concrete triple
-		return encSolutions{}, bound
+		return encSolutions{}
 	}
 	if p[2] > 0 {
 		// Matching {any,any,n} using OSP index
@@ -664,7 +669,7 @@ func (g *Graph) evalBGP(p encPattern, bound [][]int) (encSolutions, [][]int) {
 	return g.scanSPO(p, bound)
 }
 
-func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
+func (g *Graph) scanSPO(p encPattern, bound map[int][]int) encSolutions {
 	// {any,any,any}
 	var (
 		solutions  encSolutions
@@ -683,8 +688,8 @@ func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
 		solutions.Vars = append(solutions.Vars, p[2])
 	}
 
-	if p[0] < 0 && p[0]*-1 <= len(bound) && len(bound[(p[0]*-1)-1]) > 0 {
-		subjects = bound[(p[0]*-1)-1]
+	if subjs, ok := bound[p[0]]; ok {
+		subjects = subjs
 	} else {
 		subjects = g.subjects()
 	}
@@ -694,8 +699,8 @@ func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
 			continue
 		}
 
-		if p[1] < 0 && p[1]*-1 <= len(bound) && len(bound[(p[1]*-1)-1]) > 0 {
-			predicates = bound[(p[1]*-1)-1]
+		if preds, ok := bound[p[1]]; ok {
+			predicates = preds
 		} else {
 			predicates = g.predicatesForSubj(sid)
 		}
@@ -705,8 +710,8 @@ func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
 				continue
 			}
 
-			if p[2] < 0 && p[2]*-1 <= len(bound) && len(bound[(p[2]*-1)-1]) > 0 {
-				objects = bound[(p[2]*-1)-1]
+			if objs, ok := bound[p[2]]; ok {
+				objects = objs
 			} else {
 				objects = g.spo[sid][pid]
 			}
@@ -733,11 +738,11 @@ func (g *Graph) scanSPO(p encPattern, bound [][]int) (encSolutions, [][]int) {
 		}
 	}
 
-	bound = updateBound(solutions, bound)
-	return solutions, bound
+	updateBound(solutions, bound)
+	return solutions
 }
 
-func (g *Graph) scanOSP(p encPattern, bound [][]int) (encSolutions, [][]int) {
+func (g *Graph) scanOSP(p encPattern, bound map[int][]int) encSolutions {
 	// {any,any,literal/uri}
 
 	var solutions encSolutions
@@ -776,11 +781,11 @@ func (g *Graph) scanOSP(p encPattern, bound [][]int) (encSolutions, [][]int) {
 		}
 	}
 
-	bound = updateBound(solutions, bound)
-	return solutions, bound
+	updateBound(solutions, bound)
+	return solutions
 }
 
-func (g *Graph) scanPOS(p encPattern, bound [][]int) (encSolutions, [][]int) {
+func (g *Graph) scanPOS(p encPattern, bound map[int][]int) encSolutions {
 	// {var,uri,var}
 
 	var solutions encSolutions
@@ -820,8 +825,8 @@ func (g *Graph) scanPOS(p encPattern, bound [][]int) (encSolutions, [][]int) {
 		}
 	}
 
-	bound = updateBound(solutions, bound)
-	return solutions, bound
+	updateBound(solutions, bound)
+	return solutions
 }
 
 func (g *Graph) substitute(p encPattern, s encSolutions) (res []rdf.Triple) {
@@ -894,13 +899,13 @@ func (g *Graph) where(patterns []encPattern) ([][]encPattern, encSolutions) {
 		})
 	}
 
-	var bound [][]int // TODO make([][]int, 0 len(vars)) we know from encoding
+	bound := make(map[int][]int)
 	var left, right encSolutions
 	// Evaluate each BGP sequentially, each BGP using any bound values from previous BGPs
 	for _, group := range groups {
 		for _, pattern := range group {
-			right, bound = g.evalBGP(pattern, bound)
-			left, bound = left.join(right, bound)
+			right = g.evalBGP(pattern, bound)
+			left = left.join(right, bound)
 		}
 	}
 
@@ -1077,23 +1082,19 @@ func (g *Graph) predicatesForSubj(sid int) (res []int) {
 	return res
 }
 
-func updateBound(s encSolutions, bound [][]int) [][]int {
+func updateBound(s encSolutions, bound map[int][]int) {
+	for _, v := range s.Vars {
+		if _, ok := bound[v]; !ok {
+			bound[v] = []int{}
+		}
+	}
 	for _, row := range s.Rows {
 		for i, v := range s.Vars {
-			if diff := v*-1 - len(bound); diff != 0 {
-				// First bound value of this variable
-				for j := 0; j < diff; j++ {
-					bound = append(bound, []int{})
-				}
-				bound[(v*-1)-1] = append(bound[(v*-1)-1], row[i])
-			} else if !includeNode(bound[(v*-1)-1], row[i]) {
-				// New bund value for variable
-				bound[(v*-1)-1] = append(bound[(v*-1)-1], row[i])
+			if !includeNode(bound[v], row[i]) {
+				bound[v] = append(bound[v], row[i])
 			}
 		}
 	}
-
-	return bound
 }
 
 func includeNode(nodes []int, find int) bool {
@@ -1108,17 +1109,11 @@ func includeNode(nodes []int, find int) bool {
 // freeOrBound returns true if there are no bound nodes for the given variable,
 // or if the given id is included in the already bound nodes.
 // TODO find a better name
-func freeOrBound(v int, id int, bound [][]int) bool {
-	if len(bound) < v*-1 || len(bound[(v*-1)-1]) == 0 {
-		return true
+func freeOrBound(v int, id int, bound map[int][]int) bool {
+	if vs, ok := bound[v]; ok {
+		return includeNode(vs, id)
 	}
-
-	for _, node := range bound[(v*-1)-1] {
-		if node == id {
-			return true
-		}
-	}
-	return false
+	return true
 }
 
 // Eq checks if two graphs are equal (isomorphic).

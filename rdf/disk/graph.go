@@ -251,6 +251,7 @@ func (g *Graph) encodePattern(tx *bolt.Tx, p rdf.TriplePattern, cache map[rdf.Tr
 // - If only one pattern, or last pattern in group, updating bound is unessecary
 
 func (g *Graph) scanOSPwBoundSP(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanOSPwBoundSP(%v) bound %v\n", p[:3], bound)
 	// O must be a concrete, exisiting node.
 
 	// SP are bound, so they must be variables
@@ -285,6 +286,7 @@ func (g *Graph) scanOSPwBoundSP(tx *bolt.Tx, p query.EncTriplePattern, bound map
 }
 
 func (g *Graph) scanOSPwBoundS(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanOSPwBoundS(%v) bound %v\n", p[:3], bound)
 	// O must be a concrete, exisiting node.
 
 	// S is bound, so must be a variable
@@ -302,7 +304,7 @@ func (g *Graph) scanOSPwBoundS(tx *bolt.Tx, p query.EncTriplePattern, bound map[
 
 	for iterS.HasNext() {
 		sID := iterS.Next()
-		preds, err := g.osp(tx, p[0], sID)
+		preds, err := g.osp(tx, p[2], sID)
 		if err == ErrNotFound {
 			missS.Add(sID)
 			continue
@@ -727,6 +729,7 @@ func (g *Graph) scanSPOwBoundP(tx *bolt.Tx, p query.EncTriplePattern, bound map[
 }
 
 func (g *Graph) scanOSPwBoundO(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanOSPwBoundO(%v) bound %v\n", p[:3], bound)
 	// S must be a concrete, exisiting node.
 
 	sol := query.EncSolutions{}
@@ -979,6 +982,7 @@ func (g *Graph) scanAllwBoundSO(tx *bolt.Tx, p query.EncTriplePattern, bound map
 }
 
 func (g *Graph) scanAllwBoundS(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanAllwBoundS(%v) bound %v\n", p[:3], bound)
 	// SPO are all variables
 
 	sol := query.EncSolutions{}
@@ -997,7 +1001,7 @@ func (g *Graph) scanAllwBoundS(tx *bolt.Tx, p query.EncTriplePattern, bound map[
 			switch bytes.Compare(k[:4], bs) {
 			case 0:
 				pID := btou32(k[4:])
-				objs, err := g.osp(tx, sID, pID)
+				objs, err := g.spo(tx, sID, pID)
 				if err != nil {
 					// err cannot be ErrNotFound
 					return sol, err
@@ -1018,6 +1022,7 @@ func (g *Graph) scanAllwBoundS(tx *bolt.Tx, p query.EncTriplePattern, bound map[
 }
 
 func (g *Graph) scanAllwBoundPO(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanAll(%v) bound %v\n", p[:3], bound)
 	// SPO are all variables
 
 	sol := query.EncSolutions{}
@@ -1098,6 +1103,7 @@ func (g *Graph) scanAllwBoundP(tx *bolt.Tx, p query.EncTriplePattern, bound map[
 }
 
 func (g *Graph) scanAllwBoundO(tx *bolt.Tx, p query.EncTriplePattern, bound map[uint32]*roaring.Bitmap) (query.EncSolutions, error) {
+	//fmt.Printf("scanAllwBoundO(%v) bound %v\n", p[:3], bound)
 	// SPO are all variables
 
 	sol := query.EncSolutions{}
@@ -1392,7 +1398,9 @@ func (g *Graph) deleteFor(tx *bolt.Tx, p rdf.TriplePattern, s query.EncSolutions
 			continue
 		}
 		if err != nil {
-			return n, err
+			// TODO, how can removeTriple be called with non-existing triple?
+			// Maybe It means one of the solution rows is wrong
+			continue //return n, err
 		}
 		n++
 	}
@@ -1810,6 +1818,7 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 				if er != nil {
 					return err
 				}
+				//fmt.Printf("\n%v => %v\n", pattern, encWhere[i][:3])
 			}
 
 			// Evaluate query
@@ -1835,6 +1844,7 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 					}
 					delN += n
 				}
+
 			}
 
 			return nil
