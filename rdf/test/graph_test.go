@@ -13,18 +13,6 @@ import (
 	"github.com/knakk/kbp/rdf/memory"
 )
 
-func wantGraph(t *testing.T, got rdf.Graph, wantGraph string) {
-	want := mustDecode(wantGraph)
-	gotMem, _ := got.Where(rdf.TriplePattern{
-		rdf.NewVariable("s"),
-		rdf.NewVariable("p"),
-		rdf.NewVariable("o"),
-	})
-	if eq, _ := want.Eq(gotMem.(*memory.Graph)); !eq {
-		t.Fatalf("\ngot:\n%v\nwant:\n%v", mustEncode(gotMem.(*memory.Graph)), mustEncode(want))
-	}
-}
-
 func mustTriples(s string) []rdf.Triple {
 	return mustDecode(s).Triples()
 }
@@ -50,6 +38,21 @@ func mustParseSolutions(s string) (res [][]rdf.Node) {
 		res = append(res, solution)
 	}
 	return res
+}
+
+func mustParseUpdate(s string) (del, ins, where []rdf.TriplePattern) {
+	lines := strings.Split(s, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "-") {
+			del = append(del, mustParsePatterns(line[1:])...)
+		} else if strings.HasPrefix(line, "+") {
+			ins = append(ins, mustParsePatterns(line[1:])...)
+		} else {
+			where = append(where, mustParsePatterns(line)...)
+		}
+	}
+	return del, ins, where
 }
 
 func nodesToString(nodes []rdf.Node) string {
@@ -128,90 +131,107 @@ func newGraphImplementations() []graphImpl {
 	return impls
 }
 
-func TestGraphMutateOperations(t *testing.T) {
+func TestGraphUpdate(t *testing.T) {
+
+	tests := []struct {
+		input  string
+		update string
+		want   string
+	}{
+		{ // 1
+			``,
+			``,
+			``,
+		},
+		{ // 2
+			``,
+
+			`+ <s> <p> <o> .`,
+
+			`<s> <p> <o> .`,
+		},
+		{ // 3
+			`<s> <p> <o> .`,
+
+			`+ <s> <p> <o2> .`,
+
+			`<s> <p> <o> .
+			 <s> <p> <o2> .`,
+		},
+		{ // 4
+			`<s> <p> <o> .`,
+
+			`- <s> <p> <o> .`,
+
+			``,
+		},
+		{ // 5
+			`<s> <p> "a" .`,
+
+			`- <s> <p> "a" .
+			 + <s> <p> "b" .`,
+
+			`<s> <p> "b" .`,
+		},
+		{ // 6
+			`<s> <p> "a" .
+			 <s2> <p> "a" .`,
+
+			`- ?s <p> "a" .
+			 ?s <p> "a" .`,
+
+			``,
+		},
+		{ // 7
+			`<s> <p> "a" .
+			 <s2> <p> "a" .`,
+
+			`- ?s <p> "a" .
+			 + ?s <p> "b" .
+			 ?s <p> "a" .`,
+
+			`<s> <p> "b" .
+			 <s2> <p> "b" .`,
+		},
+	}
+
 	impls := newGraphImplementations()
+	matchAll := mustParsePatterns("?s ?p ?o .")
 
 	for _, impl := range impls {
 		t.Run(fmt.Sprintf("%s implementation", impl.name), func(t *testing.T) {
 			defer impl.closeFn()
-			impl.graph.Insert(mustTriples(`
-				<h1> <name> "A" .
-				<h1> <knows> <h2> .
-				<h2> <name> "B" .
-				<h2> <knows> <h1> .`)...,
-			)
+			for i, test := range tests {
 
-			wantGraph(t, impl.graph, `
-				<h1> <name> "A" .
-				<h1> <knows> <h2> .
-				<h2> <name> "B" .
-				<h2> <knows> <h1> .
-				`,
-			)
+				// clear graph
+				_, _, err := impl.graph.Update(matchAll, nil, matchAll)
+				if err != nil {
+					t.Fatalf("delete {?s ?p ?o}: %v", err)
+				}
 
-			impl.graph.Insert(mustTriples(`
-				<b1> <title> "book" .
-				<b1> <contributor> _:c1 .
-				_:c1 <role> <author> .
-				_:c1 <agent> <h1> .
-				<b1> <contributor> _:c2 .
-				_:c2 <role> <illustrator> .
-				_:c2 <agent> <h2> .
-				`)...,
-			)
+				// insert
+				_, err = impl.graph.Insert(mustTriples(test.input)...)
+				if err != nil {
+					t.Fatal("insert: %v", err)
+				}
 
-			wantGraph(t, impl.graph, `
-				<h1> <name> "A" .
-				<h1> <knows> <h2> .
-				<h2> <name> "B" .
-				<h2> <knows> <h1> .
-				<b1> <title> "book" .
-				<b1> <contributor> _:123 .
-				_:123 <role> <author> .
-				_:123 <agent> <h1> .
-				<b1> <contributor> _:456 .
-				_:456 <role> <illustrator> .
-				_:456 <agent> <h2> .`,
-			)
+				// update
+				del, ins, where := mustParseUpdate(test.update)
+				_, _, err = impl.graph.Update(del, ins, where)
+				if err != nil {
+					t.Fatalf("update: %v", err)
+				}
 
-			impl.graph.Delete(mustTriples(`
-				<b1> <contributor> _:a .
-				_:a <role> <illustrator> .
-				_:a <agent> <h2> `)...,
-			)
-
-			wantGraph(t, impl.graph, `
-				<h1> <name> "A" .
-				<h1> <knows> <h2> .
-				<h2> <name> "B" .
-				<h2> <knows> <h1> .
-				<b1> <title> "book" .
-				<b1> <contributor> _:1 .
-				_:1 <role> <author> .
-				_:1 <agent> <h1> .
-				<b1> <contributor> _:2 .
-				_:2 <role> <illustrator> .
-				_:2 <agent> <h2> .`,
-			)
-
-			impl.graph.Delete(mustTriples(`
-				<h1> <knows> <h2> .
-				<h2> <knows> <h1> .
-				`)...,
-			)
-
-			wantGraph(t, impl.graph, `
-				<h1> <name> "A" .
-				<h2> <name> "B" .
-				<b1> <title> "book" .
-				<b1> <contributor> _:1 .
-				_:1 <role> <author> .
-				_:1 <agent> <h1> .
-				<b1> <contributor> _:2 .
-				_:2 <role> <illustrator> .
-				_:2 <agent> <h2> .
-				`,
-			)
+				// verify
+				got, err := impl.graph.Where(matchAll...)
+				if err != nil {
+					t.Fatalf("where: %v", err)
+				}
+				want := mustDecode(test.want)
+				if eq, _ := got.Eq(want); !eq {
+					t.Fatalf("#%d\ngot:\n%v\nwant:\n%v\n", i+1, mustEncode(got.(*memory.Graph)), test.want)
+				}
+			}
 		})
 	}
 }

@@ -1342,6 +1342,118 @@ func (g *Graph) substitute(tx *bolt.Tx, p query.EncTriplePattern, s query.EncSol
 	return res, nil
 }
 
+func (g *Graph) deleteFor(tx *bolt.Tx, p rdf.TriplePattern, s query.EncSolutions, cache map[rdf.TriplePatternNode]uint32) (int, error) {
+	var encP [3]uint32
+	for i, node := range []rdf.TriplePatternNode{p.Subject, p.Predicate, p.Object} {
+		id, ok := cache[node]
+		if ok {
+			encP[i] = id
+			continue
+		}
+		if _, ok := node.(rdf.Variable); ok {
+			panic("BUG: deleteFor got variable not in cache")
+		}
+
+		id, err := g.getID(tx, node.(rdf.Node))
+		if err == ErrNotFound {
+			// Node is not stored, so we have no triple
+			return 0, nil
+		}
+		if err != nil {
+			return 0, err
+		}
+		encP[i] = id
+		cache[node] = id
+	}
+
+	if p.IsConcrete() {
+		if err := g.removeTriple(tx, encP[0], encP[1], encP[2]); err != nil {
+			return 0, err
+		}
+		return 1, nil
+	}
+
+	var n int
+	tr := [3]uint32{encP[0], encP[1], encP[2]}
+	for _, row := range s.Rows {
+		for i, v := range s.Vars {
+			if v == encP[0] {
+				tr[0] = row[i]
+			}
+			if v == encP[1] {
+				tr[1] = row[i]
+			}
+			if v == encP[2] {
+				tr[2] = row[i]
+			}
+		}
+		err := g.removeTriple(tx, tr[0], tr[1], tr[2])
+		if err == ErrNotFound {
+			continue
+		}
+		if err != nil {
+			return n, err
+		}
+		n++
+	}
+
+	return n, nil
+}
+
+func (g *Graph) insertFor(tx *bolt.Tx, p rdf.TriplePattern, s query.EncSolutions, cache map[rdf.TriplePatternNode]uint32) (int, error) {
+	var encP [3]uint32
+	for i, node := range []rdf.TriplePatternNode{p.Subject, p.Predicate, p.Object} {
+		id, ok := cache[node]
+		if ok {
+			encP[i] = id
+			continue
+		}
+		if _, ok := node.(rdf.Variable); ok {
+			panic("BUG: insertFor got variable not in cache")
+		}
+
+		id, err := g.addNode(tx, node.(rdf.Node))
+		if err != nil {
+			return 0, nil
+		}
+		encP[i] = id
+		cache[node] = id
+	}
+
+	if p.IsConcrete() {
+		stored, err := g.storeTriple(tx, encP[0], encP[1], encP[2])
+		if err != nil || !stored {
+			return 0, err
+		}
+		return 1, nil
+	}
+
+	var n int
+	tr := [3]uint32{encP[0], encP[1], encP[2]}
+	for _, row := range s.Rows {
+		for i, v := range s.Vars {
+			if v == encP[0] {
+				tr[0] = row[i]
+			}
+			if v == encP[1] {
+				tr[1] = row[i]
+			}
+			if v == encP[2] {
+				tr[2] = row[i]
+			}
+		}
+		stored, err := g.storeTriple(tx, tr[0], tr[1], tr[2])
+		if err != nil {
+			return n, err
+		}
+		if stored {
+			n++
+		}
+	}
+
+	return n, nil
+}
+
 func (g *Graph) Where(patterns ...rdf.TriplePattern) (rdf.Graph, error) {
 	// Fast path for no patterns
 	if len(patterns) == 0 {
@@ -1685,37 +1797,90 @@ func (g *Graph) Delete(trs ...rdf.Triple) (int, error) {
 	return n, txErr
 }
 
-func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (int, int, error) {
+func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (delN, insN int, err error) {
 	if where != nil {
-		panic("TODO: disk.Graph.Update( where=non nil)")
+		err = g.kv.Update(func(tx *bolt.Tx) error {
+			// Encode patterns
+			encWhere := make([]query.EncTriplePattern, len(where))
+			cache := make(map[rdf.TriplePatternNode]uint32)
+			numVars := 0
+			for i, pattern := range where {
+				var er error
+				encWhere[i], er = g.encodePattern(tx, pattern, cache, &numVars)
+				if er != nil {
+					return err
+				}
+			}
+
+			// Evaluate query
+			_, solutions, er := g.where(tx, encWhere)
+			if er != nil {
+				return er
+			}
+
+			// Substitute variables with solutions
+			if len(solutions.Rows) > 0 {
+				for _, pattern := range ins {
+					n, er := g.insertFor(tx, pattern, solutions, cache)
+					if er != nil {
+						return er
+					}
+					insN += n
+				}
+
+				for _, pattern := range del {
+					n, er := g.deleteFor(tx, pattern, solutions, cache)
+					if er != nil {
+						return er
+					}
+					delN += n
+				}
+			}
+
+			return nil
+		})
+		return delN, insN, err
 	}
 
-	if ins != nil && del != nil {
-		panic("TODO: disk.Graph.Update( both ins and del=non nil )")
-	}
-
-	if ins != nil {
-		trs := make([]rdf.Triple, len(ins))
-		for i, p := range ins {
+	// TODO delete and insert operations must be part of same transaction
+	if del != nil {
+		trs := make([]rdf.Triple, len(del))
+		for i, p := range del {
+			if !p.IsConcrete() {
+				trs = trs[:len(trs)-1]
+				continue
+			}
 			trs[i] = rdf.Triple{
 				Subject:   p.Subject.(rdf.SubjectNode),
 				Predicate: p.Predicate.(rdf.NamedNode),
 				Object:    p.Object.(rdf.Node),
 			}
 		}
-		n, err := g.Insert(trs...)
-		return 0, n, err
-	}
-	trs := make([]rdf.Triple, len(del))
-	for i, p := range del {
-		trs[i] = rdf.Triple{
-			Subject:   p.Subject.(rdf.SubjectNode),
-			Predicate: p.Predicate.(rdf.NamedNode),
-			Object:    p.Object.(rdf.Node),
+		delN, err = g.Delete(trs...)
+		if err != nil {
+			return
 		}
 	}
-	n, err := g.Delete(trs...)
-	return n, 0, err
+	if ins != nil {
+		trs := make([]rdf.Triple, len(ins))
+		for i, p := range ins {
+			if !p.IsConcrete() {
+				trs = trs[:len(trs)-1]
+				continue
+			}
+			trs[i] = rdf.Triple{
+				Subject:   p.Subject.(rdf.SubjectNode),
+				Predicate: p.Predicate.(rdf.NamedNode),
+				Object:    p.Object.(rdf.Node),
+			}
+		}
+		insN, err = g.Insert(trs...)
+		if err != nil {
+			return
+		}
+	}
+
+	return delN, insN, err
 }
 
 func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]rdf.Node, error) {

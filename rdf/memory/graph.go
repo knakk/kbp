@@ -93,37 +93,72 @@ func (g *Graph) Triples() []rdf.Triple {
 	return res
 }
 
-func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (int, int, error) {
+func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (delN, insN int, err error) {
 	if where != nil {
-		panic("TODO: memory.Graph.Update( where=non nil)")
+		// Encode patterns
+		encPatterns := make([]encPattern, len(where))
+		vars := make(map[rdf.Variable]int)
+		for i, pattern := range where {
+			encPatterns[i] = g.encodePattern(pattern, vars)
+		}
+
+		// Evaluate query
+		_, solutions := g.where(encPatterns)
+
+		// Substitute variables with solutions
+		if len(solutions.Rows) > 0 {
+			for _, pattern := range ins {
+				n := g.insertFor(pattern, solutions, vars)
+				insN += n
+			}
+
+			for _, pattern := range del {
+				n := g.deleteFor(pattern, solutions, vars)
+				delN += n
+			}
+		}
+
+		return delN, insN, nil
 	}
 
-	if ins != nil && del != nil {
-		panic("TODO: memory.Graph.Update( both ins and del=non nil )")
-	}
-
-	if ins != nil {
-		trs := make([]rdf.Triple, len(ins))
-		for i, p := range ins {
+	if del != nil {
+		trs := make([]rdf.Triple, len(del))
+		for i, p := range del {
+			if !p.IsConcrete() {
+				trs = trs[:len(trs)-1]
+				continue
+			}
 			trs[i] = rdf.Triple{
 				Subject:   p.Subject.(rdf.SubjectNode),
 				Predicate: p.Predicate.(rdf.NamedNode),
 				Object:    p.Object.(rdf.Node),
 			}
 		}
-		n, err := g.Insert(trs...)
-		return 0, n, err
-	}
-	trs := make([]rdf.Triple, len(del))
-	for i, p := range del {
-		trs[i] = rdf.Triple{
-			Subject:   p.Subject.(rdf.SubjectNode),
-			Predicate: p.Predicate.(rdf.NamedNode),
-			Object:    p.Object.(rdf.Node),
+		delN, err = g.Delete(trs...)
+		if err != nil {
+			return
 		}
 	}
-	n, err := g.Delete(trs...)
-	return n, 0, err
+	if ins != nil {
+		trs := make([]rdf.Triple, len(ins))
+		for i, p := range ins {
+			if !p.IsConcrete() {
+				trs = trs[:len(trs)-1]
+				continue
+			}
+			trs[i] = rdf.Triple{
+				Subject:   p.Subject.(rdf.SubjectNode),
+				Predicate: p.Predicate.(rdf.NamedNode),
+				Object:    p.Object.(rdf.Node),
+			}
+		}
+		insN, err = g.Insert(trs...)
+		if err != nil {
+			return
+		}
+	}
+
+	return delN, insN, err
 }
 
 // Insert adds one or more triples to the Graph. It returns the number
@@ -167,6 +202,100 @@ func (g *Graph) Insert(trs ...rdf.Triple) (int, error) {
 		}
 	}
 	return n, nil
+}
+
+func (g *Graph) deleteFor(p rdf.TriplePattern, s encSolutions, vars map[rdf.Variable]int) int {
+	var encP [3]int
+	for i, node := range []rdf.TriplePatternNode{p.Subject, p.Predicate, p.Object} {
+		if v, ok := node.(rdf.Variable); ok {
+			encP[i] = vars[v]
+			if vars[v] == 0 {
+				panic("BUG: deleteFor got variable not in cache")
+			}
+			continue
+		}
+
+		id, ok := g.node2id[node.(rdf.Node)]
+		if !ok {
+			// Node is not stored, so we have no triple to delete
+			return 0
+		}
+		encP[i] = id
+	}
+
+	if p.IsConcrete() {
+		if stored := g.unindex(encP[0], encP[1], encP[2]); !stored {
+			return 0
+		}
+		return 1
+	}
+
+	var n int
+	tr := [3]int{encP[0], encP[1], encP[2]}
+	for _, row := range s.Rows {
+		for i, v := range s.Vars {
+			if v == encP[0] {
+				tr[0] = row[i]
+			}
+			if v == encP[1] {
+				tr[1] = row[i]
+			}
+			if v == encP[2] {
+				tr[2] = row[i]
+			}
+		}
+		stored := g.unindex(tr[0], tr[1], tr[2])
+		if stored {
+			n++
+		}
+	}
+
+	return n
+}
+
+func (g *Graph) insertFor(p rdf.TriplePattern, s encSolutions, vars map[rdf.Variable]int) int {
+	var encP [3]int
+	for i, node := range []rdf.TriplePatternNode{p.Subject, p.Predicate, p.Object} {
+		if v, ok := node.(rdf.Variable); ok {
+			encP[i] = vars[v]
+			if vars[v] == 0 {
+				panic("BUG: insertFor got variable not in cache")
+			}
+			continue
+		}
+		id := g.addNode(node.(rdf.Node))
+		encP[i] = id
+	}
+
+	if p.IsConcrete() {
+		stored := g.index(encP[0], encP[1], encP[2])
+		if !stored {
+			return 0
+		}
+		return 1
+	}
+
+	var n int
+	tr := [3]int{encP[0], encP[1], encP[2]}
+	for _, row := range s.Rows {
+		for i, v := range s.Vars {
+			if v == encP[0] {
+				tr[0] = row[i]
+			}
+			if v == encP[1] {
+				tr[1] = row[i]
+			}
+			if v == encP[2] {
+				tr[2] = row[i]
+			}
+		}
+		stored := g.index(tr[0], tr[1], tr[2])
+		if stored {
+			n++
+		}
+	}
+
+	return n
 }
 
 // addNode adds a node to the node dictonaries, and returns its new ID, or

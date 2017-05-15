@@ -260,6 +260,14 @@ type TriplePattern struct {
 	Object    object
 }
 
+// IsConcrete tests if the triple pattern represent a concrete triple,
+// i.e. contains no variables.
+func (p TriplePattern) IsConcrete() bool {
+	return p.Subject.nodeType() != typeVariable &&
+		p.Predicate.nodeType() != typeVariable &&
+		p.Object.nodeType() != typeVariable
+}
+
 // Eq tests the euality between two TriplePatterns.
 func (p TriplePattern) Eq(other TriplePattern) bool {
 	return p.Subject == other.Subject &&
