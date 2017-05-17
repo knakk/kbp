@@ -266,6 +266,25 @@ func TestGraphUpdate(t *testing.T) {
 			 _:c1 <hasAgent> <h1> .
 			 _:c1 <hasRole> <author> .`,
 		},
+		{ // 12
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book2> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <author> .`,
+
+			`- <book2> <hasContribution> ?c .
+			 + <book1> <hasContribution> ?c .
+			 <book2> <hasContribution> ?c .`,
+
+			`<book1> <hasContribution> _:c1 .
+			 _:c1 <hasAgent> <h1> .
+			 _:c1 <hasRole> <author> .
+			 <book1> <hasContribution> _:c2 .
+			 _:c2 <hasAgent> <h2> .
+			 _:c2 <hasRole> <author> .`,
+		},
 	}
 
 	impls := newGraphImplementations()
@@ -707,6 +726,47 @@ func TestGraphSelect(t *testing.T) {
 				got, _ := impl.graph.Select(test.vars, test.patterns...)
 				if !solutionsEq(got, want) {
 					t.Fatalf("got:\n%v\nwant:\n%v", got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestGraphDescribe(t *testing.T) {
+	tests := []struct {
+		node rdf.NamedNode
+		want string
+	}{
+		{
+			rdf.NewNamedNode("a1"),
+			`<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			 <a1> <hasName> "Italo Calvino" .
+			 <a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			 <a1> <hasDeathYear> "1985"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
+		},
+		{
+			rdf.NewNamedNode("w2"),
+			`<w2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Work> .
+			 <w2> <hasMainTitle> "Il barone rampante" .
+			 <w2> <hasPublicationYear> "1957"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			 <w2> <hasContributor> _:c5 .
+
+			 _:c5 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			 _:c5 <hasRole> <author> .
+			 _:c5 <hasAgent> <a1> .`,
+		},
+	}
+	impls := newGraphImplementations()
+	for _, impl := range impls {
+		t.Run(fmt.Sprintf("%s implementation", impl.name), func(t *testing.T) {
+			defer impl.closeFn()
+			impl.graph.Insert(mustTriples(testTriples)...)
+
+			for _, test := range tests {
+				want := mustDecode(test.want)
+				got, _ := impl.graph.Describe(test.node)
+				if eq, _ := want.Eq(got); !eq {
+					t.Fatalf("got:\n%v\nwant:\n%v", mustEncode(got.(*memory.Graph)), test.want)
 				}
 			}
 		})

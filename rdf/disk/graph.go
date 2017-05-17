@@ -98,6 +98,83 @@ func (g *Graph) setup() (*Graph, error) {
 	return g, err
 }
 
+func (g *Graph) Describe(node rdf.NamedNode) (rdf.Graph, error) {
+	res := memory.NewGraph()
+	err := g.kv.View(func(tx *bolt.Tx) error {
+		sID, err := g.getID(tx, node)
+		if err == ErrNotFound {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		cache := make(map[uint32]rdf.Node)
+		cache[sID] = node
+		trs, err := g.describe(tx, sID, cache)
+		if err != nil {
+			return err
+		}
+		res.Insert(trs...)
+		return nil
+	})
+	return res, err
+}
+
+func (g *Graph) describe(tx *bolt.Tx, nodeID uint32, cache map[uint32]rdf.Node) ([]rdf.Triple, error) {
+	// nodeID must represent either a Named Node or Blank Node.
+	var trs []rdf.Triple
+	bs := u32tob(nodeID)
+	cur := tx.Bucket(bucketSPO).Cursor()
+outerSPO:
+	for k, _ := cur.Seek(bs); k != nil; k, _ = cur.Next() {
+		// TODO k, v and use v directly, not calling g.spo
+		switch bytes.Compare(k[:4], bs) {
+		case 0:
+			pID := btou32(k[4:])
+			objs, err := g.spo(tx, nodeID, pID)
+			if err != nil {
+				return nil, err
+			}
+			pred, ok := cache[pID]
+			if !ok {
+				pred, err = g.getNode(tx, pID)
+				if err != nil {
+					return nil, err
+				}
+				cache[pID] = pred
+			}
+			iterO := objs.Iterator()
+			for iterO.HasNext() {
+				oID := iterO.Next()
+				obj, ok := cache[oID]
+				if !ok {
+					obj, err = g.getNode(tx, oID)
+					if err != nil {
+						return nil, err
+					}
+					cache[oID] = obj
+				}
+				trs = append(trs, rdf.Triple{
+					Subject:   cache[nodeID].(rdf.SubjectNode),
+					Predicate: pred.(rdf.NamedNode),
+					Object:    obj,
+				})
+				if _, ok := obj.(rdf.BlankNode); ok {
+					bnodeTrs, err := g.describe(tx, oID, cache)
+					if err != nil {
+						return nil, err
+					}
+					trs = append(trs, bnodeTrs...)
+				}
+			}
+		case 1:
+			break outerSPO
+		}
+	}
+	return trs, nil
+}
+
 func (g *Graph) spo(tx *bolt.Tx, s, p uint32) (*roaring.Bitmap, error) {
 	return g.getBitmap(tx, bucketSPO, s, p)
 }
