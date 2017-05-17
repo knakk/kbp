@@ -1149,14 +1149,9 @@ func freeOrBound(v int, id int, bound map[int][]int) bool {
 }
 
 // Eq checks if two graphs are equal (isomorphic).
-func (g *Graph) Eq(b rdf.Graph) (bool, error) {
-	other, ok := b.(*Graph)
-	if !ok {
-		panic("Eq can only compare memory.Graph ATM")
-	}
-
+func (g *Graph) Eq(other *Graph) bool {
 	if len(g.node2id) != len(other.node2id) {
-		return false, nil
+		return false
 	}
 
 	set := make(map[rdf.BlankNode]bool)
@@ -1170,15 +1165,15 @@ func (g *Graph) Eq(b rdf.Graph) (bool, error) {
 		}
 		others, ok := other.node2id[g.id2node[s]]
 		if !ok {
-			return false, nil
+			return false
 		}
 		for p, objs := range po {
 			otherp, ok := other.node2id[g.id2node[p]]
 			if !ok {
-				return false, nil
+				return false
 			}
 			if _, ok := other.spo[others][otherp]; !ok {
-				return false, nil
+				return false
 			}
 			for _, o := range objs {
 				if bnode, ok := g.id2node[o].(rdf.BlankNode); ok {
@@ -1187,10 +1182,10 @@ func (g *Graph) Eq(b rdf.Graph) (bool, error) {
 				}
 				othero, ok := other.node2id[g.id2node[o]]
 				if !ok {
-					return false, nil
+					return false
 				}
 				if !includeNode(other.spo[others][otherp], othero) {
-					return false, nil
+					return false
 				}
 			}
 		}
@@ -1204,7 +1199,7 @@ func (g *Graph) Eq(b rdf.Graph) (bool, error) {
 	}
 	bBlankNodes := other.bnodes()
 	if len(bBlankNodes) != len(aBlankNodes) {
-		return false, nil
+		return false
 	}
 	var (
 		aSign []string
@@ -1223,11 +1218,11 @@ func (g *Graph) Eq(b rdf.Graph) (bool, error) {
 	sort.Strings(bSign)
 	for i, s := range aSign {
 		if s != bSign[i] {
-			return false, nil
+			return false
 		}
 	}
 
-	return true, nil
+	return true
 }
 
 func (g *Graph) bnodes() []rdf.BlankNode {

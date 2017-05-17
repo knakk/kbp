@@ -2033,10 +2033,6 @@ func (g *Graph) Stats() (rdf.Stats, error) {
 	return rdf.Stats{}, nil
 }
 
-func (g *Graph) Eq(other rdf.Graph) (bool, error) {
-	panic("Graph.Eq: TODO")
-}
-
 func (g *Graph) encode(tx *bolt.Tx, node rdf.Node) ([]byte, error) {
 	switch t := node.(type) {
 	case rdf.NamedNode:

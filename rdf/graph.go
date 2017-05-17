@@ -44,11 +44,6 @@ type Graph interface {
 
 	Select([]Variable, ...TriplePattern) ([][]Node, error)
 
-	// Eq tests if two graphs are equal (isomorphic).
-	// TODO consider remove from interface - its mostly usefull for
-	// verifying test results on memory.Graph implementation.
-	Eq(Graph) (bool, error)
-
 	// Stats returns statistics about the Graph.
 	Stats() (Stats, error)
 }

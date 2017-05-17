@@ -320,7 +320,7 @@ func TestGraphUpdate(t *testing.T) {
 					t.Fatalf("where: %v", err)
 				}
 				want := mustDecode(test.want)
-				if eq, _ := got.Eq(want); !eq {
+				if !got.(*memory.Graph).Eq(want) {
 					t.Fatalf("#%d\ngot:\n%v\nwant:\n%v\n", i+1, mustEncode(got.(*memory.Graph)), test.want)
 				}
 			}
@@ -436,7 +436,7 @@ func TestGraphIsomorphism(t *testing.T) {
 	for _, test := range tests {
 		a := mustDecode(test.a)
 		b := mustDecode(test.b)
-		if got, _ := a.Eq(b); got != test.eq {
+		if got := a.Eq(b); got != test.eq {
 			t.Fatalf("\n%v  Eq\n%v  = %v; want %v", mustEncode(a), mustEncode(b), got, test.eq)
 		}
 	}
@@ -662,7 +662,7 @@ func TestGraphWhere(t *testing.T) {
 				got, err := impl.graph.Where(test.patterns...)
 				if err != nil {
 					t.Fatalf("%d:got:\n%v\nwant:\n%v", i+1, err, test.want)
-				} else if eq, _ := got.Eq(mustDecode(test.want)); !eq {
+				} else if !got.(*memory.Graph).Eq(mustDecode(test.want)) {
 					t.Fatalf("%d:got:\n%v\nwant:\n%v", i+1, mustEncode(got.(*memory.Graph)), test.want)
 				}
 			}
@@ -765,7 +765,7 @@ func TestGraphDescribe(t *testing.T) {
 			for _, test := range tests {
 				want := mustDecode(test.want)
 				got, _ := impl.graph.Describe(test.node)
-				if eq, _ := want.Eq(got); !eq {
+				if !want.Eq(got.(*memory.Graph)) {
 					t.Fatalf("got:\n%v\nwant:\n%v", mustEncode(got.(*memory.Graph)), test.want)
 				}
 			}

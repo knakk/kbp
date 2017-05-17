@@ -129,7 +129,7 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 	nt := mustEncode(g)
 	g2 := mustDecode(nt)
 
-	if equal, _ := g.Eq(g2); !equal {
+	if !g.Eq(g2) {
 		t.Fatal("decode-encode-decode roundtrip failed")
 	}
 }
