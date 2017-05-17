@@ -98,24 +98,26 @@ func (g *Graph) setup() (*Graph, error) {
 	return g, err
 }
 
-func (g *Graph) Describe(node rdf.NamedNode) (rdf.Graph, error) {
+func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := memory.NewGraph()
 	err := g.kv.View(func(tx *bolt.Tx) error {
-		sID, err := g.getID(tx, node)
-		if err == ErrNotFound {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
 		cache := make(map[uint32]rdf.Node)
-		cache[sID] = node
-		trs, err := g.describe(tx, sID, cache)
-		if err != nil {
-			return err
+		for _, node := range nodes {
+			sID, err := g.getID(tx, node)
+			if err == ErrNotFound {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			cache[sID] = node
+			trs, err := g.describe(tx, sID, cache)
+			if err != nil {
+				return err
+			}
+			res.Insert(trs...)
 		}
-		res.Insert(trs...)
 		return nil
 	})
 	return res, err

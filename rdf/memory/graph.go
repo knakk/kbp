@@ -93,31 +93,34 @@ func (g *Graph) Triples() []rdf.Triple {
 	return res
 }
 
-func (g *Graph) Describe(node rdf.NamedNode) (rdf.Graph, error) {
+func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := NewGraph()
-	var trs []rdf.Triple
-	if s, found := g.node2id[node]; found {
-		for p, objs := range g.spo[s] {
-			for _, o := range objs {
-				trs = append(trs, rdf.Triple{
-					Subject:   node,
-					Predicate: g.id2node[p].(rdf.NamedNode),
-					Object:    g.id2node[o],
-				})
-				if _, ok := g.id2node[o].(rdf.BlankNode); ok {
-					for p, objs := range g.spo[o] {
-						for _, bo := range objs {
-							trs = append(trs, rdf.Triple{
-								Subject:   g.id2node[o].(rdf.SubjectNode),
-								Predicate: g.id2node[p].(rdf.NamedNode),
-								Object:    g.id2node[bo],
-							})
+	for _, node := range nodes {
+		var trs []rdf.Triple
+		if s, found := g.node2id[node]; found {
+			for p, objs := range g.spo[s] {
+				for _, o := range objs {
+					trs = append(trs, rdf.Triple{
+						Subject:   node,
+						Predicate: g.id2node[p].(rdf.NamedNode),
+						Object:    g.id2node[o],
+					})
+					if _, ok := g.id2node[o].(rdf.BlankNode); ok {
+						for p, objs := range g.spo[o] {
+							for _, bo := range objs {
+								trs = append(trs, rdf.Triple{
+									Subject:   g.id2node[o].(rdf.SubjectNode),
+									Predicate: g.id2node[p].(rdf.NamedNode),
+									Object:    g.id2node[bo],
+								})
+							}
 						}
 					}
 				}
 			}
+			res.Insert(trs...)
 		}
-		res.Insert(trs...)
+
 	}
 	return res, nil
 }

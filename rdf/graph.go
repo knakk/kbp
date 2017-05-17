@@ -10,10 +10,10 @@ var (
 // Graph represents a RDF Graph - a colllection of RDF triples which
 // can be queried for subgraphs and mutated by adding and removing triples.
 type Graph interface {
-	// Describe returns a Graph containingt the data about the given node.
-	// Specifically, it should contain all the triples where the node is subject,
-	// as well all triples of blank nodes which are outgoing relations of the given node.
-	Describe(node NamedNode) (Graph, error)
+	// Describe returns a Graph containing the data about the given nodes.
+	// Specifically, it should contain all the triples where a given node is subject,
+	// as well all triples of blank nodes which are outgoing relation of the node.
+	Describe(...NamedNode) (Graph, error)
 
 	// Update performs an update query which inserts and/or deletes triples
 	// from the Graph.
