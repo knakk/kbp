@@ -515,8 +515,8 @@ var testTriples = `
 		<a5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 		<a5> <hasName> "Ingeborg Hagemann" .
 
-		<c1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Corporation> .
-		<c1> <hasName> "Gyldendal" .
+		<c2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Corporation> .
+		<c2> <hasName> "Gyldendal" .
 		`
 var testGraph = mustDecode(testTriples)
 
