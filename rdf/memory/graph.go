@@ -125,6 +125,39 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	return res, nil
 }
 
+func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
+	for _, node := range nodes {
+		if s, found := g.node2id[node]; found {
+			for p, objs := range g.spo[s] {
+				for _, o := range objs {
+					if err := enc.Encode(rdf.Triple{
+						Subject:   node,
+						Predicate: g.id2node[p].(rdf.NamedNode),
+						Object:    g.id2node[o],
+					}); err != nil {
+						return err
+					}
+					if _, ok := g.id2node[o].(rdf.BlankNode); ok {
+						for p, objs := range g.spo[o] {
+							for _, bo := range objs {
+								if err := enc.Encode(rdf.Triple{
+									Subject:   g.id2node[o].(rdf.SubjectNode),
+									Predicate: g.id2node[p].(rdf.NamedNode),
+									Object:    g.id2node[bo],
+								}); err != nil {
+									return err
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+	return nil
+}
+
 func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (delN, insN int, err error) {
 	if where != nil {
 		// Encode patterns

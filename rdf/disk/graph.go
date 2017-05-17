@@ -123,6 +123,33 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	return res, err
 }
 
+func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
+	return g.kv.View(func(tx *bolt.Tx) error {
+		cache := make(map[uint32]rdf.Node)
+		for _, node := range nodes {
+			sID, err := g.getID(tx, node)
+			if err == ErrNotFound {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			cache[sID] = node
+			trs, err := g.describe(tx, sID, cache)
+			if err != nil {
+				return err
+			}
+			for _, tr := range trs {
+				if err := enc.Encode(tr); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
 func (g *Graph) describe(tx *bolt.Tx, nodeID uint32, cache map[uint32]rdf.Node) ([]rdf.Triple, error) {
 	// nodeID must represent either a Named Node or Blank Node.
 	var trs []rdf.Triple

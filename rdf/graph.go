@@ -15,6 +15,8 @@ type Graph interface {
 	// as well all triples of blank nodes which are outgoing relation of the node.
 	Describe(...NamedNode) (Graph, error)
 
+	DescribeW(*Encoder, ...NamedNode) error
+
 	// Update performs an update query which inserts and/or deletes triples
 	// from the Graph.
 	//
