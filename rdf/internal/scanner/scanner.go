@@ -25,6 +25,10 @@ const (
 
 	// Triple pattern
 	TokenVariable
+
+	// Update query tokens
+	TokenPlus
+	TokenMinus
 )
 
 const eof = rune(-1)
@@ -95,8 +99,8 @@ func NewScanner(input string) *Scanner {
 func (s *Scanner) Scan() token {
 
 	if len(s.lookahead) > 0 {
-		t := s.lookahead[len(s.lookahead)-1]
-		s.lookahead = s.lookahead[:len(s.lookahead)-1]
+		t := s.lookahead[0]
+		s.lookahead = s.lookahead[1:]
 		return t
 	}
 
@@ -191,6 +195,10 @@ runeSwitch:
 		s.scanUntilNextToken()
 		addStart = 1
 		tok = TokenVariable
+	case '+':
+		tok = TokenPlus
+	case '-':
+		tok = TokenMinus
 	case eof:
 		tok = TokenEOF
 	case utf8.RuneError:
