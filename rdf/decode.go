@@ -185,6 +185,42 @@ func (d *Decoder) DecodePattern() (TriplePattern, error) {
 	return tr, nil
 }
 
+func ParseUpdateQuery(s string) (del, ins, where []TriplePattern, err error) {
+	d := Decoder{
+		s: scanner.NewScanner(s),
+	}
+	var tr TriplePattern
+	for {
+		switch d.s.Peek().Type {
+		case scanner.TokenEOL:
+			d.s.Scan() // consume
+		case scanner.TokenPlus:
+			d.s.Scan() // consume +
+			tr, err = d.DecodePattern()
+			if err != nil {
+				return
+			}
+			ins = append(ins, tr)
+		case scanner.TokenMinus:
+			d.s.Scan() // consume -
+			tr, err = d.DecodePattern()
+			if err != nil {
+				return
+			}
+			del = append(del, tr)
+		case scanner.TokenEOF:
+			return
+		default:
+			tr, err = d.DecodePattern()
+			if err != nil {
+				return
+			}
+			where = append(where, tr)
+		}
+	}
+	return
+}
+
 // TODO implement this properly
 func MustParseNode(node string) Node {
 	d := Decoder{

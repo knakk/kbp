@@ -41,18 +41,11 @@ func mustParseSolutions(s string) (res [][]rdf.Node) {
 }
 
 func mustParseUpdate(s string) (del, ins, where []rdf.TriplePattern) {
-	lines := strings.Split(s, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "-") {
-			del = append(del, mustParsePatterns(line[1:])...)
-		} else if strings.HasPrefix(line, "+") {
-			ins = append(ins, mustParsePatterns(line[1:])...)
-		} else {
-			where = append(where, mustParsePatterns(line)...)
-		}
+	del, ins, where, err := rdf.ParseUpdateQuery(s)
+	if err != nil {
+		panic(err)
 	}
-	return del, ins, where
+	return
 }
 
 func nodesToString(nodes []rdf.Node) string {
