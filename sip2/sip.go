@@ -262,7 +262,7 @@ func (mf MessageFactory) NewMessage(t msgType) Message {
 	switch msg.typ {
 	case MsgReqStatus:
 		msg.AddField(Field{Type: FieldDateTimeSync, Value: time.Now().Format(DateLayout)})
-	case MsgReqStatus, MsgReqResend, MsgReqLogin, MsgRespStatus, MsgRespLogin:
+	case MsgReqResend, MsgReqLogin, MsgRespStatus, MsgRespLogin:
 		// No timestamp
 	case MsgReqCheckin:
 		msg.AddField(Field{Type: FieldReturnDate, Value: time.Now().Format(DateLayout)})
