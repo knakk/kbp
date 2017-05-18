@@ -278,6 +278,27 @@ func TestGraphUpdate(t *testing.T) {
 			 _:c2 <hasAgent> <h2> .
 			 _:c2 <hasRole> <author> .`,
 		},
+		{
+			// 13
+			`<person> <hasName> "Name" .
+			 <person> <hasBirthYear> "1988" .
+			 <book> <hasTitle> "title" .
+			 <book> <hasContribution> _:c .
+			 _:c <hasAgent> <person> .
+			 _:c <hasRole> <author> .`,
+
+			`- <person> <hasBirthYear> "1988" .
+			 + <person> <hasBirthYear> "1888" .
+			 + <person> <hasDeathYear> "1958" .`,
+
+			`<person> <hasName> "Name" .
+			 <person> <hasBirthYear> "1888" .
+			 <person> <hasDeathYear> "1958" .
+			 <book> <hasTitle> "title" .
+			 <book> <hasContribution> _:c .
+			 _:c <hasAgent> <person> .
+			 _:c <hasRole> <author> ..`,
+		},
 	}
 
 	impls := newGraphImplementations()

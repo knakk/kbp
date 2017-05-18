@@ -187,24 +187,6 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 		return delN, insN, nil
 	}
 
-	if del != nil {
-		trs := make([]rdf.Triple, len(del))
-		for i, p := range del {
-			if !p.IsConcrete() {
-				trs = trs[:len(trs)-1]
-				continue
-			}
-			trs[i] = rdf.Triple{
-				Subject:   p.Subject.(rdf.SubjectNode),
-				Predicate: p.Predicate.(rdf.NamedNode),
-				Object:    p.Object.(rdf.Node),
-			}
-		}
-		delN, err = g.Delete(trs...)
-		if err != nil {
-			return
-		}
-	}
 	if ins != nil {
 		trs := make([]rdf.Triple, len(ins))
 		for i, p := range ins {
@@ -219,6 +201,24 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 			}
 		}
 		insN, err = g.Insert(trs...)
+		if err != nil {
+			return
+		}
+	}
+	if del != nil {
+		trs := make([]rdf.Triple, len(del))
+		for i, p := range del {
+			if !p.IsConcrete() {
+				trs = trs[:len(trs)-1]
+				continue
+			}
+			trs[i] = rdf.Triple{
+				Subject:   p.Subject.(rdf.SubjectNode),
+				Predicate: p.Predicate.(rdf.NamedNode),
+				Object:    p.Object.(rdf.Node),
+			}
+		}
+		delN, err = g.Delete(trs...)
 		if err != nil {
 			return
 		}
