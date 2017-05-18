@@ -67,9 +67,10 @@ type Scanner struct {
 	r     *bufio.Reader
 	input string // input being scanned
 
-	pos      int  // position in input
-	start    int  // start of current token
-	unescape bool // true when token needs unescaping
+	pos       int     // position in input
+	start     int     // start of current token
+	unescape  bool    // true when token needs unescaping
+	lookahead []token // lookahead
 
 	// Keep track of position in stream for error reporting:
 	Row int // line number
@@ -90,8 +91,15 @@ func NewScanner(input string) *Scanner {
 	return &Scanner{input: input, Row: 1}
 }
 
-// token returns the next token in the stream.
+// Scan returns the next token in the stream.
 func (s *Scanner) Scan() token {
+
+	if len(s.lookahead) > 0 {
+		t := s.lookahead[len(s.lookahead)-1]
+		s.lookahead = s.lookahead[:len(s.lookahead)-1]
+		return t
+	}
+
 	s.start = s.pos
 	s.Error = ""
 	addStart, addEnd := 0, 0
@@ -200,6 +208,12 @@ runeSwitch:
 		return s.unescaped(tok, s.start+addStart, s.pos+addEnd)
 	}
 	return token{tok, s.input[s.start+addStart : s.pos+addEnd]}
+}
+
+// Peek returns the next token in stream, but does not consume it.
+func (s *Scanner) Peek() token {
+	s.lookahead = append(s.lookahead, s.Scan())
+	return s.lookahead[len(s.lookahead)-1]
 }
 
 func (s *Scanner) ignore() {
