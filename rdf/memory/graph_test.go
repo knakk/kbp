@@ -1,10 +1,15 @@
 package memory
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/go-test/deep"
+	"github.com/knakk/kbp/rdf"
 )
 
 // TODO move to knakk/kbp/rdf/internal
@@ -74,4 +79,126 @@ func TestGroupPatternsByVariable(t *testing.T) {
 			t.Fatalf("groupPatternsByVariable(%v) => %v; want %v", test.patterns, groups, test.want)
 		}
 	}
+}
+
+func TestDecode(t *testing.T) {
+	type contribution struct {
+		Role  string `rdf:"->hasRole;->hasLabel"`
+		Agent string `rdf:"->hasAgent;->hasName"`
+	}
+	type publication struct {
+		MainTitle     string         `rdf:"->hasMainTitle"`
+		Subtitle      string         `rdf:"->hasSubtitle"`
+		Year          int            `rdf:"->wasPublishedYear"`
+		Binding       string         `rdf:"->hasBinding;->hasLabel"`
+		Subjects      []string       `rdf:">>hasTag"`
+		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;->hasLabel"`
+		WorkSubjects  []string       `rdf:"->isPublicationOf;>>hasTag"`
+		Contributions []contribution `rdf:">>hasContribution"`
+		Fans          []string       `rdf:"<<isFanOf;->hasName"`
+	}
+
+	g := mustDecode(`
+		<book1> <hasMainTitle> "Das Kapital" .
+		<book1> <hasSubtitle> "Kritik der politischen Ökonomie" .
+		<book1> <wasPublishedYear> "1867"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+		<book1> <hasContribution> _:c1 .
+		<book1> <hasTag> "Politics" .
+		<book1> <hasTag> "Economy" .
+		<book1> <hasTag> "Work" .
+		<book1> <isPublicationOf> <work1> .
+		<book1> <hasBinding> <binding1> .
+		<binding1> <hasLabel> "Hardcover" .
+		<work1> <hasTag> "Politikk" .
+		<work1> <hasMainTitle> "Das Kapital" .
+		<work1> <hasGenre> <genre1> .
+		<genre1> <hasLabel> "Komedie" .
+		_:c1 <hasAgent> <person1> .
+		_:c1 <hasRole> <author> .
+		<book1> <hasContribution> _:c2 .
+		_:c2 <hasAgent> <person2> .
+		_:c2 <hasRole> <contributor> .
+		<person1> <hasName> "Karl Marx" .
+		<person2> <hasName> "Friedrich Engels" .
+		<person3> <hasName> "Ole" .
+		<person3> <isFanOf> <book1> .
+		<person1> <isFanOf> <book1> .
+		<author> <hasLabel> "forfatter" .
+		<contributor> <hasLabel> "bidragsyter" .`)
+
+	var p publication
+	if err := g.Decode(&p, rdf.NewNamedNode("book1"), rdf.NewNamedNode("")); err != nil {
+		t.Fatal(err)
+	}
+
+	want := publication{
+		MainTitle:    "Das Kapital",
+		Subtitle:     "Kritik der politischen Ökonomie",
+		Year:         1867,
+		Subjects:     []string{"Economy", "Politics", "Work"},
+		WorkSubjects: []string{"Politikk"},
+		Contributions: []contribution{
+			{
+				Role:  "bidragsyter",
+				Agent: "Friedrich Engels",
+			},
+			{
+				Role:  "forfatter",
+				Agent: "Karl Marx",
+			},
+		},
+		Fans:    []string{"Karl Marx", "Ole"},
+		Genres:  []string{"Komedie"},
+		Binding: "Hardcover",
+	}
+	sort.Slice(p.Contributions, func(i, j int) bool {
+		return p.Contributions[i].Agent < p.Contributions[j].Agent
+	})
+	sort.Strings(p.Subjects)
+	sort.Strings(p.Fans)
+	if diff := deep.Equal(p, want); diff != nil {
+		t.Error(diff)
+	}
+}
+
+func decodeGraph(d *rdf.Decoder) (*Graph, error) {
+	g := NewGraph()
+	bnodeTriples := make(map[rdf.BlankNode][]rdf.Triple)
+
+	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
+		if err != nil {
+			return g, err
+		}
+		switch t := tr.Subject.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		switch t := tr.Object.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		if _, err := g.Insert(tr); err != nil {
+			return nil, err
+		}
+	}
+
+	// Insert triples with bnodes in batches by ID, so that they get assigned
+	// the same (new) blank node ID in the Graph
+	for _, trs := range bnodeTriples {
+		if _, err := g.Insert(trs...); err != nil {
+			return nil, err
+		}
+	}
+	return g, nil
+}
+
+func mustDecode(s string) *Graph {
+	dec := rdf.NewDecoder(bytes.NewBufferString(s))
+	g, err := decodeGraph(dec)
+	if err != nil {
+		panic("mustDecode: " + err.Error())
+	}
+	return g
 }

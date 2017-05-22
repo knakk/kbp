@@ -195,7 +195,18 @@ func (l Literal) DataType() NamedNode { return l.dt }
 func (l Literal) Lang() string { return l.lang }
 
 // Value returns the typed value of a Literal.
-func (l Literal) Value() interface{} { panic("TODO") }
+func (l Literal) Value() interface{} {
+	switch l.DataType() {
+	case XSDgYear: // int
+		v, err := strconv.Atoi(l.val)
+		if err != nil {
+			return l.val
+		}
+		return v
+	default:
+		panic("rdf.Literal.Value() TODO")
+	}
+}
 
 // ValueAsString returns the value of a Literal as a string.
 func (l Literal) ValueAsString() string { return l.val }

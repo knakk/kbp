@@ -31,6 +31,7 @@ var (
 	XSDdateTimeStamp = NamedNode{name: "http://www.w3.org/2001/XMLSchema#dateTimeStamp"}
 	XSDdouble        = NamedNode{name: "http://www.w3.org/2001/XMLSchema#double"}
 	XSDfloat         = NamedNode{name: "http://www.w3.org/2001/XMLSchema#float"}
+	XSDgYear         = NamedNode{name: "http://www.w3.org/2001/XMLSchema#gYear"}
 	XSDint           = NamedNode{name: "http://www.w3.org/2001/XMLSchema#int"}
 	XSDinteger       = NamedNode{name: "http://www.w3.org/2001/XMLSchema#integer"}
 	XSDlong          = NamedNode{name: "http://www.w3.org/2001/XMLSchema#long"}

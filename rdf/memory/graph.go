@@ -2,8 +2,10 @@ package memory
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -91,6 +93,184 @@ func (g *Graph) Triples() []rdf.Triple {
 		}
 	}
 	return res
+}
+
+// Decode decodes values from the graph into a struct, starting at the given node
+// and traversing the graph following the path specified in "rdf" struct tags.
+// Each path fragment (separated by ;) represents a predicate and a direction:
+//
+//   -> or >> outgoing direction from node
+//   <- or << incomming direction from node
+//
+// The double arrow variants signify that you want to collect all matches, as
+// opposed to just one match otherwise.
+func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr {
+		fmt.Errorf("Graph.Decode of non-pointer %s", reflect.TypeOf(v))
+	}
+	if rv.IsNil() {
+		fmt.Errorf("Graph.Decode of nil %s", reflect.TypeOf(v))
+	}
+
+	nodeID, ok := g.node2id[startNode]
+	if !ok {
+		return nil
+	}
+
+	return g.decodeStruct(rv, nodeID, base.Name())
+}
+
+// traverse traverses the graph starting at the given node, using the predicates and directions encoded
+// in paths. Collect and return the nodes at the end of the traversal. If path includes '>>' or '<<'
+// return all mathcing nodes, otherwise at most 1 node.
+func (g *Graph) traverse(startID int, base string, paths []string) (res []int, err error) {
+	ids := []int{startID}
+	for len(paths) > 0 {
+		pred := paths[0]
+		paths = paths[1:]
+		var tempNodes []int
+		for _, nID := range ids {
+
+			if len(pred) < 3 {
+				return nil, errors.New("rdf path fragment too short")
+			}
+			pID, ok := g.node2id[rdf.NewNamedNode(base+pred[2:])]
+			if !ok {
+				return
+			}
+
+			var (
+				found = false
+				nodes []int
+			)
+			switch pred[:2] {
+			case "->":
+				nodes, found = g.spo[nID][pID]
+				if found {
+					nodes = nodes[:1] // keep only one match
+				}
+			case "<-":
+				nodes, found = g.pos[pID][nID]
+				if found {
+					nodes = nodes[:1] // keep only one match
+				}
+			case ">>":
+				nodes, found = g.spo[nID][pID]
+			case "<<":
+				nodes, found = g.pos[pID][nID]
+			default:
+				return nil, fmt.Errorf("unknown path fragment prefix: %q", pred[:2])
+			}
+
+			if !found {
+				continue
+			}
+
+			if len(paths) == 0 {
+				// traversal finished, collect nodes
+				res = append(res, nodes...)
+
+			}
+
+			tempNodes = append(tempNodes, nodes...)
+		}
+		ids = tempNodes
+	}
+
+	return res, nil
+}
+
+func (g *Graph) decodeStruct(rv reflect.Value, nodeID int, base string) error {
+	s := rv.Elem()
+	t := s.Type()
+
+structFields:
+	for i := 0; i < s.NumField(); i++ {
+		tag := t.Field(i).Tag.Get("rdf")
+		if tag == "" {
+			continue
+		}
+		predicates := strings.Split(tag, ";")
+		nodes, err := g.traverse(nodeID, base, predicates)
+		if err != nil {
+			return err
+		}
+		if len(nodes) == 0 {
+			continue structFields
+		}
+
+		switch s.Field(i).Kind() {
+		case reflect.Slice:
+			if err := g.decodeSlice(s.Field(i), nodes, base); err != nil {
+				return err
+			}
+		default:
+			if err := g.decodePrimitive(s.Field(i), g.id2node[nodes[0]]); err != nil {
+				return err
+			}
+		}
+
+	}
+	return nil
+}
+
+func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
+	switch v.Kind() {
+	case reflect.String:
+		switch n := node.(type) {
+		case rdf.Literal:
+			v.SetString(n.ValueAsString())
+		case rdf.NamedNode:
+			v.SetString(n.Name())
+		default:
+			return errors.New("only named node or literal can be set to struct.string field")
+		}
+	case reflect.Int:
+		lit, ok := node.(rdf.Literal)
+		if !ok {
+			return errors.New("only literal can be sto struct.int field")
+		}
+		litInt, ok := lit.Value().(int)
+		if !ok {
+			return fmt.Errorf("struct field is int, but RDF Literal incompatible: %v", lit.DataType())
+		}
+		v.SetInt(int64(litInt))
+	default:
+		panic("decodePrimitive TODO")
+	}
+	return nil
+}
+
+func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string) error {
+	slice := reflect.MakeSlice(rv.Type(), 0, len(nodes))
+	switch slice.Type().Elem().Kind() {
+	case reflect.String:
+		vals := make([]string, 0, len(nodes))
+		for _, id := range nodes {
+			switch node := g.id2node[id].(type) {
+			case rdf.Literal:
+				vals = append(vals, node.ValueAsString())
+			case rdf.NamedNode:
+				vals = append(vals, node.Name())
+			default:
+				return fmt.Errorf("only named node or literal can be set to struct.[]string field, got %T %v", node, node)
+			}
+		}
+		rv.Set(reflect.AppendSlice(slice, reflect.ValueOf(vals)))
+	case reflect.Struct:
+		for _, id := range nodes {
+			elem := reflect.New(slice.Type().Elem())
+			if err := g.decodeStruct(elem, id, base); err != nil {
+				return err
+			}
+			slice = reflect.Append(slice, reflect.Indirect(elem))
+		}
+		rv.Set(slice)
+	default:
+		panic("decodeSlice TODO")
+	}
+	return nil
 }
 
 func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
