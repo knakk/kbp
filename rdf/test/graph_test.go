@@ -767,7 +767,63 @@ func TestGraphDescribe(t *testing.T) {
 
 			 _:c5 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
 			 _:c5 <hasRole> <author> .
-			 _:c5 <hasAgent> <a1> .`,
+			 _:c5 <hasAgent> <a1> .
+
+			 <a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			 <a1> <hasName> "Italo Calvino" .
+			 <a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			 <a1> <hasDeathYear> "1985"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
+		},
+		{
+			rdf.NewNamedNode("p1"),
+			`<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			<a1> <hasName> "Italo Calvino" .
+			<a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			<a1> <hasDeathYear> "1985"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+
+			<w1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Work> .
+			<w1> <hasMainTitle> "Le Cosmicomiche" .
+			<w1> <hasPublicationYear> "1965"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			<w1> <hasContributor> _:c1 .
+
+			_:c1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			_:c1 <hasRole> <author> .
+			_:c1 <hasAgent> <a1> .
+
+			<p1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Publication> .
+			<p1> <isPublicationOf> <w1> .
+			<p1> <hasMainTitle> "The Complete Cosmicomics" .
+			<p1> <hasISBN> "9781846141652" .
+			<p1> <hasPublishYear> "2009"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			<p1> <isPublishedBy> <c1> .
+			<p1> <hasContributor> _:c2 .
+			<p1> <hasContributor> _:c3 .
+			<p1> <hasContributor> _:c4 .
+			<p1> <hasAbstract> "The definitive edition of Calvino’s cosmicomics, bringing together all of these enchanting stories—including some never before translated — in one volume for the first time" .
+
+			_:c2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			_:c2 <hasRole> <translator> .
+			_:c2 <hasAgent> <a2> .
+
+			_:c3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			_:c3 <hasRole> <translator> .
+			_:c3 <hasAgent> <a3> .
+
+			_:c4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			_:c4 <hasRole> <translator> .
+			_:c4 <hasAgent> <a4> .
+
+			<a2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			<a2> <hasName> "Martin L. McLaughlin" .
+
+			<a3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			<a3> <hasName> "Tim Parks" .
+
+			<a4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
+			<a4> <hasName> "William Weaver" .
+
+			<c1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Corporation> .
+			<c1> <hasName> "Penguin" .`,
 		},
 	}
 	impls := newGraphImplementations()

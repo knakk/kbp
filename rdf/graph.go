@@ -7,12 +7,13 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+// TODO consider splitting interface into Graph (read-only) and UpdatableGraph
+
 // Graph represents a RDF Graph - a colllection of RDF triples which
 // can be queried for subgraphs and mutated by adding and removing triples.
 type Graph interface {
-	// Describe returns a Graph containing the data about the given nodes.
-	// Specifically, it should contain all the triples where a given node is subject,
-	// as well all triples of blank nodes which are outgoing relation of the node.
+	// Describe returns a Graph containing the data about the given nodes, and
+	// recursivly describing all the nodes which are objects of node.
 	Describe(...NamedNode) (Graph, error)
 
 	DescribeW(*Encoder, ...NamedNode) error

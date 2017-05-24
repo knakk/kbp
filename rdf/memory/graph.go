@@ -275,65 +275,68 @@ func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string) error {
 
 func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := NewGraph()
+	described := make(map[int]struct{})
 	for _, node := range nodes {
-		var trs []rdf.Triple
-		if s, found := g.node2id[node]; found {
-			for p, objs := range g.spo[s] {
-				for _, o := range objs {
-					trs = append(trs, rdf.Triple{
-						Subject:   node,
-						Predicate: g.id2node[p].(rdf.NamedNode),
-						Object:    g.id2node[o],
-					})
-					if _, ok := g.id2node[o].(rdf.BlankNode); ok {
-						for p, objs := range g.spo[o] {
-							for _, bo := range objs {
-								trs = append(trs, rdf.Triple{
-									Subject:   g.id2node[o].(rdf.SubjectNode),
-									Predicate: g.id2node[p].(rdf.NamedNode),
-									Object:    g.id2node[bo],
-								})
-							}
-						}
-					}
-				}
-			}
-			res.Insert(trs...)
-		}
-
+		g.describe(node, res, described)
 	}
 	return res, nil
 }
 
-func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
-	for _, node := range nodes {
-		if s, found := g.node2id[node]; found {
-			for p, objs := range g.spo[s] {
-				for _, o := range objs {
-					if err := enc.Encode(rdf.Triple{
-						Subject:   node,
-						Predicate: g.id2node[p].(rdf.NamedNode),
-						Object:    g.id2node[o],
-					}); err != nil {
-						return err
-					}
-					if _, ok := g.id2node[o].(rdf.BlankNode); ok {
-						for p, objs := range g.spo[o] {
-							for _, bo := range objs {
-								if err := enc.Encode(rdf.Triple{
-									Subject:   g.id2node[o].(rdf.SubjectNode),
-									Predicate: g.id2node[p].(rdf.NamedNode),
-									Object:    g.id2node[bo],
-								}); err != nil {
-									return err
-								}
-							}
-						}
-					}
+func (g *Graph) describe(node rdf.Node, res *Graph, described map[int]struct{}) {
+	var trs []rdf.Triple
+	if s, found := g.node2id[node]; found {
+		if _, ok := described[s]; ok {
+			return
+		}
+		for p, objs := range g.spo[s] {
+			for _, o := range objs {
+				trs = append(trs, rdf.Triple{
+					Subject:   node.(rdf.SubjectNode),
+					Predicate: g.id2node[p].(rdf.NamedNode),
+					Object:    g.id2node[o],
+				})
+				if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
+					// Node must be Blank Node or Named Node
+					g.describe(g.id2node[o], res, described)
 				}
 			}
 		}
+		res.Insert(trs...)
+		described[s] = struct{}{}
+	}
+}
 
+func (g *Graph) describeW(enc *rdf.Encoder, node rdf.Node, described map[int]struct{}) error {
+	if s, found := g.node2id[node]; found {
+		if _, ok := described[s]; ok {
+			return nil
+		}
+		for p, objs := range g.spo[s] {
+			for _, o := range objs {
+				if err := enc.Encode(rdf.Triple{
+					Subject:   node.(rdf.SubjectNode),
+					Predicate: g.id2node[p].(rdf.NamedNode),
+					Object:    g.id2node[o],
+				}); err != nil {
+					return err
+				}
+				if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
+					// Node must be Blank Node or Named Node
+					return g.describeW(enc, g.id2node[o], described)
+				}
+			}
+		}
+		described[s] = struct{}{}
+	}
+	return nil
+}
+
+func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
+	described := make(map[int]struct{})
+	for _, node := range nodes {
+		if err := g.describeW(enc, node, described); err != nil {
+			return err
+		}
 	}
 	return nil
 }

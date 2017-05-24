@@ -100,6 +100,7 @@ func (g *Graph) setup() (*Graph, error) {
 
 func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := memory.NewGraph()
+	described := make(map[uint32]struct{})
 	err := g.kv.View(func(tx *bolt.Tx) error {
 		cache := make(map[uint32]rdf.Node)
 		for _, node := range nodes {
@@ -112,7 +113,7 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 			}
 
 			cache[sID] = node
-			trs, err := g.describe(tx, sID, cache)
+			trs, err := g.describe(tx, sID, cache, described)
 			if err != nil {
 				return err
 			}
@@ -126,6 +127,7 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
 	return g.kv.View(func(tx *bolt.Tx) error {
 		cache := make(map[uint32]rdf.Node)
+		described := make(map[uint32]struct{})
 		for _, node := range nodes {
 			sID, err := g.getID(tx, node)
 			if err == ErrNotFound {
@@ -136,7 +138,7 @@ func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
 			}
 
 			cache[sID] = node
-			trs, err := g.describe(tx, sID, cache)
+			trs, err := g.describe(tx, sID, cache, described)
 			if err != nil {
 				return err
 			}
@@ -150,8 +152,11 @@ func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
 	})
 }
 
-func (g *Graph) describe(tx *bolt.Tx, nodeID uint32, cache map[uint32]rdf.Node) ([]rdf.Triple, error) {
+func (g *Graph) describe(tx *bolt.Tx, nodeID uint32, cache map[uint32]rdf.Node, described map[uint32]struct{}) ([]rdf.Triple, error) {
 	// nodeID must represent either a Named Node or Blank Node.
+	if _, ok := described[nodeID]; ok {
+		return nil, nil
+	}
 	var trs []rdf.Triple
 	bs := u32tob(nodeID)
 	cur := tx.Bucket(bucketSPO).Cursor()
@@ -189,18 +194,19 @@ outerSPO:
 					Predicate: pred.(rdf.NamedNode),
 					Object:    obj,
 				})
-				if _, ok := obj.(rdf.BlankNode); ok {
-					bnodeTrs, err := g.describe(tx, oID, cache)
+				if _, isLiteral := obj.(rdf.Literal); !isLiteral {
+					moreTrs, err := g.describe(tx, oID, cache, described)
 					if err != nil {
 						return nil, err
 					}
-					trs = append(trs, bnodeTrs...)
+					trs = append(trs, moreTrs...)
 				}
 			}
 		case 1:
 			break outerSPO
 		}
 	}
+	described[nodeID] = struct{}{}
 	return trs, nil
 }
 
