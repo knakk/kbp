@@ -749,10 +749,12 @@ func TestGraphSelect(t *testing.T) {
 func TestGraphDescribe(t *testing.T) {
 	tests := []struct {
 		node rdf.NamedNode
+		mode rdf.DescribeMode
 		want string
 	}{
 		{
 			rdf.NewNamedNode("a1"),
+			rdf.DescForward,
 			`<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 			 <a1> <hasName> "Italo Calvino" .
 			 <a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
@@ -760,6 +762,7 @@ func TestGraphDescribe(t *testing.T) {
 		},
 		{
 			rdf.NewNamedNode("w2"),
+			rdf.DescForward,
 			`<w2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Work> .
 			 <w2> <hasMainTitle> "Il barone rampante" .
 			 <w2> <hasPublicationYear> "1957"^^<http://www.w3.org/2001/XMLSchema#gYear> .
@@ -767,15 +770,37 @@ func TestGraphDescribe(t *testing.T) {
 
 			 _:c5 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
 			 _:c5 <hasRole> <author> .
-			 _:c5 <hasAgent> <a1> .
-
-			 <a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
-			 <a1> <hasName> "Italo Calvino" .
-			 <a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
-			 <a1> <hasDeathYear> "1985"^^<http://www.w3.org/2001/XMLSchema#gYear> .`,
+			 _:c5 <hasAgent> <a1> .`,
 		},
 		{
 			rdf.NewNamedNode("p1"),
+			rdf.DescForward,
+			`<p1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Publication> .
+			 <p1> <isPublicationOf> <w1> .
+			 <p1> <hasMainTitle> "The Complete Cosmicomics" .
+			 <p1> <hasISBN> "9781846141652" .
+			 <p1> <hasPublishYear> "2009"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+			 <p1> <isPublishedBy> <c1> .
+			 <p1> <hasContributor> _:c2 .
+			 <p1> <hasContributor> _:c3 .
+			 <p1> <hasContributor> _:c4 .
+			 <p1> <hasAbstract> "The definitive edition of Calvino’s cosmicomics, bringing together all of these enchanting stories—including some never before translated — in one volume for the first time" .
+
+			 _:c2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			 _:c2 <hasRole> <translator> .
+			 _:c2 <hasAgent> <a2> .
+
+			 _:c3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			 _:c3 <hasRole> <translator> .
+			 _:c3 <hasAgent> <a3> .
+
+			 _:c4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+			 _:c4 <hasRole> <translator> .
+			 _:c4 <hasAgent> <a4> .`,
+		},
+		{
+			rdf.NewNamedNode("p1"),
+			rdf.DescForwardRecursive,
 			`<a1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Person> .
 			<a1> <hasName> "Italo Calvino" .
 			<a1> <hasBirthYear> "1923"^^<http://www.w3.org/2001/XMLSchema#gYear> .
@@ -834,7 +859,7 @@ func TestGraphDescribe(t *testing.T) {
 
 			for _, test := range tests {
 				want := mustDecode(test.want)
-				got, _ := impl.graph.Describe(test.node)
+				got, _ := impl.graph.Describe(test.mode, test.node)
 				if !want.Eq(got.(*memory.Graph)) {
 					t.Fatalf("got:\n%v\nwant:\n%v", mustEncode(got.(*memory.Graph)), test.want)
 				}

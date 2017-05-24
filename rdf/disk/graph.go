@@ -98,7 +98,7 @@ func (g *Graph) setup() (*Graph, error) {
 	return g, err
 }
 
-func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
+func (g *Graph) Describe(mode rdf.DescribeMode, nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := memory.NewGraph()
 	described := make(map[uint32]struct{})
 	err := g.kv.View(func(tx *bolt.Tx) error {
@@ -113,7 +113,7 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 			}
 
 			cache[sID] = node
-			trs, err := g.describe(tx, sID, cache, described)
+			trs, err := g.describe(tx, mode, sID, cache, described)
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	return res, err
 }
 
-func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
+func (g *Graph) DescribeW(enc *rdf.Encoder, mode rdf.DescribeMode, nodes ...rdf.NamedNode) error {
 	return g.kv.View(func(tx *bolt.Tx) error {
 		cache := make(map[uint32]rdf.Node)
 		described := make(map[uint32]struct{})
@@ -138,7 +138,7 @@ func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
 			}
 
 			cache[sID] = node
-			trs, err := g.describe(tx, sID, cache, described)
+			trs, err := g.describe(tx, mode, sID, cache, described)
 			if err != nil {
 				return err
 			}
@@ -152,7 +152,7 @@ func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
 	})
 }
 
-func (g *Graph) describe(tx *bolt.Tx, nodeID uint32, cache map[uint32]rdf.Node, described map[uint32]struct{}) ([]rdf.Triple, error) {
+func (g *Graph) describe(tx *bolt.Tx, mode rdf.DescribeMode, nodeID uint32, cache map[uint32]rdf.Node, described map[uint32]struct{}) ([]rdf.Triple, error) {
 	// nodeID must represent either a Named Node or Blank Node.
 	if _, ok := described[nodeID]; ok {
 		return nil, nil
@@ -194,12 +194,23 @@ outerSPO:
 					Predicate: pred.(rdf.NamedNode),
 					Object:    obj,
 				})
-				if _, isLiteral := obj.(rdf.Literal); !isLiteral {
-					moreTrs, err := g.describe(tx, oID, cache, described)
-					if err != nil {
-						return nil, err
+				switch mode {
+				case rdf.DescForward:
+					if _, isBlank := obj.(rdf.BlankNode); isBlank {
+						moreTrs, err := g.describe(tx, mode, oID, cache, described)
+						if err != nil {
+							return nil, err
+						}
+						trs = append(trs, moreTrs...)
 					}
-					trs = append(trs, moreTrs...)
+				case rdf.DescForwardRecursive:
+					if _, isLiteral := obj.(rdf.Literal); !isLiteral {
+						moreTrs, err := g.describe(tx, mode, oID, cache, described)
+						if err != nil {
+							return nil, err
+						}
+						trs = append(trs, moreTrs...)
+					}
 				}
 			}
 		case 1:

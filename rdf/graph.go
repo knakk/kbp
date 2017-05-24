@@ -1,10 +1,24 @@
 package rdf
 
-import "errors"
+// DescribeMode represents an algorithm which Describe method can use.
+type DescribeMode int
 
-// Exported errors that Graph methods can return.
-var (
-	ErrNotFound = errors.New("not found")
+// Available DescribeModes:
+const (
+	// DescForward describes a node by including its literal properties and outgoing relations.
+	// A blank node relation will be expanded, so that all triples where the blank node is subject
+	// will be included.
+	DescForward DescribeMode = iota
+
+	// DescForwardRecursive describes a node by including all its literal properties and outgoing relations,
+	// and recursivly calls Describe with the same algorithm on the relations.
+	DescForwardRecursive
+
+	// TODO:
+	// DescBackward
+	// DescBackwardRecursive
+	// DescSymmetric
+	// DescSymmetricRecursive
 )
 
 // TODO consider splitting interface into Graph (read-only) and UpdatableGraph
@@ -12,11 +26,14 @@ var (
 // Graph represents a RDF Graph - a colllection of RDF triples which
 // can be queried for subgraphs and mutated by adding and removing triples.
 type Graph interface {
-	// Describe returns a Graph containing the data about the given nodes, and
-	// recursivly describing all the nodes which are objects of node.
-	Describe(...NamedNode) (Graph, error)
 
-	DescribeW(*Encoder, ...NamedNode) error
+	// Describe returns a Graph which describes the given nodes, according
+	// to the DescribeMode algorithm.
+	Describe(DescribeMode, ...NamedNode) (Graph, error)
+
+	// DescribeW works like Describe, except that it will encode the Graph
+	// using the given Encoder, instead of returning it.
+	DescribeW(*Encoder, DescribeMode, ...NamedNode) error
 
 	// Update performs an update query which inserts and/or deletes triples
 	// from the Graph.
@@ -46,6 +63,10 @@ type Graph interface {
 	//Construct([]TriplePattern, ...TriplePattern) (Graph, error)
 
 	Select([]Variable, ...TriplePattern) ([][]Node, error)
+	// TODO consider type Bindings, to make it possible
+	// to add helper methods to result:
+	// Bindings.Var("v") => []Node, Bindings.First("v") => Node, ok
+	// Bindings.Vars() => []Variable, Bindings.Rows() => [][]Node etc..
 
 	// Stats returns statistics about the Graph.
 	Stats() (Stats, error)

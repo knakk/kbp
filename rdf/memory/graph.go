@@ -273,16 +273,16 @@ func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string) error {
 	return nil
 }
 
-func (g *Graph) Describe(nodes ...rdf.NamedNode) (rdf.Graph, error) {
+func (g *Graph) Describe(mode rdf.DescribeMode, nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := NewGraph()
 	described := make(map[int]struct{})
 	for _, node := range nodes {
-		g.describe(node, res, described)
+		g.describe(mode, node, res, described)
 	}
 	return res, nil
 }
 
-func (g *Graph) describe(node rdf.Node, res *Graph, described map[int]struct{}) {
+func (g *Graph) describe(mode rdf.DescribeMode, node rdf.Node, res *Graph, described map[int]struct{}) {
 	var trs []rdf.Triple
 	if s, found := g.node2id[node]; found {
 		if _, ok := described[s]; ok {
@@ -295,9 +295,16 @@ func (g *Graph) describe(node rdf.Node, res *Graph, described map[int]struct{}) 
 					Predicate: g.id2node[p].(rdf.NamedNode),
 					Object:    g.id2node[o],
 				})
-				if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
-					// Node must be Blank Node or Named Node
-					g.describe(g.id2node[o], res, described)
+				switch mode {
+				case rdf.DescForward:
+					if _, isBnode := g.id2node[o].(rdf.BlankNode); isBnode {
+						g.describe(mode, g.id2node[o], res, described)
+					}
+				case rdf.DescForwardRecursive:
+					if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
+						// Node must be Blank Node or Named Node
+						g.describe(mode, g.id2node[o], res, described)
+					}
 				}
 			}
 		}
@@ -306,7 +313,7 @@ func (g *Graph) describe(node rdf.Node, res *Graph, described map[int]struct{}) 
 	}
 }
 
-func (g *Graph) describeW(enc *rdf.Encoder, node rdf.Node, described map[int]struct{}) error {
+func (g *Graph) describeW(enc *rdf.Encoder, mode rdf.DescribeMode, node rdf.Node, described map[int]struct{}) error {
 	if s, found := g.node2id[node]; found {
 		if _, ok := described[s]; ok {
 			return nil
@@ -320,9 +327,18 @@ func (g *Graph) describeW(enc *rdf.Encoder, node rdf.Node, described map[int]str
 				}); err != nil {
 					return err
 				}
-				if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
-					// Node must be Blank Node or Named Node
-					return g.describeW(enc, g.id2node[o], described)
+				switch mode {
+				case rdf.DescForward:
+					if _, isBnode := g.id2node[o].(rdf.BlankNode); isBnode {
+						g.describeW(enc, mode, g.id2node[o], described)
+					}
+				case rdf.DescForwardRecursive:
+					if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
+						// Node must be Blank Node or Named Node
+						if err := g.describeW(enc, mode, g.id2node[o], described); err != nil {
+							return err
+						}
+					}
 				}
 			}
 		}
@@ -331,10 +347,10 @@ func (g *Graph) describeW(enc *rdf.Encoder, node rdf.Node, described map[int]str
 	return nil
 }
 
-func (g *Graph) DescribeW(enc *rdf.Encoder, nodes ...rdf.NamedNode) error {
+func (g *Graph) DescribeW(enc *rdf.Encoder, mode rdf.DescribeMode, nodes ...rdf.NamedNode) error {
 	described := make(map[int]struct{})
 	for _, node := range nodes {
-		if err := g.describeW(enc, node, described); err != nil {
+		if err := g.describeW(enc, mode, node, described); err != nil {
 			return err
 		}
 	}
