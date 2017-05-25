@@ -300,16 +300,22 @@ func (g *Graph) describe(mode rdf.DescribeMode, node rdf.Node, res *Graph, descr
 					if _, isBnode := g.id2node[o].(rdf.BlankNode); isBnode {
 						g.describe(mode, g.id2node[o], res, described)
 					}
-				case rdf.DescForwardRecursive:
+				case rdf.DescForwardRecursive, rdf.DescSymmetricRecursive:
 					if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
 						// Node must be Blank Node or Named Node
-						g.describe(mode, g.id2node[o], res, described)
+						g.describe(rdf.DescForwardRecursive, g.id2node[o], res, described)
 					}
 				}
 			}
 		}
 		res.Insert(trs...)
 		described[s] = struct{}{}
+
+		if mode == rdf.DescSymmetricRecursive {
+			for sub, _ := range g.osp[s] {
+				g.describe(mode, g.id2node[sub], res, described)
+			}
+		}
 	}
 }
 
@@ -332,10 +338,10 @@ func (g *Graph) describeW(enc *rdf.Encoder, mode rdf.DescribeMode, node rdf.Node
 					if _, isBnode := g.id2node[o].(rdf.BlankNode); isBnode {
 						g.describeW(enc, mode, g.id2node[o], described)
 					}
-				case rdf.DescForwardRecursive:
+				case rdf.DescForwardRecursive, rdf.DescSymmetricRecursive:
 					if _, isLiteral := g.id2node[o].(rdf.Literal); !isLiteral {
 						// Node must be Blank Node or Named Node
-						if err := g.describeW(enc, mode, g.id2node[o], described); err != nil {
+						if err := g.describeW(enc, rdf.DescForwardRecursive, g.id2node[o], described); err != nil {
 							return err
 						}
 					}
@@ -343,6 +349,13 @@ func (g *Graph) describeW(enc *rdf.Encoder, mode rdf.DescribeMode, node rdf.Node
 			}
 		}
 		described[s] = struct{}{}
+		if mode == rdf.DescSymmetricRecursive {
+			for sub, _ := range g.osp[s] {
+				if err := g.describeW(enc, mode, g.id2node[sub], described); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	return nil
 }

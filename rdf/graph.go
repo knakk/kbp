@@ -14,11 +14,14 @@ const (
 	// and recursivly calls Describe with the same algorithm on the relations.
 	DescForwardRecursive
 
+	// DescSymmetricRecursive describes a node first like DescForwardRecursive, then, recursivly for each
+	// incomming relation, calls DescForwardRecursive on the subject of the reltion.
+	DescSymmetricRecursive
+
 	// TODO:
 	// DescBackward
 	// DescBackwardRecursive
 	// DescSymmetric
-	// DescSymmetricRecursive
 )
 
 // TODO consider splitting interface into Graph (read-only) and UpdatableGraph

@@ -203,9 +203,9 @@ outerSPO:
 						}
 						trs = append(trs, moreTrs...)
 					}
-				case rdf.DescForwardRecursive:
+				case rdf.DescForwardRecursive, rdf.DescSymmetricRecursive:
 					if _, isLiteral := obj.(rdf.Literal); !isLiteral {
-						moreTrs, err := g.describe(tx, mode, oID, cache, described)
+						moreTrs, err := g.describe(tx, rdf.DescForwardRecursive, oID, cache, described)
 						if err != nil {
 							return nil, err
 						}
@@ -218,6 +218,30 @@ outerSPO:
 		}
 	}
 	described[nodeID] = struct{}{}
+
+	if mode == rdf.DescSymmetricRecursive {
+		cur = tx.Bucket(bucketOSP).Cursor()
+	outerOSP:
+		for k, _ := cur.Seek(bs); k != nil; k, _ = cur.Next() {
+			switch bytes.Compare(k[:4], bs) {
+			case 0:
+				sID := btou32(k[4:])
+				node, err := g.getNode(tx, sID)
+				if err != nil {
+					return nil, err
+				}
+				cache[sID] = node
+				moreTrs, err := g.describe(tx, mode, sID, cache, described)
+				if err != nil {
+					return nil, err
+				}
+				trs = append(trs, moreTrs...)
+			case 1:
+				break outerOSP
+			}
+		}
+	}
+
 	return trs, nil
 }
 
