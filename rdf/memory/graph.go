@@ -104,6 +104,9 @@ func (g *Graph) Triples() []rdf.Triple {
 //
 // The double arrow variants signify that you want to collect all matches, as
 // opposed to just one match otherwise.
+//
+// In addition, a single 'id' as last fragment in a chain states that you want
+// to collect the URI of the resource.
 func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
@@ -131,6 +134,10 @@ func (g *Graph) traverse(startID int, base string, paths []string) (res []int, e
 		paths = paths[1:]
 		var tempNodes []int
 		for _, nID := range ids {
+
+			if pred == "id" {
+				return []int{nID}, nil
+			}
 
 			if len(pred) < 3 {
 				return nil, errors.New("rdf path fragment too short")

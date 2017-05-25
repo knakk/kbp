@@ -87,6 +87,8 @@ func TestDecode(t *testing.T) {
 		Agent string `rdf:"->hasAgent;->hasName"`
 	}
 	type publication struct {
+		ID            string         `rdf:"id"`
+		WorkID        string         `rdf:"->isPublicationOf;id"`
 		MainTitle     string         `rdf:"->hasMainTitle"`
 		Subtitle      string         `rdf:"->hasSubtitle"`
 		Year          int            `rdf:"->wasPublishedYear"`
@@ -132,6 +134,8 @@ func TestDecode(t *testing.T) {
 	}
 
 	want := publication{
+		ID:           "book1",
+		WorkID:       "work1",
 		MainTitle:    "Das Kapital",
 		Subtitle:     "Kritik der politischen Ökonomie",
 		Year:         1867,
