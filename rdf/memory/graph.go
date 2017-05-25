@@ -212,6 +212,10 @@ structFields:
 			if err := g.decodeSlice(s.Field(i), nodes, base); err != nil {
 				return err
 			}
+		case reflect.Struct:
+			if err := g.decodeStruct(s.Field(i).Addr(), nodes[0], base); err != nil {
+				return err
+			}
 		default:
 			if err := g.decodePrimitive(s.Field(i), g.id2node[nodes[0]]); err != nil {
 				return err
