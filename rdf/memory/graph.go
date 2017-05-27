@@ -2,6 +2,7 @@ package memory
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -93,6 +94,124 @@ func (g *Graph) Triples() []rdf.Triple {
 		}
 	}
 	return res
+}
+
+type DotOptions struct {
+	Base            string
+	Inline          []string
+	InlineWithLabel map[string]string
+	FullTypes       []string
+	BnodeEdges      map[string][2]string
+}
+
+func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
+	var b bytes.Buffer
+	b.WriteString("digraph \"")
+	b.WriteString("\" {\n\trankdir=LR;\n\tnode [shape=plaintext;fontsize=10]; edge [fontsize=10];\n\n")
+
+	type link struct {
+		to    string
+		label string
+	}
+
+	type resource struct {
+		ID         string
+		Type       string
+		Properties [][2]string
+	}
+
+	for s, po := range g.spo {
+		if node, ok := g.id2node[s].(rdf.NamedNode); ok {
+			res := resource{ID: node.Name()}
+			var links []link
+			for p, objs := range po {
+				for _, o := range objs {
+					pred := g.id2node[p].(rdf.NamedNode)
+					switch obj := g.id2node[o].(type) {
+					case rdf.Literal:
+						res.Properties = append(res.Properties, [2]string{pred.Name(), obj.ValueAsString()})
+					case rdf.NamedNode:
+						if pred == rdf.RDFtype {
+							res.Type = obj.Name()
+						} else if contains(opt.Inline, pred.Name()) {
+							res.Properties = append(res.Properties, [2]string{pred.Name(), obj.Name()})
+						} else if labelPred, ok := opt.InlineWithLabel[pred.Name()]; ok {
+							labels, ok := g.spo[o][g.node2id[rdf.NewNamedNode(labelPred)]]
+							if ok {
+								res.Properties = append(res.Properties, [2]string{
+									pred.Name(),
+									g.id2node[labels[0]].(rdf.Literal).ValueAsString()})
+							}
+						} else {
+							links = append(links, link{to: obj.Name(), label: pred.Name()})
+						}
+					case rdf.BlankNode:
+						if entry, ok := opt.BnodeEdges[g.id2node[p].(rdf.NamedNode).Name()]; ok {
+							lnk, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[0])]]
+							if ok {
+								if lbl, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[1])]]; ok {
+									links = append(links, link{
+										to:    g.id2node[lnk[0]].(rdf.NamedNode).Name(),
+										label: g.id2node[lbl[0]].(rdf.NamedNode).Name(),
+									})
+								}
+							}
+						}
+					}
+				}
+			}
+
+			for _, l := range links {
+				fmt.Fprintf(&b, "\t%q->%q[label=%q];\n", res.ID, l.to, l.label)
+			}
+
+			if !contains(opt.FullTypes, res.Type) {
+				continue
+			}
+
+			sort.Slice(res.Properties, func(i, j int) bool {
+				return res.Properties[i][0] < res.Properties[j][0]
+			})
+
+			fmt.Fprintf(&b, "\t%q[label=<<TABLE BORDER='1' CELLBORDER='0' CELLSPACING='0' CELLPADDING='2'>\n", res.ID)
+			b.WriteString("\t<TR><TD ALIGN='LEFT' BGCOLOR='")
+			if res.ID == focus.Name() {
+				b.WriteString("#a0ffa0' COLSPAN='2'> <FONT ")
+			} else {
+				b.WriteString("#e0e0e0' COLSPAN='2' HREF='/")
+				b.WriteString(res.ID)
+				b.WriteString(".svg'> <FONT COLOR='blue' ")
+			}
+			b.WriteString("FACE='monospace' POINT-SIZE='10'>")
+			b.WriteString(res.ID)
+			//b.WriteString(" [")
+			//b.WriteString(res.Type)
+			//b.WriteString("]")
+			b.WriteString("</FONT></TD></TR>\n")
+
+			for _, p := range res.Properties {
+				b.WriteString("<TR><TD ALIGN='RIGHT'><B>")
+				b.WriteString(p[0])
+				b.WriteString("</B> </TD>")
+				b.WriteString("<TD ALIGN='LEFT'>")
+				b.WriteString(p[1])
+				b.WriteString("</TD></TR>\n")
+			}
+			b.WriteString("</TABLE>>];\n")
+		}
+	}
+
+	b.WriteString("}")
+	return b.String()
+}
+
+func contains(list []string, find string) bool {
+	for _, s := range list {
+		if s == find {
+			return true
+		}
+	}
+	return false
 }
 
 // Decode decodes values from the graph into a struct, starting at the given node
