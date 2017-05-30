@@ -3,6 +3,7 @@ package rdf
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"strconv"
 )
 
@@ -197,14 +198,26 @@ func (l Literal) Lang() string { return l.lang }
 // Value returns the typed value of a Literal.
 func (l Literal) Value() interface{} {
 	switch l.DataType() {
-	case XSDgYear: // int
+	case XSDgYear, XSDinteger, XSDint: // int
 		v, err := strconv.Atoi(l.val)
 		if err != nil {
 			return l.val
 		}
 		return v
+	case XSDunsignedInt:
+		v, err := strconv.Atoi(l.val)
+		if err != nil {
+			return l.val
+		}
+		return uint(v)
+	case RDFHTML:
+		v, err := template.New("").Parse(l.val)
+		if err != nil {
+			return l.val
+		}
+		return v
 	default:
-		panic("rdf.Literal.Value() TODO")
+		panic("rdf.Literal.Value() TODO: " + l.DataType().String())
 	}
 }
 

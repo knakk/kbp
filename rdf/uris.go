@@ -9,6 +9,7 @@ var (
 	RDFrest       = NamedNode{name: "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest"}
 	RDFseq        = NamedNode{name: "http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq"}
 	RDFtype       = NamedNode{name: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}
+	RDFHTML       = NamedNode{name: "http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML"}
 
 	// rdfs: https://www.w3.org/2000/01/rdf-schema#
 	RDFScomment = NamedNode{name: "https://www.w3.org/2000/01/rdf-schema#comment"}

@@ -5,10 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html"
+	"html/template"
 	"io"
 	"reflect"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/knakk/kbp/rdf"
 )
@@ -129,7 +132,7 @@ func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 					pred := g.id2node[p].(rdf.NamedNode)
 					switch obj := g.id2node[o].(type) {
 					case rdf.Literal:
-						res.Properties = append(res.Properties, [2]string{pred.Name(), obj.ValueAsString()})
+						res.Properties = append(res.Properties, [2]string{pred.Name(), truncate(html.EscapeString(obj.ValueAsString()), 50)})
 					case rdf.NamedNode:
 						if pred == rdf.RDFtype {
 							res.Type = obj.Name()
@@ -140,7 +143,7 @@ func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 							if ok {
 								res.Properties = append(res.Properties, [2]string{
 									pred.Name(),
-									g.id2node[labels[0]].(rdf.Literal).ValueAsString()})
+									truncate(html.EscapeString(g.id2node[labels[0]].(rdf.Literal).ValueAsString()), 50)})
 							}
 						} else {
 							links = append(links, link{to: obj.Name(), label: pred.Name()})
@@ -212,6 +215,17 @@ func contains(list []string, find string) bool {
 		}
 	}
 	return false
+}
+
+func truncate(s string, numChars int) string {
+	n := 0
+	for i, c := range s {
+		n += utf8.RuneLen(c)
+		if i == numChars {
+			return s[:n] + "..."
+		}
+	}
+	return s
 }
 
 // Decode decodes values from the graph into a struct, starting at the given node
@@ -366,8 +380,27 @@ func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
 			return fmt.Errorf("struct field is int, but RDF Literal incompatible: %v", lit.DataType())
 		}
 		v.SetInt(int64(litInt))
+	case reflect.Uint:
+		lit, ok := node.(rdf.Literal)
+		if !ok {
+			return errors.New("only literal can be stored in struct.int field")
+		}
+		litInt, ok := lit.Value().(uint)
+		if !ok {
+			return fmt.Errorf("struct field is int, but RDF Literal incompatible: %v", lit.DataType())
+		}
+		v.SetUint(uint64(litInt))
+	case reflect.Ptr:
+		lit, ok := node.(rdf.Literal)
+		if !ok {
+			return errors.New("only literal can be stored in template.HTML field")
+		}
+		switch v.Interface().(type) {
+		case template.HTML:
+			v.Set(reflect.ValueOf(lit.ValueAsString()))
+		}
 	default:
-		panic("decodePrimitive TODO")
+		panic(fmt.Sprintf("decodePrimitive TODO: %v", v.Kind()))
 	}
 	return nil
 }
