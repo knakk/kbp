@@ -216,6 +216,8 @@ func (l Literal) Value() interface{} {
 			return l.val
 		}
 		return v
+	case XSDstring:
+		return l.val
 	default:
 		panic("rdf.Literal.Value() TODO: " + l.DataType().String())
 	}
