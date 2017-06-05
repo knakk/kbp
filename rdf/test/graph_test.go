@@ -596,17 +596,18 @@ func TestGraphWhere(t *testing.T) {
 				?agent <hasName> ?name .`,
 			),
 			`
-			_:1 <hasAgent> <a4> .
+			_:1 <hasAgent> <a2> .
 			_:1 <hasRole> <translator> .
-			_:2 <hasAgent> <a2> .
+			_:2 <hasAgent> <a3> .
 			_:2 <hasRole> <translator> .
-			_:3 <hasAgent> <a3> .
+			_:3 <hasAgent> <a4> .
 			_:3 <hasRole> <translator> .
-			_:4 <hasAgent> <a4> .
+			_:4 <hasAgent> <a5> .
 			_:4 <hasRole> <translator> .
 			<a2> <hasName> "Martin L. McLaughlin" .
-			<a4> <hasName> "William Weaver" .
 			<a3> <hasName> "Tim Parks" .
+			<a4> <hasName> "William Weaver" .
+			<a5> <hasName> "Ingeborg Hagemann" .
 			`,
 		},
 		{ // 10
@@ -619,8 +620,6 @@ func TestGraphWhere(t *testing.T) {
 			`
 			_:1 <hasAgent> <a4> .
 			_:1 <hasRole> <translator> .
-			_:4 <hasAgent> <a4> .
-			_:4 <hasRole> <translator> .
 			<a4> <hasName> "William Weaver" .
 			`,
 		},
@@ -634,8 +633,6 @@ func TestGraphWhere(t *testing.T) {
 			`
 			_:1 <hasAgent> <a4> .
 			_:1 <hasRole> <translator> .
-			_:4 <hasAgent> <a4> .
-			_:4 <hasRole> <translator> .
 			<a4> <hasName> "William Weaver" .
 			`,
 		},
