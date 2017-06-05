@@ -65,14 +65,47 @@ type Graph interface {
 	Where(...TriplePattern) (Graph, error)
 	//Construct([]TriplePattern, ...TriplePattern) (Graph, error)
 
-	Select([]Variable, ...TriplePattern) ([][]Node, error)
-	// TODO consider type Bindings, to make it possible
-	// to add helper methods to result:
-	// Bindings.Var("v") => []Node, Bindings.First("v") => Node, ok
-	// Bindings.Vars() => []Variable, Bindings.Rows() => [][]Node etc..
+	Select([]Variable, ...TriplePattern) (Bindings, error)
 
 	// Stats returns statistics about the Graph.
 	Stats() (Stats, error)
+}
+
+// Bindings represents the results from a Select query.
+type Bindings struct {
+	Vars []Variable
+	Rows [][]Node
+}
+
+// FirstBound returns the first bound value (Node) of the given variable,
+// along with a boolean stating if there is one or not.
+func (b Bindings) FirstBound(v Variable) (Node, bool) {
+	for i, bv := range b.Vars {
+		if bv == v {
+			for _, row := range b.Rows {
+				if row[i] != nil {
+					return row[i], true
+				}
+			}
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// AllBound returns all the bound values (Nodes) for the given variable.
+func (b Bindings) AllBound(v Variable) (res []Node) {
+	for i, bv := range b.Vars {
+		if bv == v {
+			for _, row := range b.Rows {
+				if row[i] != nil {
+					res = append(res, row[i])
+				}
+			}
+			return res
+		}
+	}
+	return res
 }
 
 // Stats represents statistics about a graph.

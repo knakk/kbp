@@ -2040,8 +2040,11 @@ func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where [
 	return delN, insN, err
 }
 
-func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]rdf.Node, error) {
-	var res [][]rdf.Node
+func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) (rdf.Bindings, error) {
+
+	res := rdf.Bindings{
+		Vars: vars,
+	}
 
 	// Fast path for no patterns
 	if len(patterns) == 0 {
@@ -2089,7 +2092,7 @@ func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]
 				nodes = append(nodes, node)
 			}
 
-			res = append(res, nodes)
+			res.Rows = append(res.Rows, nodes)
 		}
 		return nil
 	})

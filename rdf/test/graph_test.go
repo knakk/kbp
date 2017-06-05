@@ -735,8 +735,8 @@ func TestGraphSelect(t *testing.T) {
 			for _, test := range tests {
 				want := mustParseSolutions(test.want)
 				got, _ := impl.graph.Select(test.vars, test.patterns...)
-				if !solutionsEq(got, want) {
-					t.Fatalf("got:\n%v\nwant:\n%v", got, want)
+				if !solutionsEq(got.Rows, want) {
+					t.Fatalf("got:\n%v\nwant:\n%v", got.Rows, want)
 				}
 			}
 		})

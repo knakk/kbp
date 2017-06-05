@@ -1352,10 +1352,11 @@ func (g *Graph) where(patterns []encPattern) ([][]encPattern, encSolutions) {
 	return groups, left
 }
 
-func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]rdf.Node, error) {
+func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) (rdf.Bindings, error) {
 
-	var res [][]rdf.Node
-
+	res := rdf.Bindings{
+		Vars: vars,
+	}
 	// Fast path for no patterns
 	if len(patterns) == 0 {
 		return res, nil
@@ -1389,7 +1390,7 @@ func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) ([][]
 			nodes = append(nodes, g.id2node[id])
 		}
 
-		res = append(res, nodes)
+		res.Rows = append(res.Rows, nodes)
 	}
 
 	return res, nil
