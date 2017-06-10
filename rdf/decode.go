@@ -230,5 +230,8 @@ func MustParseNode(node string) Node {
 	if err != nil && err != io.EOF {
 		panic(err)
 	}
+	if n == nil {
+		return nil
+	}
 	return n.(Node)
 }
