@@ -399,6 +399,12 @@ func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
 		case template.HTML:
 			v.Set(reflect.ValueOf(lit.ValueAsString()))
 		}
+	case reflect.Bool:
+		lit, ok := node.(rdf.Literal)
+		if !ok {
+			return errors.New("only literal can be stored in boolean field")
+		}
+		v.Set(reflect.ValueOf(lit.Value().(bool)))
 	default:
 		panic(fmt.Sprintf("decodePrimitive TODO: %v", v.Kind()))
 	}
