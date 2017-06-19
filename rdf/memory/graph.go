@@ -329,6 +329,12 @@ structFields:
 	for i := 0; i < s.NumField(); i++ {
 		tag := t.Field(i).Tag.Get("rdf")
 		if tag == "" {
+			if t.Field(i).Anonymous && s.Field(i).Kind() == reflect.Struct {
+				// Embedded struct
+				if err := g.decodeStruct(s.Field(i).Addr(), nodeID, base); err != nil {
+					return err
+				}
+			}
 			continue
 		}
 		predicates := strings.Split(tag, ";")
