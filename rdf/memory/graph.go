@@ -355,6 +355,21 @@ structFields:
 			if err := g.decodeStruct(s.Field(i).Addr(), nodes[0], base); err != nil {
 				return err
 			}
+		case reflect.Ptr:
+			switch s.Field(i).Interface().(type) {
+			case template.HTML:
+				lit, ok := g.id2node[nodes[0]].(rdf.Literal)
+				if !ok {
+					return errors.New("only literal can be stored in template.HTML field")
+				}
+				s.Field(i).Set(reflect.ValueOf(lit.ValueAsString()))
+			default:
+				elem := reflect.New(s.Field(i).Type().Elem())
+				s.Field(i).Set(elem)
+				if err := g.decodeStruct(s.Field(i), nodes[0], base); err != nil {
+					return err
+				}
+			}
 		default:
 			if err := g.decodePrimitive(s.Field(i), g.id2node[nodes[0]]); err != nil {
 				return err
@@ -396,15 +411,6 @@ func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
 			return fmt.Errorf("struct field is int, but RDF Literal incompatible: %v", lit.DataType())
 		}
 		v.SetUint(uint64(litInt))
-	case reflect.Ptr:
-		lit, ok := node.(rdf.Literal)
-		if !ok {
-			return errors.New("only literal can be stored in template.HTML field")
-		}
-		switch v.Interface().(type) {
-		case template.HTML:
-			v.Set(reflect.ValueOf(lit.ValueAsString()))
-		}
 	case reflect.Bool:
 		lit, ok := node.(rdf.Literal)
 		if !ok {

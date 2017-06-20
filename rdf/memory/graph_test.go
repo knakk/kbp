@@ -86,18 +86,22 @@ func TestDecode(t *testing.T) {
 		Role  string `rdf:"->hasRole;->hasLabel"`
 		Agent string `rdf:"->hasAgent;->hasName"`
 	}
+	type binding struct {
+		Name string `rdf:"->hasLabel"`
+	}
 	type publication struct {
 		ID            string         `rdf:"id"`
 		WorkID        string         `rdf:"->isPublicationOf;id"`
 		MainTitle     string         `rdf:"->hasMainTitle"`
 		Subtitle      string         `rdf:"->hasSubtitle"`
 		Year          int            `rdf:"->wasPublishedYear"`
-		Binding       string         `rdf:"->hasBinding;->hasLabel"`
+		Binding       *binding       `rdf:"->hasBinding"`
 		Subjects      []string       `rdf:">>hasTag"`
 		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;->hasLabel"`
 		WorkSubjects  []string       `rdf:"->isPublicationOf;>>hasTag"`
 		Contributions []contribution `rdf:">>hasContribution"`
 		Fans          []string       `rdf:"<<isFanOf;->hasName"`
+		Similar       *publication   `rdf:"<-isSimilarTo"`
 	}
 
 	g := mustDecode(`
@@ -153,7 +157,8 @@ func TestDecode(t *testing.T) {
 		},
 		Fans:    []string{"Karl Marx", "Ole"},
 		Genres:  []string{"Komedie"},
-		Binding: "Hardcover",
+		Binding: &binding{Name: "Hardcover"},
+		Similar: nil,
 	}
 	sort.Slice(p.Contributions, func(i, j int) bool {
 		return p.Contributions[i].Agent < p.Contributions[j].Agent
