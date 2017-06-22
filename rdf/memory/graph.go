@@ -385,7 +385,9 @@ func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
 	case reflect.String:
 		switch n := node.(type) {
 		case rdf.Literal:
-			v.SetString(n.ValueAsString())
+			if v.CanSet() {
+				v.SetString(n.ValueAsString())
+			}
 		case rdf.NamedNode:
 			v.SetString(n.Name())
 		default:
