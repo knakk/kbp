@@ -44,6 +44,39 @@ func NewGraph() *Graph {
 	}
 }
 
+func NewFromNTriples(r io.Reader) (*Graph, error) {
+	g := NewGraph()
+	dec := rdf.NewDecoder(r)
+	bnodeTriples := make(map[rdf.BlankNode][]rdf.Triple)
+	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
+		if err != nil {
+			return g, err
+		}
+		switch t := tr.Subject.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		switch t := tr.Object.(type) {
+		case rdf.BlankNode:
+			bnodeTriples[t] = append(bnodeTriples[t], tr)
+			continue
+		}
+		if _, err := g.Insert(tr); err != nil {
+			return nil, err
+		}
+	}
+
+	// Insert triples with bnodes in batches by ID, so that they get assigned
+	// the same (new) blank node ID in the Graph
+	for _, trs := range bnodeTriples {
+		if _, err := g.Insert(trs...); err != nil {
+			return nil, err
+		}
+	}
+	return g, nil
+}
+
 // Stats returns statistics about the graph.
 func (g *Graph) Stats() (rdf.Stats, error) {
 	// Count node types
