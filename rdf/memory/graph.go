@@ -265,15 +265,18 @@ func truncate(s string, numChars int) string {
 // and traversing the graph following the path specified in "rdf" struct tags.
 // Each path fragment (separated by ;) represents a predicate and a direction:
 //
-//   -> or >> outgoing direction from node
-//   <- or << incomming direction from node
+//   -> or >>, @> outgoing direction from node
+//   <- or <<, <@ incomming direction from node
 //
-// The double arrow variants signify that you want to collect all matches, as
+// The double arrow variants signifies that you want to collect all matches, as
 // opposed to just one match otherwise.
+//
+// The '@' marker signifies that the language-tagged literal must match
+// the preferred languages in prefLangs.
 //
 // In addition, a single 'id' as last fragment in a chain states that you want
 // to collect the URI of the resource.
-func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode) error {
+func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode, prefLangs []string) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		fmt.Errorf("Graph.Decode of non-pointer %s", reflect.TypeOf(v))
@@ -287,13 +290,13 @@ func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode) error {
 		return nil
 	}
 
-	return g.decodeStruct(rv, nodeID, base.Name())
+	return g.decodeStruct(rv, nodeID, base.Name(), prefLangs)
 }
 
 // traverse traverses the graph starting at the given node, using the predicates and directions encoded
 // in paths. Collect and return the nodes at the end of the traversal. If path includes '>>' or '<<'
 // return all mathcing nodes, otherwise at most 1 node.
-func (g *Graph) traverse(startID int, base string, paths []string) (res []int, err error) {
+func (g *Graph) traverse(startID int, base string, paths []string, prefLangs []string) (res []int, err error) {
 	ids := []int{startID}
 	for len(paths) > 0 {
 		pred := paths[0]
@@ -332,6 +335,12 @@ func (g *Graph) traverse(startID int, base string, paths []string) (res []int, e
 				nodes, found = g.spo[nID][pID]
 			case "<<":
 				nodes, found = g.pos[pID][nID]
+			case "@>":
+				nodes, found = g.spo[nID][pID]
+				nodes = g.filterByPrefLangs(nodes, prefLangs)
+			case "<@":
+				nodes, found = g.pos[pID][nID]
+				nodes = g.filterByPrefLangs(nodes, prefLangs)
 			default:
 				return nil, fmt.Errorf("unknown path fragment prefix: %q", pred[:2])
 			}
@@ -354,7 +363,24 @@ func (g *Graph) traverse(startID int, base string, paths []string) (res []int, e
 	return res, nil
 }
 
-func (g *Graph) decodeStruct(rv reflect.Value, nodeID int, base string) error {
+func (g *Graph) filterByPrefLangs(nodes []int, prefLangs []string) []int {
+	if len(nodes) == 0 {
+		return nil
+	}
+	for _, l := range prefLangs {
+		for _, n := range nodes {
+			if lit, found := g.id2node[n].(rdf.Literal); found {
+				if lit.Lang() == l {
+					return []int{n}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g *Graph) decodeStruct(rv reflect.Value, nodeID int, base string, prefLangs []string) error {
 	s := rv.Elem()
 	t := s.Type()
 
@@ -364,14 +390,14 @@ structFields:
 		if tag == "" {
 			if t.Field(i).Anonymous && s.Field(i).Kind() == reflect.Struct {
 				// Embedded struct
-				if err := g.decodeStruct(s.Field(i).Addr(), nodeID, base); err != nil {
+				if err := g.decodeStruct(s.Field(i).Addr(), nodeID, base, prefLangs); err != nil {
 					return err
 				}
 			}
 			continue
 		}
 		predicates := strings.Split(tag, ";")
-		nodes, err := g.traverse(nodeID, base, predicates)
+		nodes, err := g.traverse(nodeID, base, predicates, prefLangs)
 		if err != nil {
 			return err
 		}
@@ -381,11 +407,11 @@ structFields:
 
 		switch s.Field(i).Kind() {
 		case reflect.Slice:
-			if err := g.decodeSlice(s.Field(i), nodes, base); err != nil {
+			if err := g.decodeSlice(s.Field(i), nodes, base, prefLangs); err != nil {
 				return err
 			}
 		case reflect.Struct:
-			if err := g.decodeStruct(s.Field(i).Addr(), nodes[0], base); err != nil {
+			if err := g.decodeStruct(s.Field(i).Addr(), nodes[0], base, prefLangs); err != nil {
 				return err
 			}
 		case reflect.Ptr:
@@ -399,7 +425,7 @@ structFields:
 			default:
 				elem := reflect.New(s.Field(i).Type().Elem())
 				s.Field(i).Set(elem)
-				if err := g.decodeStruct(s.Field(i), nodes[0], base); err != nil {
+				if err := g.decodeStruct(s.Field(i), nodes[0], base, prefLangs); err != nil {
 					return err
 				}
 			}
@@ -458,7 +484,7 @@ func (g *Graph) decodePrimitive(v reflect.Value, node rdf.Node) error {
 	return nil
 }
 
-func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string) error {
+func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string, prefLangs []string) error {
 	slice := reflect.MakeSlice(rv.Type(), 0, len(nodes))
 	switch slice.Type().Elem().Kind() {
 	case reflect.String:
@@ -477,7 +503,7 @@ func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string) error {
 	case reflect.Struct:
 		for _, id := range nodes {
 			elem := reflect.New(slice.Type().Elem())
-			if err := g.decodeStruct(elem, id, base); err != nil {
+			if err := g.decodeStruct(elem, id, base, prefLangs); err != nil {
 				return err
 			}
 			slice = reflect.Append(slice, reflect.Indirect(elem))

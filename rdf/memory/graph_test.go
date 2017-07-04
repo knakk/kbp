@@ -96,7 +96,7 @@ func TestDecode(t *testing.T) {
 		Year          int            `rdf:"->wasPublishedYear"`
 		Binding       *binding       `rdf:"->hasBinding"`
 		Subjects      []string       `rdf:">>hasTag"`
-		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;->hasLabel"`
+		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;@>hasLabel"`
 		WorkSubjects  []string       `rdf:"->isPublicationOf;>>hasTag"`
 		Contributions []contribution `rdf:">>hasContribution"`
 		Fans          []string       `rdf:"<<isFanOf;->hasName"`
@@ -117,7 +117,11 @@ func TestDecode(t *testing.T) {
 		<work1> <hasTag> "Politikk" .
 		<work1> <hasMainTitle> "Das Kapital" .
 		<work1> <hasGenre> <genre1> .
-		<genre1> <hasLabel> "Komedie" .
+		<work1> <hasGenre> <genre2> .
+		<genre1> <hasLabel> "Κωμωδία"@el .
+		<genre1> <hasLabel> "Comedy"@en .
+		<genre1> <hasLabel> "Komedie"@no .
+		<genre2> <hasLabel> "Classic"@en .
 		_:c1 <hasAgent> <person1> .
 		_:c1 <hasRole> <author> .
 		<book1> <hasContribution> _:c2 .
@@ -132,7 +136,7 @@ func TestDecode(t *testing.T) {
 		<contributor> <hasLabel> "bidragsyter" .`)
 
 	var p publication
-	if err := g.Decode(&p, rdf.NewNamedNode("book1"), rdf.NewNamedNode("")); err != nil {
+	if err := g.Decode(&p, rdf.NewNamedNode("book1"), rdf.NewNamedNode(""), []string{"no", "en"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -155,7 +159,7 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		Fans:    []string{"Karl Marx", "Ole"},
-		Genres:  []string{"Komedie"},
+		Genres:  []string{"Komedie", "Classic"},
 		Binding: &binding{Name: "Hardcover"},
 		Similar: nil,
 	}
