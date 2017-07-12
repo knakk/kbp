@@ -277,7 +277,7 @@ func (s *Scanner) scanUntilNextToken() {
 	for {
 		r := s.peek()
 		switch r {
-		case '<', '"', '.', ';', ',', '\n', ' ', '_', eof, utf8.RuneError:
+		case '\t', '<', '"', '.', ';', ',', '\n', ' ', '_', eof, utf8.RuneError:
 			return
 		default:
 			s.next()
