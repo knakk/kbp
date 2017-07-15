@@ -376,8 +376,8 @@ func (g *Graph) filterByPrefLangs(nodes []int, prefLangs []string) []int {
 			}
 		}
 	}
-
-	return nil
+	// no match in pref langs, take any available any
+	return []int{nodes[0]}
 }
 
 func (g *Graph) decodeStruct(rv reflect.Value, nodeID int, base string, prefLangs []string) error {
