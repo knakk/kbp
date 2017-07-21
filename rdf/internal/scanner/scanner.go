@@ -23,6 +23,13 @@ const (
 	TokenTypeMarker
 	TokenDot
 
+	// Turtle tokens
+	TokenComma
+	TokenSemicolon
+	TokenBracketStart
+	TokenBracketEnd
+	TokenA // rdf:type
+
 	// Triple pattern
 	TokenVariable
 
@@ -60,6 +67,16 @@ func (t tokenType) String() string {
 		return "Dot"
 	case TokenVariable:
 		return "Variable"
+	case TokenComma:
+		return "Comma"
+	case TokenSemicolon:
+		return "Semicolon"
+	case TokenBracketStart:
+		return "Opening bracket"
+	case TokenBracketEnd:
+		return "Closing bracket"
+	case TokenA:
+		return "a (rdf:type)"
 	default:
 		panic("token String() TODO")
 	}
@@ -140,6 +157,18 @@ runeSwitch:
 	case '.':
 		s.ignore()
 		tok = TokenDot
+	case ',':
+		s.ignore()
+		tok = TokenComma
+	case ';':
+		s.ignore()
+		tok = TokenSemicolon
+	case '[':
+		s.ignore()
+		tok = TokenBracketStart
+	case ']':
+		s.ignore()
+		tok = TokenBracketEnd
 	case '#':
 		if !s.scanTo('\n') {
 			tok = TokenEOF

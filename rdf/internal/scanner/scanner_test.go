@@ -182,6 +182,21 @@ func TestScanTokens(t *testing.T) {
 				{TokenDot, ""},
 			},
 		},
+		{
+			"?s ?p [ <p> <o> ; <p2> <o2> ] .",
+			[]token{
+				{TokenVariable, "s"},
+				{TokenVariable, "p"},
+				{TokenBracketStart, ""},
+				{TokenURI, "p"},
+				{TokenURI, "o"},
+				{TokenSemicolon, ""},
+				{TokenURI, "p2"},
+				{TokenURI, "o2"},
+				{TokenBracketEnd, ""},
+				{TokenDot, ""},
+			},
+		},
 	}
 
 	for _, test := range tests {
