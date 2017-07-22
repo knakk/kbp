@@ -71,7 +71,7 @@ func mustEncode(g *memory.Graph) string {
 	return out.String()
 }
 
-func TestDecode(t *testing.T) {
+func TestDecodeEncodeNTriples(t *testing.T) {
 	// Testcase lifted from W3C testsuite at: https://www.w3.org/2013/N-TriplesTests/
 	const input = `
 <http://example.org/resource1> <http://example.org/property> <http://example.org/resource2> .
@@ -130,6 +130,23 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 	g2 := mustDecode(nt)
 
 	if !g.Eq(g2) {
-		t.Fatal("decode-encode-decode roundtrip failed")
+		t.Fatal("N-Triples decode-encode-decode roundtrip failed")
+	}
+}
+
+func TestDecodeEncodeTurtle(t *testing.T) {
+	const input = `
+[ <name> "Alice" ] <knows> [
+    <name> "Bob" ;
+    <knows> [
+        <name> "Eve" ] ;
+   <mbox> <bob@example.com> ] .
+`
+	g := mustDecode(input)
+	nt := mustEncode(g)
+	g2 := mustDecode(nt)
+
+	if !g.Eq(g2) {
+		t.Fatal("Turtle decode-encode-decode roundtrip failed")
 	}
 }

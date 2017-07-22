@@ -4,13 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/knakk/kbp/rdf/internal/scanner"
 )
 
-// Decoder decodes RDF triples i N-Triples format.
+type context [2]Node // [0] = subject, [1] = predicate
+
+// Decoder decodes RDF triples i Turtle/N-Triples format.
 type Decoder struct {
 	s              *scanner.Scanner
+	stack          []context
+	bnodeN         int
 	ParseVariables bool
 }
 
@@ -41,60 +46,57 @@ func (d *Decoder) parseEnd() error {
 	return nil
 }
 
-func (d *Decoder) oneOf(types ...nodeType) (TriplePatternNode, bool, error) {
-	node, parsedDot, err := d.parseNode()
+func (d *Decoder) oneOf(types ...nodeType) (TriplePatternNode, error) {
+	node, err := d.parseNode()
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	for _, t := range types {
 		if t == node.nodeType() {
-			return node, parsedDot, nil
+			return node, nil
 		}
 	}
-	return nil, false, fmt.Errorf("unexpected node type: %v", node.nodeType())
+	return nil, fmt.Errorf("unexpected node type: %v", node.nodeType())
 }
 
 var errEOL = errors.New("EOL")
 
-func (d *Decoder) parseNode() (n TriplePatternNode, parsedDot bool, err error) {
+func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 	tok := d.s.Scan()
 	switch tok.Type {
 	case scanner.TokenLiteral:
 		n = Literal{val: tok.Text, dt: XSDstring}
 	case scanner.TokenIllegal:
-		return n, false, errors.New(d.s.Error + ": " + tok.Text)
+		return n, errors.New(d.s.Error + ": " + tok.Text)
 	case scanner.TokenEOF:
-		return n, false, io.EOF
+		return n, io.EOF
 	case scanner.TokenEOL:
-		return n, false, errEOL
+		return n, errEOL
 	case scanner.TokenURI:
-		return NamedNode{name: tok.Text}, false, nil
+		return NamedNode{name: tok.Text}, nil
 	case scanner.TokenBNode:
-		return BlankNode{id: tok.Text}, false, nil
+		return BlankNode{id: tok.Text}, nil
 	case scanner.TokenVariable:
-		return Variable{name: tok.Text}, false, nil
+		return Variable{name: tok.Text}, nil
+	case scanner.TokenBracketStart:
+		d.bnodeN++
+		return BlankNode{id: "b" + strconv.Itoa(d.bnodeN)}, nil
 	default:
-		return n, false, fmt.Errorf("unexpected %v", tok.Type)
+		return n, fmt.Errorf("unexpected %v", tok.Type)
 	}
 
 	// Check if we have datatype or language-tag for literal
-	tok = d.s.Scan()
-	switch tok.Type {
-	case scanner.TokenIllegal:
-		err = errors.New(d.s.Error + ": " + tok.Text)
-	case scanner.TokenEOF:
-		err = io.EOF
-	case scanner.TokenEOL:
-		err = errEOL
-	case scanner.TokenDot:
-		parsedDot = true
+
+	switch d.s.Peek().Type {
 	case scanner.TokenLangTag:
+		tok = d.s.Scan()
 		n = Literal{
 			val:  n.(Literal).val,
 			dt:   RDFlangString,
 			lang: tok.Text,
 		}
 	case scanner.TokenTypeMarker:
+		d.s.Scan() // consume ^^
 		tok = d.s.Scan()
 		if tok.Type == scanner.TokenURI {
 			n = Literal{
@@ -103,43 +105,95 @@ func (d *Decoder) parseNode() (n TriplePatternNode, parsedDot bool, err error) {
 			}
 			break
 		}
-		fallthrough
-	default:
 		err = fmt.Errorf("unexpected %v", tok.Type)
 	}
 
-	return n, parsedDot, err
+	return n, err
 }
 
 // Decode returns the next valid triple in the the stream, or an error.
 func (d *Decoder) Decode() (Triple, error) {
 	var tr Triple
-	subj, _, err := d.oneOf(typeNamedNode, typeBlankNode)
-	if err == errEOL {
-		return d.Decode() // Continue looking for new triple after empty line
-	} else if err == io.EOF {
-		return tr, io.EOF
-	} else if err != nil {
-		d.ignoreLine()
-		return tr, fmt.Errorf("%d:%d: error parsing subject: %q", d.s.Row, d.s.Col, err)
-	}
-	tr.Subject = subj.(SubjectNode)
+	var c context
 
-	pred, _, err := d.oneOf(typeNamedNode)
-	if err != nil {
-		d.ignoreLine()
-		return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
+	if len(d.stack) > 0 {
+		c = d.stack[len(d.stack)-1]
+		d.stack = d.stack[:len(d.stack)-1]
 	}
-	tr.Predicate = pred.(NamedNode)
 
-	obj, parsedDot, err := d.oneOf(typeNamedNode, typeBlankNode, typeLiteral)
+	bnodeN := d.bnodeN
+	if c[0] != nil {
+		tr.Subject = c[0].(SubjectNode)
+	} else {
+		subj, err := d.oneOf(typeNamedNode, typeBlankNode)
+		if err == errEOL {
+			return d.Decode() // Continue looking for new triple after empty line
+		} else if err == io.EOF {
+			return tr, io.EOF
+		} else if err != nil {
+			d.ignoreLine()
+			return tr, fmt.Errorf("%d:%d: error parsing subject: %q", d.s.Row, d.s.Col, err)
+		}
+		tr.Subject = subj.(SubjectNode)
+		if bnodeN != d.bnodeN {
+			d.stack = append(d.stack, context{subj.(Node)})
+		}
+	}
+
+	if c[1] != nil {
+		tr.Predicate = c[1].(NamedNode)
+	} else {
+		pred, err := d.oneOf(typeNamedNode)
+		if err == errEOL {
+			if c[0] != nil {
+				d.stack = append(d.stack, c)
+				return d.Decode()
+			}
+		} else if err != nil {
+			d.ignoreLine()
+			return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
+		}
+		tr.Predicate = pred.(NamedNode)
+	}
+
+	bnodeN = d.bnodeN
+	obj, err := d.oneOf(typeNamedNode, typeBlankNode, typeLiteral)
 	if err != nil {
 		d.ignoreLine()
 		return tr, fmt.Errorf("%d:%d: error parsing object: %q", d.s.Row, d.s.Col, err)
 	}
 	tr.Object = obj.(Node)
+	if bnodeN != d.bnodeN {
+		d.stack = append(d.stack, context{obj.(Node)})
+	}
 
-	if !parsedDot {
+	switch d.s.Peek().Type {
+	case scanner.TokenSemicolon:
+		d.s.Scan() // consume ;
+		d.stack = append(d.stack, context{tr.Subject.(Node)})
+		return tr, nil
+	case scanner.TokenComma:
+		d.s.Scan() // consume ,
+		d.stack = append(d.stack, context{tr.Subject.(Node), Node(tr.Predicate)})
+		return tr, nil
+	case scanner.TokenBracketEnd:
+		d.s.Scan() // consume ]
+		if d.s.Peek().Type == scanner.TokenDot {
+			d.s.Scan()
+		}
+		switch d.s.Peek().Type {
+		case scanner.TokenSemicolon:
+			d.s.Scan() // consume ;
+			d.stack = append(d.stack, context{tr.Subject.(Node)})
+			return tr, nil
+		case scanner.TokenComma:
+			d.s.Scan() // consume ,
+			d.stack = append(d.stack, context{tr.Subject.(Node), Node(tr.Predicate)})
+			return tr, nil
+		}
+		return tr, nil
+	}
+	if len(d.stack) == 0 {
 		if err = d.parseEnd(); err != nil {
 			return tr, err
 		}
@@ -151,7 +205,7 @@ func (d *Decoder) Decode() (Triple, error) {
 // DecodePattern decodes a TriplePattern.
 func (d *Decoder) DecodePattern() (TriplePattern, error) {
 	var tr TriplePattern
-	subj, _, err := d.oneOf(typeNamedNode, typeBlankNode, typeVariable)
+	subj, err := d.oneOf(typeNamedNode, typeBlankNode, typeVariable)
 	if err == errEOL {
 		return d.DecodePattern() // Continue looking for new triple after empty line
 	} else if err == io.EOF {
@@ -162,24 +216,22 @@ func (d *Decoder) DecodePattern() (TriplePattern, error) {
 	}
 	tr.Subject = subj.(subject)
 
-	pred, _, err := d.oneOf(typeNamedNode, typeVariable)
+	pred, err := d.oneOf(typeNamedNode, typeVariable)
 	if err != nil {
 		d.ignoreLine()
 		return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
 	}
 	tr.Predicate = pred.(predicate)
 
-	obj, parsedDot, err := d.oneOf(typeNamedNode, typeBlankNode, typeLiteral, typeVariable)
+	obj, err := d.oneOf(typeNamedNode, typeBlankNode, typeLiteral, typeVariable)
 	if err != nil {
 		d.ignoreLine()
 		return tr, fmt.Errorf("%d:%d: error parsing object: %q", d.s.Row, d.s.Col, err)
 	}
 	tr.Object = obj.(object)
 
-	if !parsedDot {
-		if err = d.parseEnd(); err != nil {
-			return tr, err
-		}
+	if err = d.parseEnd(); err != nil {
+		return tr, err
 	}
 	d.ignoreLine()
 	return tr, nil
@@ -226,7 +278,7 @@ func MustParseNode(node string) Node {
 	d := Decoder{
 		s: scanner.NewScanner(node),
 	}
-	n, _, err := d.parseNode()
+	n, err := d.parseNode()
 	if err != nil && err != io.EOF {
 		panic(err)
 	}
