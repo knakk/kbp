@@ -24,6 +24,9 @@ const (
 	TokenDot
 
 	// Turtle tokens
+	TokenPrefixDirective
+	TokenPrefix
+	TokenSuffix
 	TokenComma
 	TokenSemicolon
 	TokenBracketStart
@@ -77,6 +80,12 @@ func (t tokenType) String() string {
 		return "Closing bracket"
 	case TokenA:
 		return "a (rdf:type)"
+	case TokenPrefix:
+		return "URI prefix"
+	case TokenSuffix:
+		return "URI suffix"
+	case TokenPrefixDirective:
+		return "Prefix directive"
 	default:
 		panic("token String() TODO")
 	}
@@ -198,10 +207,15 @@ runeSwitch:
 		p := s.pos
 		s.scanUntilNextToken()
 		if p == s.pos {
-			s.Error = "invalid language tag"
+			s.Error = "invalid language tag/directive"
 			break runeSwitch
 		}
-		tok = TokenLangTag
+		if s.input[s.start:s.pos] == "prefix" {
+			s.ignore()
+			tok = TokenPrefixDirective
+		} else {
+			tok = TokenLangTag
+		}
 	case '^':
 		if s.peek() != '^' {
 			s.Error = "unexpected token"
@@ -217,6 +231,7 @@ runeSwitch:
 			s.scanUntilNextToken()
 			break runeSwitch
 		}
+		s.pos++ // consume ':'
 		s.scanUntilNextToken()
 		addStart = 2
 		tok = TokenBNode
@@ -234,6 +249,16 @@ runeSwitch:
 		s.Error = "illegal UTF-8 encoding"
 	default:
 		s.scanUntilNextToken()
+		if s.peek() == ':' {
+			s.pos++ // consume :
+			tok = TokenPrefix
+			addEnd = -1
+			break runeSwitch
+		}
+		if s.pos > s.start {
+			tok = TokenSuffix
+			break runeSwitch
+		}
 		s.Error = "unexpected token"
 	}
 
@@ -306,7 +331,7 @@ func (s *Scanner) scanUntilNextToken() {
 	for {
 		r := s.peek()
 		switch r {
-		case '\t', '<', '"', '.', ';', ',', '\n', ' ', '_', eof, utf8.RuneError:
+		case '\t', '<', '"', '.', ':', ';', ',', '\n', ' ', '_', eof, utf8.RuneError:
 			return
 		default:
 			s.next()

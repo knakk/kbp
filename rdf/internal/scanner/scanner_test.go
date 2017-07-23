@@ -117,8 +117,8 @@ func TestScanTokens(t *testing.T) {
 			},
 		},
 		{
-			"<a>^^<f>", []token{
-				{TokenURI, "a"},
+			`"a"^^<f>`, []token{
+				{TokenLiteral, "a"},
 				{TokenTypeMarker, ""},
 				{TokenURI, "f"},
 			},
@@ -197,6 +197,23 @@ func TestScanTokens(t *testing.T) {
 				{TokenDot, ""},
 			},
 		},
+		{
+			"@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .",
+			[]token{
+				{TokenPrefixDirective, ""},
+				{TokenPrefix, "xsd"},
+				{TokenURI, "http://www.w3.org/2001/XMLSchema#"},
+				{TokenDot, ""},
+			},
+		},
+		{
+			`"33"^^xsd:int`, []token{
+				{TokenLiteral, "33"},
+				{TokenTypeMarker, ""},
+				{TokenPrefix, "xsd"},
+				{TokenSuffix, "int"},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -222,7 +239,7 @@ func TestScanErrors(t *testing.T) {
 		{`"hei\n`, "unterminated Literal", "\"hei\n"},
 		{`abc <a>`, "unexpected token", "abc"},
 		{`^a b`, "unexpected token", "^a"},
-		{`@ <a>`, "invalid language tag", ""},
+		{`@ <a>`, "invalid language tag/directive", ""},
 		{"abc", "unexpected token", "abc"},
 		{"_a", "unexpected token", "_a"},
 	}
