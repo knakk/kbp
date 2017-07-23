@@ -136,11 +136,13 @@ _:anon <http://example.org/property> <http://example.org/resource2> .
 
 func TestDecodeEncodeTurtle(t *testing.T) {
 	const input = `
-[ <name> "Alice" ] <knows> [
-    <name> "Bob" ;
-    <knows> [
-        <name> "Eve" ] ;
-   <mbox> <bob@example.com> ] .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+[ foaf:name "Alice" ] foaf:knows [
+    foaf:name "Bob" ;
+    foaf:knows [
+        foaf:name "Eve" ] ;
+    foaf:mbox <bob@example.com> ] .
 `
 	g := mustDecode(input)
 	nt := mustEncode(g)

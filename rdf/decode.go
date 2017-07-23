@@ -16,12 +16,16 @@ type Decoder struct {
 	s              *scanner.Scanner
 	stack          []context
 	bnodeN         int
+	prefixes       map[string]NamedNode
 	ParseVariables bool
 }
 
 // NewDecoder returns a new Decoder on the given stream.
 func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{s: scanner.NewStreamingScanner(r)}
+	return &Decoder{
+		s:        scanner.NewStreamingScanner(r),
+		prefixes: make(map[string]NamedNode),
+	}
 }
 
 func (d *Decoder) ignoreLine() {
@@ -64,6 +68,32 @@ var errEOL = errors.New("EOL")
 func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 	tok := d.s.Scan()
 	switch tok.Type {
+	case scanner.TokenPrefixDirective:
+		tok = d.s.Scan()
+		if tok.Type != scanner.TokenPrefix {
+			return n, fmt.Errorf("unexpected %v", tok.Type)
+		}
+		prefix := tok.Text
+		tok = d.s.Scan()
+		if tok.Type != scanner.TokenURI {
+			return n, fmt.Errorf("unexpected %v", tok.Type)
+		}
+		d.prefixes[prefix] = NewNamedNode(tok.Text)
+		tok = d.s.Scan()
+		if tok.Type != scanner.TokenDot {
+			return n, fmt.Errorf("unexpected %v", tok.Type)
+		}
+		return d.parseNode()
+	case scanner.TokenPrefix:
+		prefix := tok.Text
+		tok = d.s.Scan()
+		if tok.Type != scanner.TokenSuffix {
+			return n, fmt.Errorf("unexpected %v", tok.Type)
+		}
+		if _, ok := d.prefixes[prefix]; !ok {
+			return n, fmt.Errorf("unknown prefix %q", prefix)
+		}
+		return d.prefixes[prefix].Resolve(tok.Text), nil
 	case scanner.TokenLiteral:
 		n = Literal{val: tok.Text, dt: XSDstring}
 	case scanner.TokenIllegal:

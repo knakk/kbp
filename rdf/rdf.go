@@ -145,6 +145,11 @@ func (n NamedNode) String() string { return "<" + n.name + ">" }
 // Name returns the Name of the NamedNode.
 func (n NamedNode) Name() string { return n.name }
 
+func (n NamedNode) Resolve(s string) NamedNode {
+	// TODO see section 5.2 in http://www.ietf.org/rfc/rfc3986.txt
+	return NamedNode{name: n.name + s}
+}
+
 // Literal represents an RDF Literal.
 type Literal struct {
 	val  string
