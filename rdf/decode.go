@@ -156,16 +156,9 @@ func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 // Decode returns the next valid triple in the the stream, or an error.
 func (d *Decoder) Decode() (Triple, error) {
 	var tr Triple
-	var c context
-
-	if len(d.stack) > 0 {
-		c = d.stack[len(d.stack)-1]
-		d.stack = d.stack[:len(d.stack)-1]
-	}
-
 	bnodeN := d.bnodeN
-	if c[0] != nil {
-		tr.Subject = c[0].(SubjectNode)
+	if len(d.stack) > 0 {
+		tr.Subject = d.stack[len(d.stack)-1][0].(SubjectNode)
 	} else {
 		subj, err := d.oneOf(typeNamedNode, typeBlankNode)
 		if err == errEOL {
@@ -176,21 +169,20 @@ func (d *Decoder) Decode() (Triple, error) {
 			d.ignoreLine()
 			return tr, fmt.Errorf("%d:%d: error parsing subject: %q", d.s.Row, d.s.Col, err)
 		}
+
 		tr.Subject = subj.(SubjectNode)
+		d.stack = append(d.stack, context{subj.(Node)})
 		if bnodeN != d.bnodeN {
-			d.stack = append(d.stack, context{subj.(Node)})
+			d.stack = append(d.stack, context{tr.Object})
 		}
 	}
 
-	if c[1] != nil {
-		tr.Predicate = c[1].(NamedNode)
+	if len(d.stack) > 0 && d.stack[len(d.stack)-1][1] != nil {
+		tr.Predicate = d.stack[len(d.stack)-1][1].(NamedNode)
 	} else {
 		pred, err := d.oneOf(typeNamedNode)
 		if err == errEOL {
-			if c[0] != nil {
-				d.stack = append(d.stack, c)
-				return d.Decode()
-			}
+			return d.Decode()
 		} else if err != nil {
 			d.ignoreLine()
 			return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
@@ -206,39 +198,29 @@ func (d *Decoder) Decode() (Triple, error) {
 	}
 	tr.Object = obj.(Node)
 	if bnodeN != d.bnodeN {
-		d.stack = append(d.stack, context{obj.(Node)})
+		d.stack = append(d.stack, context{tr.Object})
+		return tr, nil
 	}
 
+scanEnd:
 	switch d.s.Peek().Type {
+	case scanner.TokenEOL:
+		d.s.Scan()
+		goto scanEnd
 	case scanner.TokenSemicolon:
 		d.s.Scan() // consume ;
-		d.stack = append(d.stack, context{tr.Subject.(Node)})
 		return tr, nil
 	case scanner.TokenComma:
 		d.s.Scan() // consume ,
-		d.stack = append(d.stack, context{tr.Subject.(Node), Node(tr.Predicate)})
+		d.stack[len(d.stack)-1][1] = Node(tr.Predicate)
 		return tr, nil
 	case scanner.TokenBracketEnd:
-		d.s.Scan() // consume ]
-		if d.s.Peek().Type == scanner.TokenDot {
-			d.s.Scan()
-		}
-		switch d.s.Peek().Type {
-		case scanner.TokenSemicolon:
-			d.s.Scan() // consume ;
-			d.stack = append(d.stack, context{tr.Subject.(Node)})
-			return tr, nil
-		case scanner.TokenComma:
-			d.s.Scan() // consume ,
-			d.stack = append(d.stack, context{tr.Subject.(Node), Node(tr.Predicate)})
-			return tr, nil
-		}
-		return tr, nil
-	}
-	if len(d.stack) == 0 {
-		if err = d.parseEnd(); err != nil {
-			return tr, err
-		}
+		d.s.Scan()                         // consume ]
+		d.stack = d.stack[:len(d.stack)-1] // pop last context of stack
+		goto scanEnd
+	case scanner.TokenDot:
+		d.s.Scan() // consume .
+		d.stack = nil
 	}
 	d.ignoreLine()
 	return tr, nil
@@ -261,7 +243,7 @@ func (d *Decoder) DecodePattern() (TriplePattern, error) {
 	pred, err := d.oneOf(typeNamedNode, typeVariable)
 	if err != nil {
 		d.ignoreLine()
-		return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
+		return tr, fmt.Errorf("%d:%d: error parsing predicate: %q", d.s.Row, d.s.Col, err)
 	}
 	tr.Predicate = pred.(predicate)
 
