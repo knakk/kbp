@@ -79,8 +79,7 @@ func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 			return n, fmt.Errorf("unexpected %v", tok.Type)
 		}
 		d.prefixes[prefix] = NewNamedNode(tok.Text)
-		tok = d.s.Scan()
-		if tok.Type != scanner.TokenDot {
+		if tok := d.s.Scan(); tok.Type != scanner.TokenDot {
 			return n, fmt.Errorf("unexpected %v", tok.Type)
 		}
 		return d.parseNode()
@@ -134,6 +133,19 @@ func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 				dt:  NamedNode{name: tok.Text},
 			}
 			break
+		} else if tok.Type == scanner.TokenPrefix {
+			prefix := tok.Text
+			tok = d.s.Scan()
+			if tok.Type == scanner.TokenSuffix {
+				if _, ok := d.prefixes[prefix]; !ok {
+					return n, fmt.Errorf("unknown prefix %q", prefix)
+				}
+				n = Literal{
+					val: n.(Literal).val,
+					dt:  d.prefixes[prefix].Resolve(tok.Text),
+				}
+				break
+			}
 		}
 		err = fmt.Errorf("unexpected %v", tok.Type)
 	}
