@@ -1,5 +1,11 @@
 package marc
 
+import (
+	"errors"
+	"fmt"
+	"strconv"
+)
+
 type leaderPos int
 
 // Positions in leader:
@@ -1038,3 +1044,33 @@ const (
 	Tag998
 	Tag999
 )
+
+func (c ControlTag) String() string {
+	return fmt.Sprintf("%03d", int(c))
+}
+
+func (c DataTag) String() string {
+	return fmt.Sprintf("%03d", int(c))
+}
+
+func controlTagFromString(s string) (ControlTag, error) {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return tagIllegalControlTag, err
+	}
+	if i >= 1 && i <= 9 {
+		return ControlTag(i), nil
+	}
+	return tagIllegalControlTag, errors.New("not a control tag: " + s)
+}
+
+func dataTagFromString(s string) (DataTag, error) {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return tagIllegalDataTag, err
+	}
+	if i >= 10 && i <= 999 {
+		return DataTag(i), nil
+	}
+	return tagIllegalDataTag, errors.New("not a data tag: " + s)
+}

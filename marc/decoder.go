@@ -3,6 +3,8 @@ package marc
 import (
 	"bufio"
 	"bytes"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"unicode/utf8"
@@ -12,6 +14,7 @@ import (
 // MARCXML (ISO25577), LineMARC or Standard MARC (ISO2709)
 type Decoder struct {
 	input  *bufio.Reader
+	xmlDec *xml.Decoder
 	format Format
 	lineN  int
 }
@@ -19,7 +22,12 @@ type Decoder struct {
 // NewDecoder returns a new Decoder for the given stream and format.
 func NewDecoder(r io.Reader, f Format) *Decoder {
 	switch f {
-	case MARC, MARCXML, LineMARC:
+	case MARCXML:
+		return &Decoder{
+			xmlDec: xml.NewDecoder(r),
+			format: f,
+		}
+	case MARC, LineMARC:
 	default:
 		panic("Cannot decode unknown MARC Format")
 	}
@@ -50,7 +58,7 @@ func (d *Decoder) Decode() (*Record, error) {
 	case LineMARC:
 		return d.decodeLineMARC()
 	case MARCXML:
-		panic("TODO decode MARCXML")
+		return d.decodeMARCXML()
 	case MARC:
 		panic("TODO decode ISOMARC")
 	default:
@@ -64,6 +72,125 @@ const (
 	linemarcFS  = 0x2A // * (field separator)
 	linemarcSFS = 0x24 // $ (subfield separator)
 )
+
+func (d *Decoder) decodeMARCXML() (*Record, error) {
+	for {
+		t, err := d.xmlDec.Token()
+		if err != nil {
+			return nil, err
+		}
+		switch elem := t.(type) {
+		case xml.SyntaxError:
+			return nil, errors.New(elem.Error())
+		case xml.StartElement:
+			if elem.Name.Local == "record" {
+				r := NewRecord()
+				err := d.decodeMARCXMLRecord(r)
+				return r, err
+			}
+		}
+	}
+}
+
+func (d *Decoder) decodeMARCXMLRecord(r *Record) error {
+outer:
+	for {
+		t, err := d.xmlDec.Token()
+		if err != nil {
+			return err
+		}
+		switch elem := t.(type) {
+		case xml.SyntaxError:
+			return errors.New(elem.Error())
+		case xml.StartElement:
+			switch elem.Name.Local {
+			case "leader":
+				for t, err := d.xmlDec.Token(); err == nil; t, _ = d.xmlDec.Token() {
+					switch elem := t.(type) {
+					case xml.CharData:
+						copy(r.leader, elem)
+					case xml.EndElement:
+						continue outer
+					}
+				}
+			case "controlfield":
+				var tag ControlTag
+				for _, a := range elem.Attr {
+					if a.Name.Local == "tag" {
+						var err error
+						tag, err = controlTagFromString(a.Value)
+						if err != nil {
+							return err
+						}
+					}
+				}
+				cf := NewControlField(tag)
+			controlfield:
+				for t, err := d.xmlDec.Token(); err == nil; t, err = d.xmlDec.Token() {
+					switch elem := t.(type) {
+					case xml.CharData:
+						cf.value = make([]byte, len(elem))
+						copy(cf.value, elem)
+					case xml.EndElement:
+						break controlfield
+					}
+				}
+				r.AddControlField(cf)
+			case "datafield":
+				var tag DataTag
+				var i1, i2 rune
+				for _, a := range elem.Attr {
+					switch a.Name.Local {
+					case "tag":
+						var err error
+						tag, err = dataTagFromString(a.Value)
+						if err != nil {
+							return err
+						}
+					case "ind1":
+						i1 = rune(a.Value[0])
+					case "ind2":
+						i2 = rune(a.Value[0])
+					}
+				}
+				df := NewDataFieldWithIndicators(tag, i1, i2)
+			datafield:
+				for t, err := d.xmlDec.Token(); err == nil; t, err = d.xmlDec.Token() {
+					switch elem := t.(type) {
+					case xml.StartElement:
+						if elem.Name.Local == "subfield" {
+							var code rune
+							for _, a := range elem.Attr {
+								if a.Name.Local == "code" {
+									if len(a.Value) != 1 {
+										return fmt.Errorf("invalid subfield code: %q", a.Value)
+									}
+									code = rune(a.Value[0])
+								}
+							}
+						subfield:
+							for t, err := d.xmlDec.Token(); err == nil; t, err = d.xmlDec.Token() {
+								switch elem := t.(type) {
+								case xml.CharData:
+									df.Add(code, string(elem))
+								case xml.EndElement:
+									break subfield
+								}
+							}
+						}
+					case xml.EndElement:
+						break datafield
+					}
+				}
+				r.AddDataField(df)
+			}
+		case xml.EndElement:
+			if elem.Name.Local == "record" {
+				return nil
+			}
+		}
+	}
+}
 
 func (d *Decoder) decodeLineMARC() (r *Record, err error) {
 	r = NewRecord()

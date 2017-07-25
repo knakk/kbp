@@ -1,0 +1,76 @@
+<record>
+  <leader>01054cam a2200253 c 4500</leader>
+  <controlfield tag="001">991444235614702201</controlfield>
+  <controlfield tag="005">20150609155941.0</controlfield>
+  <controlfield tag="007">ta</controlfield>
+  <controlfield tag="008">150609s2013    xx#|||||||||||000|u|eng|d</controlfield>
+  <datafield ind1=" " ind2=" " tag="020">
+    <subfield code="a">9780393088809</subfield>
+    <subfield code="q">ib.</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="035">
+    <subfield code="a">144423561-47bibsys_network</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="035">
+    <subfield code="a">(NO-TrBIB)144423561</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="040">
+    <subfield code="a">NO-TrBIB</subfield>
+    <subfield code="b">nob</subfield>
+    <subfield code="e">katreg</subfield>
+  </datafield>
+  <datafield ind1="0" ind2="4" tag="082">
+    <subfield code="a">810</subfield>
+    <subfield code="q">NoOU</subfield>
+    <subfield code="2">23</subfield>
+  </datafield>
+  <datafield ind1="1" ind2=" " tag="100">
+    <subfield code="a">Sacco, Joe.</subfield>
+    <subfield code="4">aut</subfield>
+    <subfield code="4">ill</subfield>
+    <subfield code="0">(NO-TrBIB)2042100</subfield>
+  </datafield>
+  <datafield ind1="1" ind2="4" tag="245">
+    <subfield code="a">The great war :</subfield>
+    <subfield code="b">July 1, 1916 : the first day of the Battle of the Somme : an illustrated panorama</subfield>
+    <subfield code="c">Joe Sacco</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="260">
+    <subfield code="a">New York</subfield>
+    <subfield code="b">W.W. Norton</subfield>
+    <subfield code="c">cop. 2013</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="300">
+    <subfield code="a">1 b. (1 foldet blad i 25 unummererte s.) i kassett</subfield>
+    <subfield code="b">ill.</subfield>
+    <subfield code="c">21 x 29 cm</subfield>
+  </datafield>
+  <datafield ind1=" " ind2="7" tag="655">
+    <subfield code="a">Tegneserier</subfield>
+    <subfield code="2">humord</subfield>
+  </datafield>
+  <datafield ind1="4" ind2="2" tag="856">
+    <subfield code="3">Beskrivelse fra forlaget (kort)</subfield>
+    <subfield code="u">http://content.bibsys.no/content/?type=descr_publ_brief&amp;isbn=0393088804</subfield>
+  </datafield>
+  <datafield ind1="4" ind2="2" tag="856">
+    <subfield code="3">Beskrivelse fra forlaget (lang)</subfield>
+    <subfield code="u">http://content.bibsys.no/content/?type=descr_publ_full&amp;isbn=0393088804</subfield>
+  </datafield>
+  <datafield ind1="4" ind2="2" tag="856">
+    <subfield code="3">Omslagsbilde</subfield>
+    <subfield code="u">http://innhold.bibsys.no/bilde/forside/?size=mini&amp;id=9780393088809.jpg</subfield>
+    <subfield code="q">image/jpeg</subfield>
+  </datafield>
+  <datafield ind1="0" ind2="1" tag="852">
+    <subfield code="a">47BIBSYS_UBO</subfield>
+    <subfield code="6">991444235614702204</subfield>
+    <subfield code="9">P</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="901">
+    <subfield code="a">80</subfield>
+  </datafield>
+  <datafield ind1=" " ind2=" " tag="991">
+    <subfield code="a">volumes</subfield>
+  </datafield>
+</record>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<collection
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd"
+  xmlns="http://www.loc.gov/MARC21/slim">
+<record>
+  <leader>01356 am a2200277   4500</leader>
+  <controlfield tag="001">485524</controlfield>
+  <controlfield tag="008">                      a          10nob 2</controlfield>
+  <datafield tag="015" ind1=" " ind2=" ">
+    <subfield code="a">0263484</subfield>
+    <subfield code="b">BIBBI</subfield>
+  </datafield>
+  <datafield tag="019" ind1=" " ind2=" ">
+    <subfield code="b">l</subfield>
+    <subfield code="d">R</subfield>
+  </datafield>
+  <datafield tag="020" ind1=" " ind2=" ">
+    <subfield code="a">978-82-03-21473-8</subfield>
+    <subfield code="b">h.</subfield>
+    <subfield code="c">Nkr 169.00</subfield>
+  </datafield>
+  <datafield tag="041" ind1=" " ind2=" ">
+    <subfield code="h">fre</subfield>
+  </datafield>
+  <datafield tag="082" ind1="3" ind2="1">
+    <subfield code="a">940.53</subfield>
+    <subfield code="2">5</subfield>
+  </datafield>
+  <datafield tag="100" ind1=" " ind2="0">
+    <subfield code="a">Littell, Jonathan</subfield>
+    <subfield code="d">1967-</subfield>
+    <subfield code="j">am.</subfield>
+  </datafield>
+  <datafield tag="240" ind1="1" ind2="4">
+    <subfield code="a">Les bienveillantes</subfield>
+    <subfield code="w">bienveillantes</subfield>
+  </datafield>
+  <datafield tag="245" ind1="1" ind2="3">
+    <subfield code="a">De velvillige</subfield>
+    <subfield code="c">Jonathan Littell ; oversatt av Tom Lotherington</subfield>
+    <subfield code="w">velvillige</subfield>
+  </datafield>
+  <datafield tag="260" ind1=" " ind2=" ">
+    <subfield code="a">Oslo</subfield>
+    <subfield code="b">Aschehoug</subfield>
+    <subfield code="c">2010</subfield>
+  </datafield>
+  <datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a">1037 s.</subfield>
+  </datafield>
+  <datafield tag="440" ind1=" " ind2="0">
+    <subfield code="a">Aschehoug pocket</subfield>
+  </datafield>
+  <datafield tag="503" ind1=" " ind2=" ">
+    <subfield code="a">1. norske utg. 2008</subfield>
+  </datafield>
+  <datafield tag="505" ind1=" " ind2=" ">
+    <subfield code="a">Har ordliste</subfield>
+  </datafield>
+  <datafield tag="520" ind1=" " ind2=" ">
+    <subfield code="a">I denne romanen følger vi den unge SS-offiseren Max Aue gjennom alle krigens faser - fra han lar seg verve rett før krigen og til Tysklands fall er et faktum. Dette er ingen historie om en angrende synder, men om en person som stiller spørsmålet: Er du sikker på at du er så mye bedre enn meg? Det dreiser seg om ondskap og barbari, og om bødlene som alltid er der, alltid er beredt. Boken fikk stor oppmerksomhet da den kom på fransk i 2006, og Jonathan Littel ble tildelt flere priser.</subfield>
+  </datafield>
+  <datafield tag="574" ind1=" " ind2=" ">
+    <subfield code="a">Originaltittel: Les bienveillantes</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="2">
+    <subfield code="a">Verdenskrigen, 1939-1945</subfield>
+    <subfield code="x">Fortellinger</subfield>
+    <subfield code="2">BS</subfield>
+    <subfield code="2">BS</subfield>
+    <subfield code="9">nob</subfield>
+  </datafield>
+  <datafield tag="653" ind1=" " ind2="2">
+    <subfield code="a">Andre verdenskrig</subfield>
+    <subfield code="2">BS</subfield>
+    <subfield code="9">nob</subfield>
+  </datafield>
+  <datafield tag="655" ind1=" " ind2="2">
+    <subfield code="a">Historisk</subfield>
+    <subfield code="2">BS</subfield>
+    <subfield code="9">nor</subfield>
+  </datafield>
+  <datafield tag="700" ind1=" " ind2="0">
+    <subfield code="a">Lotherington, Tom</subfield>
+    <subfield code="d">1950-</subfield>
+    <subfield code="e">overs.</subfield>
+    <subfield code="j">n.</subfield>
+  </datafield>
+</record>
+</collection>

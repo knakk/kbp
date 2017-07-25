@@ -2,17 +2,10 @@ package marc
 
 import (
 	"bytes"
+	"encoding/xml"
+	"io"
 	"sort"
 	"strconv"
-)
-
-type Flavor int
-
-const (
-	unknownFlavor Flavor = iota
-	MARC21
-	NORMARC
-	UNIMARC
 )
 
 // Format represents a MARC serialization format.
@@ -105,6 +98,44 @@ func (r *Record) String() string {
 		}
 	}
 	return b.String()
+}
+
+func (r *Record) Marshall(w io.Writer, f Format) error {
+	// TODO w = errWriter(w)
+	w.Write([]byte("<record><leader>"))
+	w.Write(r.leader)
+	w.Write([]byte("</leader>"))
+	for tag, val := range r.cfields {
+		w.Write([]byte(`<controlfield tag="`))
+		w.Write([]byte(tag.String()))
+		w.Write([]byte(`">`))
+		w.Write(val)
+		w.Write([]byte("</controlfield>"))
+	}
+	for tag, dfs := range r.dfields {
+		for _, df := range dfs {
+			w.Write([]byte(`<datafield ind1="`))
+			w.Write([]byte(string(df.Indicator1)))
+			w.Write([]byte(`" ind2="`))
+			w.Write([]byte(string(df.Indicator2)))
+			w.Write([]byte(`" tag="`))
+			w.Write([]byte(tag.String()))
+			w.Write([]byte(`">`))
+			for code, sfs := range df.subfields {
+				for _, sf := range sfs {
+					w.Write([]byte(`<subfield code="`))
+					w.Write([]byte(string(code)))
+					w.Write([]byte(`">`))
+					xml.EscapeText(w, []byte(sf))
+					w.Write([]byte("</subfield>"))
+				}
+			}
+			w.Write([]byte("</datafield>"))
+		}
+	}
+	w.Write([]byte("</record>"))
+
+	return nil
 }
 
 // SetLeaderPos sets the Record leader position to the given value.
@@ -308,6 +339,7 @@ func (b byTagAndSubfields) Len() int      { return len(b) }
 func (b byTagAndSubfields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
 
 func (b byTagAndSubfields) Less(i, j int) bool {
+	// TODO revisit this function
 	if b[i].Tag < b[j].Tag {
 		return true
 	}
@@ -325,7 +357,13 @@ func (b byTagAndSubfields) Less(i, j int) bool {
 			return true
 		}
 		// TODO sort vals
+		if len(vals) < len(b[j].subfields[code]) {
+			return true
+		}
 		for k, v := range vals {
+			if k >= len(b[j].subfields[code]) {
+				return true
+			}
 			if v < b[j].subfields[code][k] {
 				return true
 			}

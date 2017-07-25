@@ -1,0 +1,125 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+  <leader>01473cam a2200385 i 4500</leader>
+  <controlfield tag="001">18025631</controlfield>
+  <controlfield tag="005">20150304111512.0</controlfield>
+  <controlfield tag="008">140131t20142002mau           000 1 eng  </controlfield>
+  <datafield tag="906" ind1=" " ind2=" ">
+    <subfield code="a">7</subfield>
+    <subfield code="b">cbc</subfield>
+    <subfield code="c">orignew</subfield>
+    <subfield code="d">1</subfield>
+    <subfield code="e">ecip</subfield>
+    <subfield code="f">20</subfield>
+    <subfield code="g">y-gencatlg</subfield>
+  </datafield>
+  <datafield tag="925" ind1="0" ind2=" ">
+    <subfield code="a">acquire</subfield>
+    <subfield code="b">1 shelf copy</subfield>
+    <subfield code="x">policy default</subfield>
+    <subfield code="e">claim1  2014-11-24</subfield>
+  </datafield>
+  <datafield tag="955" ind1=" " ind2=" ">
+    <subfield code="b">xk10 2014-01-31</subfield>
+    <subfield code="i">xk10 2014-01-31(Telework) to CIP (dewey complete)</subfield>
+    <subfield code="a">xn12 2015-01-16 1 copy rec'd., to CIP ver.</subfield>
+    <subfield code="f">xk02 2015-03-02 to CALM (telework)</subfield>
+    <subfield code="f">xk02 2015-03-04</subfield>
+  </datafield>
+  <datafield tag="010" ind1=" " ind2=" ">
+    <subfield code="a">  2014001375</subfield>
+  </datafield>
+  <datafield tag="020" ind1=" " ind2=" ">
+    <subfield code="a">9780544146440 (hardback)</subfield>
+  </datafield>
+  <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">DLC</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="c">DLC</subfield>
+    <subfield code="e">rda</subfield>
+  </datafield>
+  <datafield tag="041" ind1="1" ind2=" ">
+    <subfield code="a">eng</subfield>
+    <subfield code="h">ita</subfield>
+  </datafield>
+  <datafield tag="042" ind1=" " ind2=" ">
+    <subfield code="a">pcc</subfield>
+  </datafield>
+  <datafield tag="050" ind1="0" ind2="0">
+    <subfield code="a">PQ4809.A45</subfield>
+    <subfield code="b">C6513 2014</subfield>
+  </datafield>
+  <datafield tag="082" ind1="0" ind2="0">
+    <subfield code="a">853/.914</subfield>
+    <subfield code="2">23</subfield>
+  </datafield>
+  <datafield tag="082" ind1="0" ind2="0">
+    <subfield code="a">853/.914</subfield>
+    <subfield code="2">23</subfield>
+  </datafield>
+  <datafield tag="084" ind1=" " ind2=" ">
+    <subfield code="a">FIC019000</subfield>
+    <subfield code="a">FIC028040</subfield>
+    <subfield code="2">bisacsh</subfield>
+  </datafield>
+  <datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a">Calvino, Italo,</subfield>
+    <subfield code="e">author.</subfield>
+  </datafield>
+  <datafield tag="240" ind1="1" ind2="0">
+    <subfield code="a">Cosmicomiche.</subfield>
+    <subfield code="l">English</subfield>
+  </datafield>
+  <datafield tag="245" ind1="1" ind2="4">
+    <subfield code="a">The complete cosmicomics /</subfield>
+    <subfield code="c">Italo Calvino ; Translated by Martin McLaughlin, Tim Parks, and William Weaver.</subfield>
+  </datafield>
+  <datafield tag="250" ind1=" " ind2=" ">
+    <subfield code="a">First U.S. Edition.</subfield>
+  </datafield>
+  <datafield tag="264" ind1=" " ind2="1">
+    <subfield code="a">Boston :</subfield>
+    <subfield code="b">Houghton Mifflin Harcourt,</subfield>
+    <subfield code="c">2014.</subfield>
+  </datafield>
+  <datafield tag="264" ind1=" " ind2="4">
+    <subfield code="c">&#xA9;2002</subfield>
+  </datafield>
+  <datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a">xxiv, 401 pages ;</subfield>
+    <subfield code="c">22 cm</subfield>
+  </datafield>
+  <datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">text</subfield>
+    <subfield code="2">rdacontent</subfield>
+  </datafield>
+  <datafield tag="337" ind1=" " ind2=" ">
+    <subfield code="a">unmediated</subfield>
+    <subfield code="2">rdamedia</subfield>
+  </datafield>
+  <datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">volume</subfield>
+    <subfield code="2">rdacarrier</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="7">
+    <subfield code="a">FICTION / Literary.</subfield>
+    <subfield code="2">bisacsh</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="7">
+    <subfield code="a">FICTION / Science Fiction / Short Stories.</subfield>
+    <subfield code="2">bisacsh</subfield>
+  </datafield>
+  <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a">McLaughlin, M. L.</subfield>
+    <subfield code="q">(Martin L.)</subfield>
+    <subfield code="e">translator.</subfield>
+  </datafield>
+  <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a">Parks, Tim,</subfield>
+    <subfield code="e">translator.</subfield>
+  </datafield>
+  <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a">Weaver, William,</subfield>
+    <subfield code="d">1923-2013.</subfield>
+    <subfield code="e">translator.</subfield>
+  </datafield>
+</record>
