@@ -1695,15 +1695,16 @@ func (g *Graph) Eq(other *Graph) bool {
 	)
 
 	for _, bnode := range aBlankNodes {
-		aSign = append(aSign, g.signature(bnode))
+		aSign = append(aSign, g.signature(bnode, make(map[int]bool)))
 	}
 
 	for _, bnode := range bBlankNodes {
-		bSign = append(bSign, other.signature(bnode))
+		bSign = append(bSign, other.signature(bnode, make(map[int]bool)))
 	}
 
 	sort.Strings(aSign)
 	sort.Strings(bSign)
+
 	for i, s := range aSign {
 		if s != bSign[i] {
 			return false
@@ -1735,13 +1736,8 @@ func (g *Graph) bnodes() []rdf.BlankNode {
 	return res
 }
 
-func (g *Graph) signature(bnode rdf.BlankNode) string {
+func (g *Graph) signature(bnode rdf.BlankNode, visited map[int]bool) string {
 	// TODO function shoud take nodeID int
-
-	// We keep track of visited blank nodes, as not to trigger infinite
-	// recursion if there is a circular relationship between nodes.
-	//visited := make(map[BlankNode]bool)
-	// TODO
 
 	var (
 		incoming []string
@@ -1750,8 +1746,16 @@ func (g *Graph) signature(bnode rdf.BlankNode) string {
 
 	// incoming relations
 	for s, preds := range g.osp[g.node2id[bnode]] {
+		if _, found := visited[s]; found {
+			continue
+		} else {
+			visited[s] = true
+		}
+		if _, isBlank := g.id2node[s].(rdf.BlankNode); isBlank {
+			continue
+		}
 		for _, p := range preds {
-			outgoing = append(outgoing, g.id2node[s].String()+g.id2node[p].String())
+			incoming = append(incoming, g.id2node[s].String()+g.id2node[p].String())
 		}
 	}
 	sort.Strings(incoming)
@@ -1759,7 +1763,16 @@ func (g *Graph) signature(bnode rdf.BlankNode) string {
 	// outgoing relations
 	for p, objs := range g.spo[g.node2id[bnode]] {
 		for _, o := range objs {
-			outgoing = append(outgoing, g.id2node[p].String()+g.id2node[o].String())
+			if _, found := visited[o]; found {
+				continue
+			} else {
+				visited[o] = true
+			}
+			if bnode, isBlank := g.id2node[o].(rdf.BlankNode); isBlank {
+				outgoing = append(outgoing, g.id2node[p].String()+g.signature(bnode, visited))
+			} else {
+				outgoing = append(outgoing, g.id2node[p].String()+g.id2node[o].String())
+			}
 		}
 	}
 	sort.Strings(outgoing)
