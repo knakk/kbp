@@ -1695,11 +1695,11 @@ func (g *Graph) Eq(other *Graph) bool {
 	)
 
 	for _, bnode := range aBlankNodes {
-		aSign = append(aSign, g.signature(bnode, make(map[int]bool)))
+		aSign = append(aSign, g.signature(bnode))
 	}
 
 	for _, bnode := range bBlankNodes {
-		bSign = append(bSign, other.signature(bnode, make(map[int]bool)))
+		bSign = append(bSign, other.signature(bnode))
 	}
 
 	sort.Strings(aSign)
@@ -1736,8 +1736,9 @@ func (g *Graph) bnodes() []rdf.BlankNode {
 	return res
 }
 
-func (g *Graph) signature(bnode rdf.BlankNode, visited map[int]bool) string {
+func (g *Graph) signature(bnode rdf.BlankNode) string {
 	// TODO function shoud take nodeID int
+	// TODO bug: does not detect cycles, eg if two bnodes pointing to each other
 
 	var (
 		incoming []string
@@ -1746,11 +1747,6 @@ func (g *Graph) signature(bnode rdf.BlankNode, visited map[int]bool) string {
 
 	// incoming relations
 	for s, preds := range g.osp[g.node2id[bnode]] {
-		if _, found := visited[s]; found {
-			continue
-		} else {
-			visited[s] = true
-		}
 		if _, isBlank := g.id2node[s].(rdf.BlankNode); isBlank {
 			continue
 		}
@@ -1763,13 +1759,8 @@ func (g *Graph) signature(bnode rdf.BlankNode, visited map[int]bool) string {
 	// outgoing relations
 	for p, objs := range g.spo[g.node2id[bnode]] {
 		for _, o := range objs {
-			if _, found := visited[o]; found {
-				continue
-			} else {
-				visited[o] = true
-			}
 			if bnode, isBlank := g.id2node[o].(rdf.BlankNode); isBlank {
-				outgoing = append(outgoing, g.id2node[p].String()+g.signature(bnode, visited))
+				outgoing = append(outgoing, g.id2node[p].String()+g.signature(bnode))
 			} else {
 				outgoing = append(outgoing, g.id2node[p].String()+g.id2node[o].String())
 			}
