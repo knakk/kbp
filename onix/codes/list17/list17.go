@@ -104,12 +104,13 @@ const (
 	EditorFilmOrVideo                = "F02"
 	OtherRecordingBy                 = "F99"
 	AssistedBy                       = "Z01"
+	Honored                          = "Z02"
 	VariousRoles                     = "Z98"
 	Other                            = "Z99"
 )
 
 var (
-	sortedCodes = []string{"A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10", "A11", "A12", "A13", "A14", "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A23", "A24", "A25", "A26", "A27", "A29", "A30", "A31", "A32", "A33", "A34", "A35", "A36", "A37", "A38", "A39", "A40", "A41", "A42", "A43", "A44", "A99", "B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26", "B27", "B28", "B99", "C01", "C02", "C03", "C04", "C99", "D01", "D02", "D03", "D99", "E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "E09", "E99", "F01", "F02", "F99", "Z01", "Z98", "Z99"}
+	sortedCodes = []string{"A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10", "A11", "A12", "A13", "A14", "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A23", "A24", "A25", "A26", "A27", "A29", "A30", "A31", "A32", "A33", "A34", "A35", "A36", "A37", "A38", "A39", "A40", "A41", "A42", "A43", "A44", "A99", "B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26", "B27", "B28", "B99", "C01", "C02", "C03", "C04", "C99", "D01", "D02", "D03", "D99", "E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "E09", "E99", "F01", "F02", "F99", "Z01", "Z02", "Z98", "Z99"}
 
 	all = map[string]struct{ labelEn, notesEn, labelNo, notesNo string }{
 		ByAuthor:                   {"By (author)", "Author of a textual work.", "Av (forfatter)", "Forfatter av av teksten"},
@@ -208,6 +209,7 @@ var (
 		EditorFilmOrVideo:    {"Editor (film or video)", "", "Redaktør (film eller video)", ""},
 		OtherRecordingBy:     {"Other recording by", "Other type of recording not specified above.", "Andre opptak av", "Andre typer opptak som ikke er spesifisert i andre koder"},
 		AssistedBy:           {"Assisted by", "May be associated with any contributor role, and placement should therefore be controlled by contributor sequence numbering.", "Assistert av", "Kan bli sammenstilt med andre bidragsroller. Rekkefølgen bør derfor kontrolleres av \"contributor sequence numbering\""},
+		Honored:              {"Honored/dedicated to", "", "Dedikert til", ""},
 		VariousRoles:         {"(Various roles)", "For use ONLY with ‘et al’ or ‘Various’ within <UnnamedPersons>, where the roles of the multiple contributors vary.", "(Ulike roller)", "Skal brukes KUN med “et al” eller “Forskjellige personer” i <UnnamedPersons>, hvor rollene til de ulike bidragsyterne er forskjellige."},
 		Other:                {"Other", "Other creative responsibility not falling within A to F above.", "Annet", "Andre kreative oppgaver som ikke faller innenfor de øvrige kodene"},
 	}
