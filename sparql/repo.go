@@ -59,9 +59,9 @@ func Timeout(t time.Duration) func(*Repo) error {
 	}
 }
 
-// Query performs a SPARQL HTTP request to the Repo, and returns the
+// Select performs a SPARQL HTTP request to the Repo, and returns the
 // parsed application/sparql-results+json response.
-func (r *Repo) Query(q string) (*Results, error) {
+func (r *Repo) Select(q string) (*Results, error) {
 	form := url.Values{}
 	form.Set("query", q)
 	b := form.Encode()
