@@ -13,6 +13,7 @@ import (
 
 	"github.com/knakk/digest"
 	"github.com/knakk/kbp/rdf"
+	"github.com/knakk/kbp/rdf/memory"
 )
 
 // Repo represent a RDF repository, assumed to be
@@ -107,8 +108,8 @@ func (r *Repo) Select(q string) (*Results, error) {
 }
 
 // Construct performs a SPARQL HTTP request to the Repo, and returns the
-// result triples.
-func (r *Repo) Construct(q string) ([]rdf.Triple, error) {
+// result graph.
+func (r *Repo) Construct(q string) (*memory.Graph, error) {
 	form := url.Values{}
 	form.Set("query", q)
 	form.Set("format", "text/turtle")
@@ -124,7 +125,7 @@ func (r *Repo) Construct(q string) ([]rdf.Triple, error) {
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Length", strconv.Itoa(len(b)))
-	req.Header.Set("Accept", "text/turtle")
+	req.Header.Set("Accept", "application/n-triples")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -145,12 +146,12 @@ func (r *Repo) Construct(q string) ([]rdf.Triple, error) {
 		return nil, fmt.Errorf("Construct: SPARQL request failed: %s. "+msg, resp.Status)
 	}
 	dec := rdf.NewDecoder(resp.Body)
-	var res []rdf.Triple
+	g := memory.NewGraph()
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
 		if err != nil {
-			return res, err
+			return g, err
 		}
-		res = append(res, tr)
+		g.Insert(tr)
 	}
-	return res, nil
+	return g, nil
 }
