@@ -118,7 +118,7 @@ func (r *Repo) Select(q string) (*Results, error) {
 func (r *Repo) Construct(q string) (*memory.Graph, error) {
 	form := url.Values{}
 	form.Set("query", q)
-	form.Set("format", "text/turtle")
+	form.Set("format", "text/plain")
 	b := form.Encode()
 
 	req, err := http.NewRequest(
@@ -131,7 +131,6 @@ func (r *Repo) Construct(q string) (*memory.Graph, error) {
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Length", strconv.Itoa(len(b)))
-	req.Header.Set("Accept", "application/n-triples")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := r.client.Do(req)
