@@ -2,6 +2,7 @@ package sparql
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -80,15 +81,20 @@ func (r *Repo) Select(q string) (*Results, error) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Length", strconv.Itoa(len(b)))
 	req.Header.Set("Accept", "application/sparql-results+json")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	body, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := ioutil.ReadAll(body)
 		var msg string
 		if err != nil {
 			msg = "Failed to read response body"
@@ -99,7 +105,7 @@ func (r *Repo) Select(q string) (*Results, error) {
 		}
 		return nil, fmt.Errorf("Query: SPARQL request failed: %s. "+msg, resp.Status)
 	}
-	results, err := ParseJSON(resp.Body)
+	results, err := ParseJSON(body)
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +132,20 @@ func (r *Repo) Construct(q string) (*memory.Graph, error) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Length", strconv.Itoa(len(b)))
 	req.Header.Set("Accept", "application/n-triples")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	body, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := ioutil.ReadAll(body)
 		var msg string
 		if err != nil {
 			msg = "Failed to read response body"
@@ -145,7 +156,7 @@ func (r *Repo) Construct(q string) (*memory.Graph, error) {
 		}
 		return nil, fmt.Errorf("Construct: SPARQL request failed: %s. "+msg, resp.Status)
 	}
-	dec := rdf.NewDecoder(resp.Body)
+	dec := rdf.NewDecoder(body)
 	g := memory.NewGraph()
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
 		if err != nil {
