@@ -95,8 +95,8 @@ func TestDecode(t *testing.T) {
 		Subtitle      string         `rdf:"->hasSubtitle"`
 		Year          int            `rdf:"->wasPublishedYear"`
 		Binding       *binding       `rdf:"->hasBinding"`
-		Subjects      []string       `rdf:">>hasTag"`
-		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;@>hasLabel"`
+		Subjects      []string       `rdf:">>hasTag@"`
+		Genres        []string       `rdf:"->isPublicationOf;>>hasGenre;->hasLabel@"`
 		WorkSubjects  []string       `rdf:"->isPublicationOf;>>hasTag"`
 		Contributions []contribution `rdf:">>hasContribution"`
 		Fans          []string       `rdf:"<<isFanOf;->hasName"`
@@ -108,9 +108,10 @@ func TestDecode(t *testing.T) {
 		<book1> <hasSubtitle> "Kritik der politischen Ökonomie" .
 		<book1> <wasPublishedYear> "1867"^^<http://www.w3.org/2001/XMLSchema#gYear> .
 		<book1> <hasContribution> _:c1 .
-		<book1> <hasTag> "Politics" .
-		<book1> <hasTag> "Economy" .
-		<book1> <hasTag> "Work" .
+		<book1> <hasTag> "Politics"@en .
+		<book1> <hasTag> "Economy"@en .
+		<book1> <hasTag> "Work"@en .
+		<book1> <hasTag> "Travaille"@fr .
 		<book1> <isPublicationOf> <work1> .
 		<book1> <hasBinding> <binding1> .
 		<binding1> <hasLabel> "Hardcover" .

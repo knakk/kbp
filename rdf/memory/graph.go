@@ -265,14 +265,14 @@ func truncate(s string, numChars int) string {
 // and traversing the graph following the path specified in "rdf" struct tags.
 // Each path fragment (separated by ;) represents a predicate and a direction:
 //
-//   -> or >>, @> outgoing direction from node
-//   <- or <<, <@ incomming direction from node
+//   -> or >> outgoing direction from node
+//   <- or << incomming direction from node
 //
 // The double arrow variants signifies that you want to collect all matches, as
 // opposed to just one match otherwise.
 //
-// The '@' marker signifies that the language-tagged literal must match
-// the preferred languages in prefLangs.
+// The '@' marker at the end of a chain signifies that the language-tagged literal
+// must match the preferred languages in prefLangs.
 //
 // In addition, a single 'id' as last fragment in a chain states that you want
 // to collect the URI of the resource.
@@ -301,6 +301,11 @@ func (g *Graph) traverse(startID int, base string, paths []string, prefLangs []s
 	for len(paths) > 0 {
 		pred := paths[0]
 		paths = paths[1:]
+		filterByLang := false
+		if strings.HasSuffix(pred, "@") {
+			pred = pred[:len(pred)-1]
+			filterByLang = true
+		}
 		var tempNodes []int
 		for _, nID := range ids {
 
@@ -324,23 +329,29 @@ func (g *Graph) traverse(startID int, base string, paths []string, prefLangs []s
 			case "->":
 				nodes, found = g.spo[nID][pID]
 				if found {
+					if filterByLang {
+						nodes = g.filterByPrefLangs(nodes, prefLangs)
+					}
 					nodes = nodes[:1] // keep only one match
 				}
 			case "<-":
 				nodes, found = g.pos[pID][nID]
 				if found {
+					if filterByLang {
+						nodes = g.filterByPrefLangs(nodes, prefLangs)
+					}
 					nodes = nodes[:1] // keep only one match
 				}
 			case ">>":
 				nodes, found = g.spo[nID][pID]
+				if filterByLang {
+					nodes = g.filterByPrefLangs(nodes, prefLangs)
+				}
 			case "<<":
 				nodes, found = g.pos[pID][nID]
-			case "@>":
-				nodes, found = g.spo[nID][pID]
-				nodes = g.filterByPrefLangs(nodes, prefLangs)
-			case "<@":
-				nodes, found = g.pos[pID][nID]
-				nodes = g.filterByPrefLangs(nodes, prefLangs)
+				if found && filterByLang {
+					nodes = g.filterByPrefLangs(nodes, prefLangs)
+				}
 			default:
 				return nil, fmt.Errorf("unknown path fragment prefix: %q", pred[:2])
 			}
@@ -363,21 +374,22 @@ func (g *Graph) traverse(startID int, base string, paths []string, prefLangs []s
 	return res, nil
 }
 
-func (g *Graph) filterByPrefLangs(nodes []int, prefLangs []string) []int {
+func (g *Graph) filterByPrefLangs(nodes []int, prefLangs []string) (res []int) {
 	if len(nodes) == 0 {
-		return nil
+		return res
 	}
 	for _, l := range prefLangs {
 		for _, n := range nodes {
 			if lit, found := g.id2node[n].(rdf.Literal); found {
+				//fmt.Printf("%v == %v\n", lit.Lang(), l)
 				if lit.Lang() == l {
-					return []int{n}
+					res = append(res, n)
 				}
 			}
 		}
 	}
-	// no match in pref langs, take any available any
-	return []int{nodes[0]}
+
+	return res
 }
 
 func (g *Graph) decodeStruct(rv reflect.Value, nodeID int, base string, prefLangs []string) error {
