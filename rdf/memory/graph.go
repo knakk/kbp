@@ -44,6 +44,7 @@ func NewGraph() *Graph {
 	}
 }
 
+// NewFromNTriples decodes the triples in r into a graph.
 func NewFromNTriples(r io.Reader) (*Graph, error) {
 	g := NewGraph()
 	dec := rdf.NewDecoder(r)
@@ -132,6 +133,7 @@ func (g *Graph) Triples() []rdf.Triple {
 	return res
 }
 
+// DotOptions contains knobs for customizing the dot encoding.
 type DotOptions struct {
 	Base            string
 	Inline          []string
@@ -140,6 +142,7 @@ type DotOptions struct {
 	BnodeEdges      map[string][2]string
 }
 
+// Dot returns a graphviz dot representation of the graph.
 func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 	var b bytes.Buffer
 	b.WriteString("digraph \"")
@@ -279,10 +282,10 @@ func truncate(s string, numChars int) string {
 func (g *Graph) Decode(v interface{}, startNode, base rdf.NamedNode, prefLangs []string) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
-		fmt.Errorf("Graph.Decode of non-pointer %s", reflect.TypeOf(v))
+		return fmt.Errorf("Graph.Decode of non-pointer %s", reflect.TypeOf(v))
 	}
 	if rv.IsNil() {
-		fmt.Errorf("Graph.Decode of nil %s", reflect.TypeOf(v))
+		return fmt.Errorf("Graph.Decode of nil %s", reflect.TypeOf(v))
 	}
 
 	nodeID, ok := g.node2id[startNode]
@@ -527,6 +530,7 @@ func (g *Graph) decodeSlice(rv reflect.Value, nodes []int, base string, prefLang
 	return nil
 }
 
+// Describe returns a graph describing the given nodes.
 func (g *Graph) Describe(mode rdf.DescribeMode, nodes ...rdf.NamedNode) (rdf.Graph, error) {
 	res := NewGraph()
 	described := make(map[int]struct{})
@@ -566,7 +570,7 @@ func (g *Graph) describe(mode rdf.DescribeMode, node rdf.Node, res *Graph, descr
 		described[s] = struct{}{}
 
 		if mode == rdf.DescSymmetricRecursive {
-			for sub, _ := range g.osp[s] {
+			for sub := range g.osp[s] {
 				g.describe(mode, g.id2node[sub], res, described)
 			}
 		}
@@ -604,7 +608,7 @@ func (g *Graph) describeW(enc *rdf.Encoder, mode rdf.DescribeMode, node rdf.Node
 		}
 		described[s] = struct{}{}
 		if mode == rdf.DescSymmetricRecursive {
-			for sub, _ := range g.osp[s] {
+			for sub := range g.osp[s] {
 				if err := g.describeW(enc, mode, g.id2node[sub], described); err != nil {
 					return err
 				}
@@ -614,6 +618,7 @@ func (g *Graph) describeW(enc *rdf.Encoder, mode rdf.DescribeMode, node rdf.Node
 	return nil
 }
 
+// DescribeW encodes the graph describing the given nodes.
 func (g *Graph) DescribeW(enc *rdf.Encoder, mode rdf.DescribeMode, nodes ...rdf.NamedNode) error {
 	described := make(map[int]struct{})
 	for _, node := range nodes {
@@ -624,6 +629,7 @@ func (g *Graph) DescribeW(enc *rdf.Encoder, mode rdf.DescribeMode, nodes ...rdf.
 	return nil
 }
 
+// Update updates the graph, deleting and/or adding triples
 func (g *Graph) Update(del []rdf.TriplePattern, ins []rdf.TriplePattern, where []rdf.TriplePattern) (delN, insN int, err error) {
 	if where != nil {
 		// Encode patterns
@@ -1443,6 +1449,7 @@ func (g *Graph) where(patterns []encPattern) ([][]encPattern, encSolutions) {
 	return groups, left
 }
 
+// Select returns the bound variables for the given triple patterns.
 func (g *Graph) Select(vars []rdf.Variable, patterns ...rdf.TriplePattern) (rdf.Bindings, error) {
 
 	res := rdf.Bindings{
@@ -1783,6 +1790,7 @@ func (g *Graph) signature(bnode rdf.BlankNode) string {
 	return strings.Join(incoming, "") + strings.Join(outgoing, "")
 }
 
+// EncodeNTriples encodes the graph as N-Triples to the given writer.
 func (g *Graph) EncodeNTriples(w io.Writer) error {
 	bw := bufio.NewWriter(w)
 	for _, tr := range g.Triples() {
