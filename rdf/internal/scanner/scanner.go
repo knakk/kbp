@@ -194,9 +194,10 @@ runeSwitch:
 				s.Error = "unterminated Literal"
 				break runeSwitch
 			}
-			if s.pos > 1 && (s.input[s.pos-2] != '\\' || s.input[s.pos-3] == '\\') {
-				break
+			if s.pos > 1 && (s.input[s.pos-2] == '\\') {
+				continue
 			}
+			break
 		}
 		if s.pos > s.start {
 			addEnd = -1

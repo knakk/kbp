@@ -92,10 +92,9 @@ func TestScanTokens(t *testing.T) {
 			},
 		},
 		{
-			`"\\" "\""`,
+			`"\\\"Slipstream\\\" \""`,
 			[]token{
-				{TokenLiteral, "\\"},
-				{TokenLiteral, "\""},
+				{TokenLiteral, "\\\"Slipstream\\\" \""},
 			},
 		},
 		{
