@@ -226,9 +226,8 @@ func (l Literal) Value() interface{} {
 	case XSDboolean:
 		if l.val == "true" {
 			return true
-		} else {
-			return false
 		}
+		return false
 	default:
 		panic("rdf.Literal.Value() TODO: " + l.DataType().String())
 	}

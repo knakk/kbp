@@ -294,7 +294,6 @@ func ParseUpdateQuery(s string) (del, ins, where []TriplePattern, err error) {
 			where = append(where, tr)
 		}
 	}
-	return
 }
 
 // TODO implement this properly

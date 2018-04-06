@@ -1,5 +1,6 @@
 package rdf
 
+// Commonly used URIs
 var (
 	// rdf: https://www.w3.org/1999/02/22-rdf-syntax-ns#
 	RDFbag        = NamedNode{name: "http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag"}
