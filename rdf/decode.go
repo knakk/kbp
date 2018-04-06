@@ -185,7 +185,7 @@ func (d *Decoder) Decode() (Triple, error) {
 			return d.Decode()
 		} else if err != nil {
 			d.ignoreLine()
-			return tr, fmt.Errorf("%d:%d: error parsing preicate: %q", d.s.Row, d.s.Col, err)
+			return tr, fmt.Errorf("%d:%d: error parsing predicate: %q", d.s.Row, d.s.Col, err)
 		}
 		tr.Predicate = pred.(NamedNode)
 	}
