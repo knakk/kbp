@@ -228,6 +228,8 @@ func (l Literal) Value() interface{} {
 			return true
 		}
 		return false
+	case RDFlangString:
+		return l.val
 	default:
 		panic("rdf.Literal.Value() TODO: " + l.DataType().String())
 	}
