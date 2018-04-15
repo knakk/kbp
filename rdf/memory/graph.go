@@ -384,12 +384,15 @@ func (g *Graph) filterByPrefLangs(nodes []int, prefLangs []string) (res []int) {
 	for _, l := range prefLangs {
 		for _, n := range nodes {
 			if lit, found := g.id2node[n].(rdf.Literal); found {
-				//fmt.Printf("%v == %v\n", lit.Lang(), l)
 				if lit.Lang() == l {
 					res = append(res, n)
 				}
 			}
 		}
+	}
+	// No match, so return whatever is there
+	if len(res) == 0 {
+		return nodes
 	}
 
 	return res
