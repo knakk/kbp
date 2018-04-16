@@ -194,9 +194,6 @@ runeSwitch:
 				s.Error = "unterminated Literal"
 				break runeSwitch
 			}
-			if s.pos > 1 && (s.input[s.pos-2] == '\\') {
-				continue
-			}
 			break
 		}
 		if s.pos > s.start {
@@ -312,8 +309,16 @@ func (s *Scanner) peek() rune {
 }
 
 func (s *Scanner) scanTo(stop rune) bool {
-	for r := s.next(); r != stop; r = s.next() {
+	prevEscape := false
+	for {
+		r := s.next()
 		switch r {
+		case stop:
+			if prevEscape {
+				prevEscape = false
+			} else {
+				return true
+			}
 		case eof:
 			return false
 		case '\n':
@@ -322,7 +327,10 @@ func (s *Scanner) scanTo(stop rune) bool {
 		//	s.Error = "illegal UTF-8 encoding"
 		//	return false
 		case '\\':
+			prevEscape = !prevEscape
 			s.unescape = true
+		default:
+			prevEscape = false
 		}
 	}
 	return true
