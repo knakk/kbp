@@ -109,6 +109,9 @@ func (d *Decoder) parseNode() (n TriplePatternNode, err error) {
 		return Variable{name: tok.Text}, nil
 	case scanner.TokenBracketStart:
 		d.bnodeN++
+		if d.s.Peek().Type == scanner.TokenBracketEnd {
+			d.s.Scan() // consume ]
+		}
 		return BlankNode{id: "b" + strconv.Itoa(d.bnodeN)}, nil
 	default:
 		return n, fmt.Errorf("unexpected %v", tok.Type)
@@ -173,7 +176,7 @@ func (d *Decoder) Decode() (Triple, error) {
 		tr.Subject = subj.(SubjectNode)
 		d.stack = append(d.stack, context{subj.(Node)})
 		if bnodeN != d.bnodeN {
-			d.stack = append(d.stack, context{tr.Object})
+			d.stack = append(d.stack, context{tr.Subject})
 		}
 	}
 
