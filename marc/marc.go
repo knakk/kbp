@@ -273,6 +273,10 @@ func (f ControlField) GetPos(pos int, n int) string {
 	return string(f.value[pos : pos+n])
 }
 
+func (f ControlField) String() string {
+	return string(f.value)
+}
+
 // Eq checks if two MARC records are equal.
 func (r *Record) Eq(other *Record) bool {
 	if !bytes.Equal(r.leader, other.leader) {
