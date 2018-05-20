@@ -227,9 +227,20 @@ func (df *DataField) Add(code rune, value string) *DataField {
 	return df
 }
 
-// Subfield returns the values set for a DataField's given subfield.
-func (df *DataField) Subfield(code rune) []string {
+// Subfields returns the values set for a DataField's given subfield.
+func (df *DataField) Subfields(code rune) []string {
 	return df.subfields[code]
+}
+
+// Subfield returns a value for a DataField's given subfield, or an
+// empty string if there aren't any.
+func (df *DataField) Subfield(code rune) string {
+	if v, ok := df.subfields[code]; ok {
+		if len(v) > 0 {
+			return v[0]
+		}
+	}
+	return ""
 }
 
 // ControlField represents a MARC control field. Control fields have
