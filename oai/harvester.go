@@ -73,6 +73,11 @@ func (h *Harvester) fetch() ([]Record, error) {
 		return nil, err
 	}
 
+	// Return an error if there is any OAI error in the response
+	if errCode := oaiResponse.Error.Code; errCode != "" {
+		return nil, errorFromCode(errCode)
+	}
+
 	// Store the resumptionToken.
 	h.token = oaiResponse.ListRecords.ResumptionToken
 
