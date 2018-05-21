@@ -4,11 +4,13 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // Harvester is a OAI harvester.
 type Harvester struct {
 	endpoint string
+	from     time.Time
 	token    string // resumptionToken
 	process  func(Record) error
 }
@@ -25,6 +27,12 @@ func NewHarvester(url string, process func(r Record) error) *Harvester {
 // WithToken returns a Harvester to be started with the given resumptionToken.
 func (h *Harvester) WithToken(s string) *Harvester {
 	h.token = s
+	return h
+}
+
+// From returns a Harvester to be started harvesting from the given timestamp.
+func (h *Harvester) From(from time.Time) *Harvester {
+	h.from = from
 	return h
 }
 
@@ -45,6 +53,11 @@ func (h *Harvester) Run() error {
 				return err
 			}
 		}
+
+		if h.token == "" {
+			// ResumptionToken is empty, which means we have harvested all records.
+			return nil
+		}
 	}
 }
 
@@ -52,6 +65,9 @@ func (h *Harvester) fetch() ([]Record, error) {
 	url := h.endpoint
 	if h.token != "" {
 		url += "&resumptionToken=" + h.token
+	}
+	if !h.from.IsZero() {
+		url += "&from=" + h.from.String()
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -78,7 +94,7 @@ func (h *Harvester) fetch() ([]Record, error) {
 		return nil, errorFromCode(errCode)
 	}
 
-	// Store the resumptionToken.
+	// Store the resumptionToken (even if empty string).
 	h.token = oaiResponse.ListRecords.ResumptionToken
 
 	return oaiResponse.ListRecords.Records, nil
