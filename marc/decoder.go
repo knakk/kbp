@@ -162,10 +162,7 @@ outer:
 							var code rune
 							for _, a := range elem.Attr {
 								if a.Name.Local == "code" {
-									if len(a.Value) != 1 {
-										return fmt.Errorf("invalid subfield code: %q", a.Value)
-									}
-									code = rune(a.Value[0])
+									code, _ = utf8.DecodeRuneInString(a.Value)
 								}
 							}
 						subfield:
