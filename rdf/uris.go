@@ -43,4 +43,16 @@ var (
 	XSDunsignedInt   = NamedNode{name: "http://www.w3.org/2001/XMLSchema#unsignedInt"}
 	XSDunsignedLong  = NamedNode{name: "http://www.w3.org/2001/XMLSchema#unsignedLong"}
 	XSDunsignedShort = NamedNode{name: "http://www.w3.org/2001/XMLSchema#unsignedShort"}
+
+	// sh: http://www.w3.org/ns/shacl#
+	SHpath        = NamedNode{name: "http://www.w3.org/ns/shacl#path"}
+	SHname        = NamedNode{name: "http://www.w3.org/ns/shacl#name"}
+	SHminCount    = NamedNode{name: "http://www.w3.org/ns/shacl#minCount"}
+	SHMaxCount    = NamedNode{name: "http://www.w3.org/ns/shacl#maxCount"}
+	SHclass       = NamedNode{name: "http://www.w3.org/ns/shacl#class"}
+	SHdatatype    = NamedNode{name: "http://www.w3.org/ns/shacl#datatype"}
+	SHNodeShape   = NamedNode{name: "http://www.w3.org/ns/shacl#NodeShape"}
+	SHproperty    = NamedNode{name: "http://www.w3.org/ns/shacl#property"}
+	SHtargetClass = NamedNode{name: "http://www.w3.org/ns/shacl#targetClass"}
+	SHIRI         = NamedNode{name: "http://www.w3.org/ns/shacl#IRI"}
 )
