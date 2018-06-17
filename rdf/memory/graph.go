@@ -445,6 +445,18 @@ structFields:
 					return errors.New("only literal can be stored in template.HTML field")
 				}
 				s.Field(i).Set(reflect.ValueOf(lit.ValueAsString()))
+			case *int:
+				lit, ok := g.id2node[nodes[0]].(rdf.Literal)
+				if !ok {
+					return errors.New("only literal can be stored in *int field")
+				}
+				litInt, ok := lit.Value().(int)
+				if !ok {
+					return fmt.Errorf("struct field is int, but RDF Literal incompatible: %v", lit.DataType())
+				}
+				v := s.Field(i)
+				v.Set(reflect.New(v.Type().Elem()))
+				v.Elem().SetInt(int64(litInt))
 			default:
 				elem := reflect.New(s.Field(i).Type().Elem())
 				s.Field(i).Set(elem)
