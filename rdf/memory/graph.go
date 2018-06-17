@@ -116,6 +116,11 @@ func (g *Graph) Stats() (rdf.Stats, error) {
 	}, nil
 }
 
+// IsEmpty returns true if the graph is empty.
+func (g *Graph) IsEmpty() bool {
+	return len(g.node2id) == 0
+}
+
 // Triples returns all the triples in the Graph.
 func (g *Graph) Triples() []rdf.Triple {
 	var res []rdf.Triple
