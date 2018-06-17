@@ -143,7 +143,9 @@ func TestDecodeEncodeTurtle(t *testing.T) {
     foaf:knows [
         foaf:name "Eve" ] ;
     foaf:mbox <bob@example.com>
-    ] .
+	] .
+[] a <Ball> ;
+	<is> <round> .
 `
 	g := mustDecode(input)
 	nt := mustEncode(g)
