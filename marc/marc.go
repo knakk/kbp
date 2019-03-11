@@ -100,7 +100,9 @@ func (r *Record) String() string {
 	return b.String()
 }
 
-func (r *Record) Marshall(w io.Writer, f Format) error {
+// Marshal (currently) serializes a marcxml representation of the MARC record.
+// TODO different formats
+func (r *Record) Marshal(w io.Writer, f Format) error {
 	// TODO w = errWriter(w)
 	w.Write([]byte("<record><leader>"))
 	w.Write(r.leader)

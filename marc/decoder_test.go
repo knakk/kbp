@@ -66,8 +66,8 @@ func TestDecodeEncodeRoundtrip(t *testing.T) {
 		}
 		for _, f := range []Format{MARCXML} { // TODO: []Format{MARCXML, LineMARC, MARC}
 			var b bytes.Buffer
-			if err := r.Marshall(&b, f); err != nil {
-				t.Errorf("Marshall error: %v", err)
+			if err := r.Marshal(&b, f); err != nil {
+				t.Errorf("Marshal error: %v", err)
 			}
 			got := mustDecode(b.String())
 			if !got.Eq(r) {
