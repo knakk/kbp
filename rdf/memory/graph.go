@@ -144,7 +144,7 @@ type DotOptions struct {
 	Inline          []string
 	InlineWithLabel map[string]string
 	FullTypes       []string
-	BnodeEdges      map[string][2]string
+	NodeEdges       map[string][3]string
 }
 
 // Dot returns a graphviz dot representation of the graph.
@@ -164,6 +164,7 @@ func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 		Properties [][2]string
 	}
 
+subject:
 	for s, po := range g.spo {
 		if node, ok := g.id2node[s].(rdf.NamedNode); ok {
 			res := resource{ID: node.Name()}
@@ -186,11 +187,21 @@ func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 									pred.Name(),
 									truncate(html.EscapeString(g.id2node[labels[0]].(rdf.Literal).ValueAsString()), 50)})
 							}
+						} else if entry, ok := opt.NodeEdges[g.id2node[p].(rdf.NamedNode).Name()]; ok {
+							lnk, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[0])]]
+							if ok {
+								if lbl, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[1])]]; ok {
+									links = append(links, link{
+										to:    g.id2node[lnk[0]].(rdf.NamedNode).Name(),
+										label: g.id2node[lbl[0]].(rdf.NamedNode).Name(),
+									})
+								}
+							}
 						} else {
 							links = append(links, link{to: obj.Name(), label: pred.Name()})
 						}
 					case rdf.BlankNode:
-						if entry, ok := opt.BnodeEdges[g.id2node[p].(rdf.NamedNode).Name()]; ok {
+						if entry, ok := opt.NodeEdges[g.id2node[p].(rdf.NamedNode).Name()]; ok {
 							lnk, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[0])]]
 							if ok {
 								if lbl, ok := g.spo[o][g.node2id[rdf.NewNamedNode(entry[1])]]; ok {
@@ -202,6 +213,12 @@ func (g *Graph) Dot(focus rdf.NamedNode, opt DotOptions) string {
 							}
 						}
 					}
+				}
+			}
+
+			for _, v := range opt.NodeEdges {
+				if strings.Contains(res.ID, v[2]) {
+					continue subject
 				}
 			}
 
