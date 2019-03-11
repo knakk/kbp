@@ -10,6 +10,32 @@ import (
 	"unicode/utf8"
 )
 
+func Unmarshal(b []byte, f Format, rec *Record) error {
+	switch f {
+	case MARCXML:
+		dec := Decoder{
+			xmlDec: xml.NewDecoder(bytes.NewBuffer(b)),
+		}
+		for {
+			t, err := dec.xmlDec.Token()
+			if err != nil {
+				return err
+			}
+			switch elem := t.(type) {
+			case xml.SyntaxError:
+				return errors.New(elem.Error())
+			case xml.StartElement:
+				if elem.Name.Local == "record" {
+					return dec.decodeMARCXMLRecord(rec)
+				}
+			}
+		}
+
+	default:
+		panic("Unmarshal: TODO")
+	}
+}
+
 // Decoder can decode MARC records from a stream, in one of the supported formats:
 // MARCXML (ISO25577), LineMARC or Standard MARC (ISO2709)
 type Decoder struct {
