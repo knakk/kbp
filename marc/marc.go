@@ -2,6 +2,7 @@ package marc
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"io"
 	"sort"
@@ -138,6 +139,44 @@ func (r *Record) Marshal(w io.Writer, f Format) error {
 	w.Write([]byte("</record>"))
 
 	return nil
+}
+
+type jsonRecord struct {
+	Leader  string                  `json:"leader"`
+	CFields map[string]string       `json:"cfields,omitempty"`
+	DFields map[string][]jsonDField `json:"dfields,omitempty"`
+}
+
+type jsonDField struct {
+	Ind1      string              `json:"ind1"`
+	Ind2      string              `json:"ind2"`
+	Subfields map[string][]string `json:"subfields"`
+}
+
+// MarshalJSON serializes a JSON representation of the MARC record.
+func (r *Record) MarshalJSON() ([]byte, error) {
+	var jr jsonRecord
+	jr.Leader = string(r.leader)
+	jr.CFields = make(map[string]string, len(r.cfields))
+	for k, v := range r.cfields {
+		jr.CFields[k.String()] = string(v)
+	}
+	jr.DFields = make(map[string][]jsonDField, len(r.dfields))
+	for k, dfs := range r.dfields {
+		for _, df := range dfs {
+			d := jsonDField{
+				Ind1:      string(df.Indicator1),
+				Ind2:      string(df.Indicator2),
+				Subfields: make(map[string][]string),
+			}
+			for sf, sfv := range df.subfields {
+				d.Subfields[string(sf)] = append(d.Subfields[string(sf)], sfv...)
+			}
+			jr.DFields[k.String()] = append(jr.DFields[k.String()], d)
+
+		}
+	}
+	return json.Marshal(jr)
 }
 
 // SetLeaderPos sets the Record leader position to the given value.
