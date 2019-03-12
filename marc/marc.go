@@ -179,6 +179,35 @@ func (r *Record) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jr)
 }
 
+func (r *Record) UnmarshalJSON(b []byte) error {
+	var rec jsonRecord
+	if err := json.Unmarshal(b, &rec); err != nil {
+		return err
+	}
+	r.leader = []byte(rec.Leader)
+	for k, v := range rec.CFields {
+		tag, err := controlTagFromString(k)
+		if err != nil {
+			return err
+		}
+		r.AddControlField(NewControlField(tag).Set(v))
+	}
+	for k, v := range rec.DFields {
+		tag, err := dataTagFromString(k)
+		if err != nil {
+			return err
+		}
+		for _, d := range v {
+			df := NewDataFieldWithIndicators(tag, rune(d.Ind1[0]), rune(d.Ind2[0]))
+			for sf, sfv := range d.Subfields {
+				df.subfields[rune(sf[0])] = sfv
+			}
+			r.AddDataField(df)
+		}
+	}
+	return nil
+}
+
 // SetLeaderPos sets the Record leader position to the given value.
 //
 // It is not possible to set the values for "Record length" or

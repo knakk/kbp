@@ -2,6 +2,7 @@ package marc
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"path/filepath"
@@ -74,5 +75,31 @@ func TestDecodeEncodeRoundtrip(t *testing.T) {
 				t.Errorf("%s: decode/encode roundtrip failed when record serialized as %v", file, f)
 			}
 		}
+	}
+}
+
+func TestDecodeEncodeJSONRoundtrip(t *testing.T) {
+	files, err := filepath.Glob("testdata/*")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, file := range files {
+		want, err := decodeFile(file)
+		if err != nil {
+			t.Errorf("decodeFile(%q) => %v", file, err)
+		}
+		b, err := json.Marshal(want)
+		if err != nil {
+			t.Errorf("json.Marshal(%v) => %v", want, err)
+		}
+		got := NewRecord()
+		if err := json.Unmarshal(b, got); err != nil {
+			t.Errorf("json.Unmarhsal(%v) => %v", string(b), err)
+		}
+		if !got.Eq(want) {
+			t.Errorf("%s: JSON decode/encode roundtrip failed", file)
+		}
+
 	}
 }
