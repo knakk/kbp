@@ -43,8 +43,8 @@ type ControlFieldPos struct {
 // the composite field 008 table.
 var (
 	// All materials
-	C008DateEnteredOnFile                       = ControlFieldPos{Pos: 0, Length: 4}
-	C008TypeOfDateOrPublicationStatus           = ControlFieldPos{Pos: 5, Length: 1}
+	C008DateEnteredOnFile                       = ControlFieldPos{Pos: 0, Length: 6}
+	C008TypeOfDateOrPublicationStatus           = ControlFieldPos{Pos: 6, Length: 1}
 	C008Date1                                   = ControlFieldPos{Pos: 7, Length: 4}
 	C008Date2                                   = ControlFieldPos{Pos: 11, Length: 4}
 	C008PlaceOfPublicationProductionOrExecution = ControlFieldPos{Pos: 15, Length: 3}
