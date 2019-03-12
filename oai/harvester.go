@@ -10,7 +10,7 @@ import (
 // Harvester is a OAI harvester.
 type Harvester struct {
 	endpoint       string
-	token          string // resumptionToken
+	Token          string // resumptionToken
 	From           time.Time
 	Process        func(Record) error
 	MetadataPrefix string
@@ -41,7 +41,7 @@ func (h *Harvester) Run() error {
 			}
 		}
 
-		if h.token == "" {
+		if h.Token == "" {
 			// ResumptionToken is empty, which means we have harvested all records.
 			return nil
 		}
@@ -50,8 +50,8 @@ func (h *Harvester) Run() error {
 
 func (h *Harvester) fetch() ([]Record, error) {
 	url := h.endpoint + "?verb=ListRecords&metadataPrefix=" + h.MetadataPrefix
-	if h.token != "" {
-		url += "&resumptionToken=" + h.token
+	if h.Token != "" {
+		url += "&resumptionToken=" + h.Token
 	}
 	if !h.From.IsZero() {
 		url += "&from=" + h.From.String()
@@ -82,7 +82,7 @@ func (h *Harvester) fetch() ([]Record, error) {
 	}
 
 	// Store the resumptionToken (even if empty string).
-	h.token = oaiResponse.ListRecords.ResumptionToken
+	h.Token = oaiResponse.ListRecords.ResumptionToken
 
 	return oaiResponse.ListRecords.Records, nil
 }
