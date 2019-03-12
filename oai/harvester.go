@@ -9,31 +9,18 @@ import (
 
 // Harvester is a OAI harvester.
 type Harvester struct {
-	endpoint string
-	from     time.Time
-	token    string // resumptionToken
-	process  func(Record) error
+	endpoint       string
+	token          string // resumptionToken
+	From           time.Time
+	Process        func(Record) error
+	MetadataPrefix string
 }
 
-// NewHarvester returns a new Harvester targeting the given endpoint url and
-// using the given function to process the records.
-func NewHarvester(url string, process func(r Record) error) *Harvester {
+// NewHarvester returns a new Harvester targeting the given endpoint url.
+func NewHarvester(url string) *Harvester {
 	return &Harvester{
-		endpoint: url + "?verb=ListRecords&metadataPrefix=marcxchange",
-		process:  process,
+		endpoint: url,
 	}
-}
-
-// WithToken returns a Harvester to be started with the given resumptionToken.
-func (h *Harvester) WithToken(s string) *Harvester {
-	h.token = s
-	return h
-}
-
-// From returns a Harvester to be started harvesting from the given timestamp.
-func (h *Harvester) From(from time.Time) *Harvester {
-	h.from = from
-	return h
 }
 
 // Run will harvest from records from an OAI endpoint. If the configured processing
@@ -49,7 +36,7 @@ func (h *Harvester) Run() error {
 			return nil
 		}
 		for _, rec := range records {
-			if err := h.process(rec); err != nil {
+			if err := h.Process(rec); err != nil {
 				return err
 			}
 		}
@@ -62,12 +49,12 @@ func (h *Harvester) Run() error {
 }
 
 func (h *Harvester) fetch() ([]Record, error) {
-	url := h.endpoint
+	url := h.endpoint + "?verb=ListRecords&metadataPrefix=" + h.MetadataPrefix
 	if h.token != "" {
 		url += "&resumptionToken=" + h.token
 	}
-	if !h.from.IsZero() {
-		url += "&from=" + h.from.String()
+	if !h.From.IsZero() {
+		url += "&from=" + h.From.String()
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
