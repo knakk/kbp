@@ -59,7 +59,7 @@ func (h *Harvester) fetch() ([]Record, error) {
 			url += "&set=" + h.Set
 		}
 		if !h.From.IsZero() {
-			url += "&from=" + h.From.String()
+			url += "&from=" + h.From.Format("2006-01-02")
 		}
 	}
 	req, err := http.NewRequest("GET", url, nil)
