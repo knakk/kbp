@@ -12,6 +12,7 @@ type Harvester struct {
 	endpoint       string
 	Token          string // resumptionToken
 	From           time.Time
+	Set            string
 	Process        func(Record) error
 	MetadataPrefix string
 }
@@ -52,6 +53,9 @@ func (h *Harvester) fetch() ([]Record, error) {
 	url := h.endpoint + "?verb=ListRecords&metadataPrefix=" + h.MetadataPrefix
 	if h.Token != "" {
 		url += "&resumptionToken=" + h.Token
+	}
+	if h.Set != "" {
+		url += "&set=" + h.Set
 	}
 	if !h.From.IsZero() {
 		url += "&from=" + h.From.String()
