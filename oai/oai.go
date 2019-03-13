@@ -20,7 +20,7 @@ var (
 
 // Error return a string representation of an Error.
 func (e Error) Error() string {
-	return e.code
+	return "oai: " + e.code
 }
 
 func errorFromCode(code string) Error {
