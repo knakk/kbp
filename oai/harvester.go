@@ -50,15 +50,17 @@ func (h *Harvester) Run() error {
 }
 
 func (h *Harvester) fetch() ([]Record, error) {
-	url := h.endpoint + "?verb=ListRecords&metadataPrefix=" + h.MetadataPrefix
+	url := h.endpoint + "?verb=ListRecords"
 	if h.Token != "" {
 		url += "&resumptionToken=" + h.Token
-	}
-	if h.Set != "" {
-		url += "&set=" + h.Set
-	}
-	if !h.From.IsZero() {
-		url += "&from=" + h.From.String()
+	} else {
+		url += "&metadataPrefix=" + h.MetadataPrefix
+		if h.Set != "" {
+			url += "&set=" + h.Set
+		}
+		if !h.From.IsZero() {
+			url += "&from=" + h.From.String()
+		}
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
