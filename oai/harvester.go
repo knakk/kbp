@@ -7,13 +7,24 @@ import (
 	"time"
 )
 
+// ProcessStatus represents the status of a record processing.
+type ProcessStatus uint
+
+// Available ProcessStatuses
+const (
+	StautsNew ProcessStatus = iota
+	StatusUpdated
+	StatusDeleted
+	StatusFailed
+)
+
 // Harvester is a OAI harvester.
 type Harvester struct {
 	endpoint       string
 	Token          string // resumptionToken
 	From           time.Time
 	Set            string
-	Process        func(Record) error
+	Process        func(Record) (ProcessStatus, error)
 	MetadataPrefix string
 }
 
@@ -24,27 +35,49 @@ func NewHarvester(url string) *Harvester {
 	}
 }
 
+// HarvestStats keeps statistics about a harvest run.
+type HarvestStats struct {
+	NumAdded         int
+	NumUpdated       int
+	NumDeleted       int
+	NumProcessFailed int
+}
+
 // Run will harvest from records from an OAI endpoint. If the configured processing
 // function returns an error, it will return. Otherwise it will keep going until
-// all records have been harvested, and then return nil.
-func (h *Harvester) Run() error {
+// all records have been harvested, and then return harest statistics.
+func (h *Harvester) Run() (HarvestStats, error) {
+	stats := HarvestStats{}
 	for {
 		records, err := h.fetch()
 		if err != nil {
-			return err
+			return stats, err
 		}
 		if len(records) == 0 {
-			return nil
+			return stats, nil
 		}
 		for _, rec := range records {
-			if err := h.Process(rec); err != nil {
-				return err
+			status, err := h.Process(rec)
+			if err != nil {
+				return stats, err
+			}
+			switch status {
+			case StautsNew:
+				stats.NumAdded++
+			case StatusDeleted:
+				stats.NumDeleted++
+			case StatusUpdated:
+				stats.NumUpdated++
+			case StatusFailed:
+				stats.NumProcessFailed++
+			default:
+				panic(fmt.Sprintf("unknown ProcessStatus %v", status))
 			}
 		}
 
 		if h.Token == "" {
 			// ResumptionToken is empty, which means we have harvested all records.
-			return nil
+			return stats, nil
 		}
 	}
 }
