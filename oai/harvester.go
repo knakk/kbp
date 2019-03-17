@@ -12,7 +12,7 @@ type ProcessStatus uint
 
 // Available ProcessStatuses
 const (
-	StautsNew ProcessStatus = iota
+	StatusNew ProcessStatus = iota
 	StatusUpdated
 	StatusDeleted
 	StatusFailed
@@ -62,7 +62,7 @@ func (h *Harvester) Run() (HarvestStats, error) {
 				return stats, err
 			}
 			switch status {
-			case StautsNew:
+			case StatusNew:
 				stats.NumAdded++
 			case StatusDeleted:
 				stats.NumDeleted++
