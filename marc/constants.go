@@ -28,7 +28,7 @@ const (
 type ControlTag int
 
 const (
-	tagIllegalControlTag ControlTag = iota
+	Tag000 = iota
 	Tag001
 	Tag002
 	Tag003
@@ -1056,12 +1056,12 @@ func (c DataTag) String() string {
 func controlTagFromString(s string) (ControlTag, error) {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		return tagIllegalControlTag, err
+		return Tag000, err
 	}
-	if i >= 1 && i <= 9 {
+	if i >= 0 && i <= 9 {
 		return ControlTag(i), nil
 	}
-	return tagIllegalControlTag, errors.New("not a control tag: " + s)
+	return Tag000, errors.New("not a control tag: " + s)
 }
 
 func dataTagFromString(s string) (DataTag, error) {
