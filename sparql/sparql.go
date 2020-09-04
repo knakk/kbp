@@ -78,6 +78,21 @@ func (r *Results) Solutions() []map[string]rdf.Node {
 	return rs
 }
 
+// SolutionsAsString
+func (r *Results) SolutionsAsString() []map[string]string {
+	var rs []map[string]string
+
+	for _, s := range r.Results.Bindings {
+		solution := make(map[string]string)
+		for k, v := range s {
+			solution[k] = v.Value
+		}
+		rs = append(rs, solution)
+	}
+
+	return rs
+}
+
 // termFromJSON converts a SPARQL json result binding into a rdf.Node. Any
 // parsing errors on typed-literal will result in a xsd:string-typed RDF term.
 func termFromJSON(b binding) rdf.Node {
