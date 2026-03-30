@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -83,6 +82,7 @@ func (r *Repo) qselect(body string, n int) (*http.Response, error) {
 	req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 	req.Header.Set("Accept", "application/sparql-results+json")
 	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("User-Agent", "github.com/knakk/kbp")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *Repo) Select(q string) (*Results, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(body)
+		b, err := io.ReadAll(body)
 		var msg string
 		if err != nil {
 			msg = "Failed to read response body"
@@ -154,7 +154,7 @@ func (r *Repo) Update(q string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(body)
+		b, err := io.ReadAll(body)
 		var msg string
 		if err != nil {
 			msg = "Failed to read response body"
@@ -180,6 +180,7 @@ func (r *Repo) construct(body string, n int) (*http.Response, error) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("User-Agent", "github.com/knakk/kbp")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -216,7 +217,7 @@ func (r *Repo) Construct(q string) (*memory.Graph, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(body)
+		b, err := io.ReadAll(body)
 		var msg string
 		if err != nil {
 			msg = "Failed to read response body"
